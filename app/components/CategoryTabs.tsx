@@ -2,9 +2,11 @@ import Link from 'next/link'
 
 const CATEGORIES = [
   { value: 'all', label: '全部' },
-  { value: 'IP', label: 'IP' },
-  { value: '文博', label: '文博' },
-  { value: '文创', label: '文创' },
+  { value: '新作发布', label: '新作发布' },
+  { value: 'IP授权', label: 'IP授权' },
+  { value: '潮玩谷子', label: '潮玩谷子' },
+  { value: '产业动态', label: '产业动态' },
+  { value: '展会活动', label: '展会活动' },
 ] as const
 
 export function CategoryTabs({

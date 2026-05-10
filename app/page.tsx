@@ -81,7 +81,7 @@ export default async function Home({
             {q
               ? `未找到匹配 "${q}" 的内容`
               : category !== 'all'
-                ? `${category} 分类暂无数据(等 LLM 接入后会自动归类)`
+                ? `${category} 分类暂无数据（等 LLM 接入后会自动归类）`
                 : '数据库暂无数据。下次 cron 抓取后会出现内容。'}
           </p>
         ) : (
