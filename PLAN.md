@@ -1,5 +1,17 @@
 # 动漫IP/ACG/文创 行业新闻聚合站搭建计划
 
+## 🔗 项目实际链接(Day 1-4 已就位)
+
+| 资源 | 链接 / 标识 | 备注 |
+|---|---|---|
+| GitHub 仓库 | https://github.com/Franky779/ip-hot | Public, main 分支 |
+| Vercel 部署 | **https://ip-hot.vercel.app** | Hobby 免费档(13 天 Pro Trial 后自动降级) |
+| Supabase Project | `ip-hot` (Org: laojia-ip, FREE) | Singapore (ap-southeast-1) |
+| 本地代码目录 | [d:/claudecode/临时文件夹/github网页/ip-hot/](d:/claudecode/临时文件夹/github网页/ip-hot/) | Next.js 14 + TS + Tailwind |
+| 主域名(待集成) | laojia-ip.com | 已有,Day 22 配 `radar.laojia-ip.com` 子域名指向 Vercel |
+| 后续推送脚本 | `ip-hot/_push_via_api.mjs` | github.com:443 不可达兜底,用 GitHub API 推 commit |
+| LLM 提供商 | 超级斜杠 ricoxueai (OpenAI 兼容) | Day 12 接入 |
+
 ## Context(为什么做、解决什么)
 
 用户是动漫IP/文创/ACG 行业自媒体从业者(艾克家族 DONO/吉米米品牌)。看到卡兹克(KKKKhazix)的 AIHOT 项目(aihot.virxact.com)后,希望复刻一个**面向自己行业的版本**:每天自动抓取行业新闻 → LLM 生成中文摘要 → 按版块归类 → 网站自动展示 + 每日早 8 点生成日报。
