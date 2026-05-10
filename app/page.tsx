@@ -1,4 +1,6 @@
 import { getSupabase } from '@/lib/supabase'
+import { CategoryTabs } from './components/CategoryTabs'
+import { SearchBox } from './components/SearchBox'
 
 export const revalidate = 60
 
@@ -13,14 +15,24 @@ type Article = {
   published_at: string | null
 }
 
-async function getArticles(): Promise<Article[]> {
+type SearchParams = { category?: string; q?: string }
+
+async function getArticles(category: string, q: string): Promise<Article[]> {
   const supabase = getSupabase()
-  const { data, error } = await supabase
+  let query = supabase
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, category, published_at')
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(50)
 
+  if (category && category !== 'all') {
+    query = query.eq('category', category)
+  }
+  if (q) {
+    query = query.or(`title.ilike.%${q}%,title_cn.ilike.%${q}%`)
+  }
+
+  const { data, error } = await query
   if (error) {
     console.error('Failed to fetch articles:', error)
     return []
@@ -31,58 +43,73 @@ async function getArticles(): Promise<Article[]> {
 function formatDate(iso: string | null): string {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+    return new Date(iso).toLocaleDateString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+    })
   } catch {
     return ''
   }
 }
 
-export default async function Home() {
-  const articles = await getArticles()
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const params = await searchParams
+  const category = params.category ?? 'all'
+  const q = params.q ?? ''
+  const articles = await getArticles(category, q)
 
   return (
-    <main className="min-h-screen bg-black text-white font-sans">
-      <header className="border-b border-zinc-900">
-        <div className="max-w-3xl mx-auto px-6 py-10">
-          <h1 className="text-2xl font-bold tracking-tight">IP 行业雷达</h1>
-          <p className="text-sm text-zinc-500 mt-2">
-            动漫 / IP / ACG / 文创行业自动聚合 · 每日北京时间 7:00 抓取
-          </p>
-          <p className="text-xs text-zinc-600 mt-1">
-            当前 {articles.length} 条
-          </p>
+    <>
+      <header className="page-header">
+        <h1 className="page-title font-serif">IP 行业资讯快报</h1>
+        <p className="page-sub">
+          动漫 / IP / ACG / 文创行业自动新闻聚合 · 每日北京时间 7:00 抓取 · 当前 {articles.length} 条
+        </p>
+        <div className="page-toolbar">
+          <CategoryTabs active={category} query={q} />
+          <SearchBox defaultValue={q} activeCategory={category} />
         </div>
       </header>
 
-      <section className="max-w-3xl mx-auto px-6 py-8">
+      <section className="article-section">
         {articles.length === 0 ? (
-          <p className="text-zinc-500 text-sm">
-            数据库暂无数据。下次 cron 抓取后会出现内容。
+          <p className="empty-state">
+            {q
+              ? `未找到匹配 "${q}" 的内容`
+              : category !== 'all'
+                ? `${category} 分类暂无数据(等 LLM 接入后会自动归类)`
+                : '数据库暂无数据。下次 cron 抓取后会出现内容。'}
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-900">
+          <ul className="article-list">
             {articles.map((article) => (
-              <li key={article.id} className="py-4">
+              <li key={article.id}>
                 <a
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block group hover:bg-zinc-950/40 -mx-3 px-3 py-2 rounded transition"
+                  className="article-card"
                 >
-                  <div className="flex items-baseline gap-3 text-xs text-zinc-500 mb-1">
-                    <span className="font-mono">{article.source}</span>
+                  <div className="article-meta">
+                    <span className="article-source">{article.source}</span>
+                    <span>·</span>
                     <span>{formatDate(article.published_at)}</span>
                     {article.category && (
-                      <span className="text-zinc-600">· {article.category}</span>
+                      <>
+                        <span>·</span>
+                        <span>{article.category}</span>
+                      </>
                     )}
                   </div>
-                  <h2 className="text-base font-medium leading-snug text-zinc-100 group-hover:text-white">
+                  <h2 className="article-title font-serif">
                     {article.title_cn ?? article.title}
                   </h2>
                   {article.summary_cn && (
-                    <p className="text-sm text-zinc-400 mt-1.5 leading-relaxed">
-                      {article.summary_cn}
-                    </p>
+                    <p className="article-summary">{article.summary_cn}</p>
                   )}
                 </a>
               </li>
@@ -90,12 +117,6 @@ export default async function Home() {
           </ul>
         )}
       </section>
-
-      <footer className="border-t border-zinc-900 mt-8">
-        <div className="max-w-3xl mx-auto px-6 py-6 text-xs text-zinc-600 text-center">
-          每天早 7:00 自动抓取 · 数据来自公开 RSS 源 · 仅展示标题与摘要
-        </div>
-      </footer>
-    </main>
+    </>
   )
 }

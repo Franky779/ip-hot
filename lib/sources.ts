@@ -6,13 +6,42 @@ export type RssSource = {
   priority: 'P0' | 'P1' | 'P2'
 }
 
-// MVP 阶段先跑 1 个最稳的 P0 海外源(Day 9-10 再加另外 4 个 P0)。
-// 完整信源池见 d:/claudecode/.claude/skills/ip-news/references/info-sources.md
+// MVP 阶段:5 个最稳的 P0 海外 RSS。
+// W2 完成后(Day 11)考虑加 P1 国内源(36氪/虎嗅/钛媒体)。
+// 完整信源池:d:/claudecode/.claude/skills/ip-news/references/info-sources.md
 export const RSS_SOURCES: RssSource[] = [
   {
     id: 'ann',
     name: 'Anime News Network',
     url: 'https://www.animenewsnetwork.com/all/rss.xml',
+    language: 'en',
+    priority: 'P0',
+  },
+  {
+    id: 'crunchyroll',
+    name: 'Crunchyroll News',
+    url: 'https://feeds.feedburner.com/crunchyroll/animenews',
+    language: 'en',
+    priority: 'P0',
+  },
+  {
+    id: 'cartoonbrew',
+    name: 'Cartoon Brew',
+    url: 'https://www.cartoonbrew.com/feed',
+    language: 'en',
+    priority: 'P0',
+  },
+  {
+    id: 'awn',
+    name: 'Animation World Network',
+    url: 'https://www.awn.com/news.xml',
+    language: 'en',
+    priority: 'P0',
+  },
+  {
+    id: 'variety',
+    name: 'Variety',
+    url: 'https://variety.com/feed',
     language: 'en',
     priority: 'P0',
   },
