@@ -3,7 +3,7 @@
 
 const LLM_BASE_URL = process.env.LLM_BASE_URL || ''
 const LLM_API_KEY = process.env.LLM_API_KEY || ''
-const LLM_MODEL = process.env.LLM_MODEL || 'claude-haiku-4-5-20251001'
+const LLM_MODEL = process.env.LLM_MODEL || 'gpt-5-mini'
 
 export const CATEGORIES = [
   '新作发布',
