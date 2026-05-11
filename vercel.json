@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/fetch-rss",
-      "schedule": "0 23 * * *"
+      "schedule": "*/30 * * * *"
     }
   ]
 }
