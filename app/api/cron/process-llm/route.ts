@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
 
 export const runtime = 'nodejs'
-export const maxDuration = 300 // 5min，LLM批量处理可能需要较长时间
+export const maxDuration = 300
 
 type ProcessResult = {
   id: string
@@ -20,13 +20,16 @@ export async function GET(request: Request) {
 
   const supabase = createServiceClient()
 
-  // 1. 拉取未处理的新闻（title_cn 为 null，按时间倒序，每次最多处理 15 条）
+  // Vercel Hobby plan 函数超时 10 秒，LLM 每次调用 2-5 秒
+  // 并行处理 3 条，总时间约 3-7 秒，在限制内
+  const BATCH_SIZE = 3
+
   const { data: articles, error: fetchError } = await supabase
     .from('articles')
     .select('id, title, url, published_at')
     .is('title_cn', null)
     .order('published_at', { ascending: false })
-    .limit(15)
+    .limit(BATCH_SIZE)
 
   if (fetchError) {
     return NextResponse.json(
@@ -39,33 +42,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, processed: 0, message: 'No pending articles' })
   }
 
-  // 2. 逐条调用 LLM 摘要
-  const results: ProcessResult[] = []
-  for (const article of articles) {
-    const result: ProcessResult = { id: article.id, ok: false }
+  // 并行调用 LLM + 并行更新数据库
+  const results: ProcessResult[] = await Promise.all(
+    articles.map(async (article): Promise<ProcessResult> => {
+      try {
+        const llmResult = await summarizeArticle(article.title, '')
 
-    try {
-      const llmResult = await summarizeArticle(article.title, '')
+        if (!llmResult) {
+          // LLM 未配置或调用失败 → 降级
+          const { error: updateError } = await supabase
+            .from('articles')
+            .update({
+              title_cn: article.title.slice(0, 60),
+              summary_cn: '',
+              category: null,
+              relevance_score: null,
+              is_selected: false,
+            })
+            .eq('id', article.id)
 
-      if (!llmResult) {
-        // LLM 未配置或调用失败 → 降级：原标题前60字当摘要
-        const { error: updateError } = await supabase
-          .from('articles')
-          .update({
-            title_cn: article.title.slice(0, 60),
-            summary_cn: '',
-            category: null,
-            relevance_score: null,
-            is_selected: false,
-          })
-          .eq('id', article.id)
-
-        if (updateError) {
-          result.error = `Update fallback failed: ${updateError.message}`
-        } else {
-          result.ok = true
+          return { id: article.id, ok: !updateError, error: updateError?.message }
         }
-      } else {
+
         const { error: updateError } = await supabase
           .from('articles')
           .update({
@@ -77,18 +75,12 @@ export async function GET(request: Request) {
           })
           .eq('id', article.id)
 
-        if (updateError) {
-          result.error = `Update failed: ${updateError.message}`
-        } else {
-          result.ok = true
-        }
+        return { id: article.id, ok: !updateError, error: updateError?.message }
+      } catch (e) {
+        return { id: article.id, ok: false, error: e instanceof Error ? e.message : String(e) }
       }
-    } catch (e) {
-      result.error = e instanceof Error ? e.message : String(e)
-    }
-
-    results.push(result)
-  }
+    })
+  )
 
   const okCount = results.filter((r) => r.ok).length
 
