@@ -3,11 +3,35 @@
   "crons": [
     {
       "path": "/api/cron/fetch-rss",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-rss",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-rss",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-rss",
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/cron/process-llm",
-      "schedule": "0 * * * *"
+      "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/process-llm",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/process-llm",
+      "schedule": "30 18 * * *"
+    },
+    {
+      "path": "/api/cron/process-llm",
+      "schedule": "30 22 * * *"
     }
   ]
 }
