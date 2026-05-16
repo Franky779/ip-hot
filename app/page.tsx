@@ -41,32 +41,39 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   return (data ?? []) as Article[]
 }
 
-async function getFeatured(): Promise<Article[]> {
-  const supabase = getSupabase()
-  const { data, error } = await supabase
-    .from('articles')
-    .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
-    .eq('is_selected', true)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(5)
-
-  if (error) {
-    console.error('Failed to fetch featured:', error)
-    return []
-  }
-  return (data ?? []) as Article[]
-}
-
-function formatDate(iso: string | null): string {
+function formatDateLabel(iso: string | null): string {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleDateString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
+    const d = new Date(iso)
+    return `${d.getMonth() + 1}月${d.getDate()}日`
+  } catch {
+    return ''
+  }
+}
+
+function formatTime(iso: string | null): string {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    return d.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
     })
   } catch {
     return ''
   }
+}
+
+function groupByDate(articles: Article[]): Record<string, Article[]> {
+  const groups: Record<string, Article[]> = {}
+  for (const article of articles) {
+    const date = formatDateLabel(article.published_at)
+    if (!date) continue
+    if (!groups[date]) groups[date] = []
+    groups[date].push(article)
+  }
+  return groups
 }
 
 export default async function Home({
@@ -77,15 +84,14 @@ export default async function Home({
   const params = await searchParams
   const category = params.category ?? 'all'
   const q = params.q ?? ''
-  const [articles, featured] = await Promise.all([
-    getArticles(category, q),
-    getFeatured(),
-  ])
+  const articles = await getArticles(category, q)
+  const dateGroups = groupByDate(articles)
+  const dates = Object.keys(dateGroups)
 
   return (
     <>
       <header className="page-header">
-        <h1 className="page-title font-serif">IP 行业资讯快报</h1>
+        <h1 className="page-title font-serif">实时快讯</h1>
         <p className="page-sub">
           动漫 / IP / ACG / 文创行业自动新闻聚合 · 每日北京时间 7:00 抓取 · 当前 {articles.length} 条
         </p>
@@ -95,54 +101,7 @@ export default async function Home({
         </div>
       </header>
 
-      {featured.length > 0 && (
-        <section className="article-section featured-section">
-          <h2 className="section-title">
-            <span className="featured-icon">🔥</span> 今日精选
-          </h2>
-          <ul className="article-list">
-            {featured.map((article) => (
-              <li key={article.id}>
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="article-card featured-card"
-                >
-                  <div className="article-meta">
-                    <span className="article-source">{article.source}</span>
-                    <span>·</span>
-                    <span>{formatDate(article.published_at)}</span>
-                    {article.category && (
-                      <>
-                        <span>·</span>
-                        <span className="featured-category">{article.category}</span>
-                      </>
-                    )}
-                  </div>
-                  <h2 className="article-title font-serif">
-                    {article.title_cn ?? article.title}
-                  </h2>
-                  {article.summary_cn && (
-                    <p className="article-summary">{article.summary_cn}</p>
-                  )}
-                  {article.commentary && (
-                    <p className="article-commentary">
-                      <span className="commentary-label">贾田点评：</span>
-                      {article.commentary}
-                    </p>
-                  )}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section className="article-section">
-        <h2 className="section-title">
-          <span>📰</span> 最新资讯
-        </h2>
+      <section className="article-section timeline-section">
         {articles.length === 0 ? (
           <p className="empty-state">
             {q
@@ -152,42 +111,57 @@ export default async function Home({
                 : '数据库暂无数据。下次 cron 抓取后会出现内容。'}
           </p>
         ) : (
-          <ul className="article-list">
-            {articles.map((article) => (
-              <li key={article.id}>
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="article-card"
-                >
-                  <div className="article-meta">
-                    <span className="article-source">{article.source}</span>
-                    <span>·</span>
-                    <span>{formatDate(article.published_at)}</span>
-                    {article.category && (
-                      <>
-                        <span>·</span>
-                        <span>{article.category}</span>
-                      </>
-                    )}
-                  </div>
-                  <h2 className="article-title font-serif">
-                    {article.title_cn ?? article.title}
-                  </h2>
-                  {article.summary_cn && (
-                    <p className="article-summary">{article.summary_cn}</p>
-                  )}
-                  {article.commentary && (
-                    <p className="article-commentary">
-                      <span className="commentary-label">贾田点评：</span>
-                      {article.commentary}
-                    </p>
-                  )}
-                </a>
-              </li>
+          <div className="timeline">
+            {dates.map((date) => (
+              <div key={date} className="timeline-date-group">
+                <div className="timeline-date-header">
+                  <span className="timeline-date-label">{date}</span>
+                  <div className="timeline-date-line" />
+                </div>
+                <div className="timeline-entries">
+                  {dateGroups[date].map((article) => (
+                    <div key={article.id} className="timeline-entry">
+                      <div className="timeline-time-col">
+                        <span className="timeline-time">{formatTime(article.published_at)}</span>
+                        <div className="timeline-dot" />
+                        <div className="timeline-line" />
+                      </div>
+                      <div className="timeline-content-col">
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="article-card"
+                        >
+                          <div className="article-meta">
+                            <span className="article-source">{article.source}</span>
+                            {article.category && (
+                              <>
+                                <span>·</span>
+                                <span>{article.category}</span>
+                              </>
+                            )}
+                          </div>
+                          <h2 className="article-title font-serif">
+                            {article.title_cn ?? article.title}
+                          </h2>
+                          {article.summary_cn && (
+                            <p className="article-summary">{article.summary_cn}</p>
+                          )}
+                          {article.commentary && (
+                            <p className="article-commentary">
+                              <span className="commentary-label">贾田点评：</span>
+                              {article.commentary}
+                            </p>
+                          )}
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </section>
     </>

@@ -416,6 +416,106 @@ body {
   padding: 4rem 1.5rem;
 }
 
+/* ====== 时间线排版 ====== */
+
+.timeline-section {
+  padding: 1.5rem 2.5rem 2rem;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.timeline-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.timeline-date-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.timeline-date-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.timeline-date-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+  opacity: 0.6;
+}
+
+.timeline-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.timeline-entry {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.timeline-time-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 48px;
+  flex-shrink: 0;
+  position: relative;
+  padding-top: 1.25rem;
+}
+
+.timeline-time {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.375rem;
+}
+
+.timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.timeline-line {
+  width: 1px;
+  flex: 1;
+  min-height: 24px;
+  background: var(--border-light);
+  opacity: 0.5;
+}
+
+.timeline-entry:last-child .timeline-line {
+  display: none;
+}
+
+.timeline-content-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-content-col .article-card {
+  margin-bottom: 0.5rem;
+}
+
 /* ====== 主题切换器(放在 sidebar 底部,3 图标 segmented) ====== */
 
 .theme-toggle-wrap {
