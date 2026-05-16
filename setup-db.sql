@@ -6,7 +6,8 @@
 -- 1. 为 articles 表补充 LLM 预留字段
 alter table public.articles
   add column if not exists relevance_score smallint,
-  add column if not exists is_selected boolean default false;
+  add column if not exists is_selected boolean default false,
+  add column if not exists commentary text;
 
 -- 2. 创建 daily_reports 表（日报功能预留）
 create table if not exists public.daily_reports (

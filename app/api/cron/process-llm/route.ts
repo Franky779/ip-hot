@@ -58,6 +58,7 @@ export async function GET(request: Request) {
               category: null,
               relevance_score: null,
               is_selected: false,
+              commentary: null,
             })
             .eq('id', article.id)
 
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
             category: llmResult.category,
             relevance_score: llmResult.relevance_score,
             is_selected: llmResult.is_selected,
+            commentary: llmResult.commentary,
           })
           .eq('id', article.id)
 

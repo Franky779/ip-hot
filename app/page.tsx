@@ -11,6 +11,7 @@ type Article = {
   title: string
   title_cn: string | null
   summary_cn: string | null
+  commentary: string | null
   category: string | null
   published_at: string | null
 }
@@ -21,7 +22,7 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   const supabase = getSupabase()
   let query = supabase
     .from('articles')
-    .select('id, source, url, title, title_cn, summary_cn, category, published_at')
+    .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(50)
 
@@ -35,6 +36,22 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   const { data, error } = await query
   if (error) {
     console.error('Failed to fetch articles:', error)
+    return []
+  }
+  return (data ?? []) as Article[]
+}
+
+async function getFeatured(): Promise<Article[]> {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('articles')
+    .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
+    .eq('is_selected', true)
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .limit(5)
+
+  if (error) {
+    console.error('Failed to fetch featured:', error)
     return []
   }
   return (data ?? []) as Article[]
@@ -60,7 +77,10 @@ export default async function Home({
   const params = await searchParams
   const category = params.category ?? 'all'
   const q = params.q ?? ''
-  const articles = await getArticles(category, q)
+  const [articles, featured] = await Promise.all([
+    getArticles(category, q),
+    getFeatured(),
+  ])
 
   return (
     <>
@@ -75,7 +95,54 @@ export default async function Home({
         </div>
       </header>
 
+      {featured.length > 0 && (
+        <section className="article-section featured-section">
+          <h2 className="section-title">
+            <span className="featured-icon">🔥</span> 今日精选
+          </h2>
+          <ul className="article-list">
+            {featured.map((article) => (
+              <li key={article.id}>
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="article-card featured-card"
+                >
+                  <div className="article-meta">
+                    <span className="article-source">{article.source}</span>
+                    <span>·</span>
+                    <span>{formatDate(article.published_at)}</span>
+                    {article.category && (
+                      <>
+                        <span>·</span>
+                        <span className="featured-category">{article.category}</span>
+                      </>
+                    )}
+                  </div>
+                  <h2 className="article-title font-serif">
+                    {article.title_cn ?? article.title}
+                  </h2>
+                  {article.summary_cn && (
+                    <p className="article-summary">{article.summary_cn}</p>
+                  )}
+                  {article.commentary && (
+                    <p className="article-commentary">
+                      <span className="commentary-label">贾田点评：</span>
+                      {article.commentary}
+                    </p>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="article-section">
+        <h2 className="section-title">
+          <span>📰</span> 最新资讯
+        </h2>
         {articles.length === 0 ? (
           <p className="empty-state">
             {q
@@ -110,6 +177,12 @@ export default async function Home({
                   </h2>
                   {article.summary_cn && (
                     <p className="article-summary">{article.summary_cn}</p>
+                  )}
+                  {article.commentary && (
+                    <p className="article-commentary">
+                      <span className="commentary-label">贾田点评：</span>
+                      {article.commentary}
+                    </p>
                   )}
                 </a>
               </li>
