@@ -1,6 +1,8 @@
 import { getSupabase } from '@/lib/supabase'
 import { CategoryTabs } from './components/CategoryTabs'
 import { SearchBox } from './components/SearchBox'
+import { AdminToggle } from './components/AdminToggle'
+import { ArticleActions } from './components/ArticleActions'
 
 export const revalidate = 60
 
@@ -95,10 +97,15 @@ export default async function Home({
   return (
     <>
       <header className="page-header">
-        <h1 className="page-title font-serif">实时快讯</h1>
-        <p className="page-sub">
-          动漫 / IP / ACG / 文创行业自动新闻聚合 · 每日北京时间 7:00 抓取 · 当前 {articles.length} 条
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 className="page-title font-serif">实时快讯</h1>
+            <p className="page-sub">
+              动漫 / IP / ACG / 文创行业自动新闻聚合 · 每日北京时间 7:00 抓取 · 当前 {articles.length} 条
+            </p>
+          </div>
+          <AdminToggle />
+        </div>
         <div className="page-toolbar">
           <CategoryTabs active={category} query={q} />
           <SearchBox defaultValue={q} activeCategory={category} />
@@ -124,7 +131,7 @@ export default async function Home({
                 </div>
                 <div className="timeline-entries">
                   {dateGroups[date].map((article) => (
-                    <div key={article.id} className="timeline-entry">
+                    <div key={article.id} id={`article-${article.id}`} className="timeline-entry">
                       <div className="timeline-time-col">
                         <span className="timeline-time">{formatTime(article.published_at)}</span>
                         <div className="timeline-dot" />
@@ -155,6 +162,13 @@ export default async function Home({
                             </p>
                           )}
                         </a>
+                        <ArticleActions
+                          id={article.id}
+                          title_cn={article.title_cn}
+                          summary_cn={article.summary_cn}
+                          commentary={article.commentary}
+                          category={article.category}
+                        />
                       </div>
                     </div>
                   ))}

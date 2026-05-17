@@ -1,5 +1,7 @@
 import { getSupabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { AdminToggle } from '../components/AdminToggle'
+import { ArticleActions } from '../components/ArticleActions'
 
 export const metadata = {
   title: '今日精选 - IP 行业资讯快报',
@@ -59,13 +61,16 @@ export default async function FeaturedPage() {
   return (
     <>
       <header className="page-header">
-        <div className="page-toolbar" style={{ justifyContent: 'flex-start', gap: '0.75rem' }}>
-          <Link href="/" className="sidebar-link" style={{ padding: '0.5rem', width: 'auto' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="page-title font-serif" style={{ margin: 0 }}>今日精选</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div className="page-toolbar" style={{ justifyContent: 'flex-start', gap: '0.75rem' }}>
+            <Link href="/" className="sidebar-link" style={{ padding: '0.5rem', width: 'auto' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <h1 className="page-title font-serif" style={{ margin: 0 }}>今日精选</h1>
+          </div>
+          <AdminToggle />
         </div>
         <p className="page-sub">
           相关性评分 7 分以上的高价值资讯 · 共 {articles.length} 条
@@ -80,7 +85,7 @@ export default async function FeaturedPage() {
         ) : (
           <ul className="article-list">
             {articles.map((article) => (
-              <li key={article.id}>
+              <li key={article.id} id={`article-${article.id}`} style={{ position: 'relative' }}>
                 <a
                   href={article.url}
                   target="_blank"
@@ -117,6 +122,13 @@ export default async function FeaturedPage() {
                     </p>
                   )}
                 </a>
+                <ArticleActions
+                  id={article.id}
+                  title_cn={article.title_cn}
+                  summary_cn={article.summary_cn}
+                  commentary={article.commentary}
+                  category={article.category}
+                />
               </li>
             ))}
           </ul>
