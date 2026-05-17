@@ -607,6 +607,8 @@ body {
   padding: 1.5rem;
   width: 100%;
   max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
 }
 
