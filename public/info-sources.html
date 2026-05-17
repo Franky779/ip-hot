@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP NEWS 信息源主库</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3f0;
+  --surface: #ffffff;
+  --surface-hover: #faf9f7;
+  --text: #1a1714;
+  --text-secondary: #6b6560;
+  --text-muted: #9a948e;
+  --accent: #c45c26;
+  --accent-light: #f5e6d8;
+  --border: #e5e0da;
+  --border-light: #f0ede8;
+  --shadow: 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+  --sidebar-bg: #1a1714;
+  --sidebar-text: #a39e98;
+  --sidebar-text-hover: #e5e0da;
+  --sidebar-active: #c45c26;
+  --sidebar-active-bg: rgba(196,92,38,0.12);
+  --sidebar-border: rgba(255,255,255,0.06);
+  --sidebar-width: 220px;
+  --danger: #c23b3b;
+  --danger-light: #fceaea;
+  --success: #2d8a4e;
+  --success-light: #e6f5eb;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: "Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased;
+}
+.app-layout { display: flex; min-height: 100vh; }
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-width); background: var(--sidebar-bg);
+  display: flex; flex-direction: column; z-index: 50; overflow-y: auto;
+}
+.sidebar-brand {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--sidebar-border); text-decoration: none;
+}
+.sidebar-brand-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--accent); color: #fff; font-weight: 700;
+  font-size: 0.875rem; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; letter-spacing: 0.05em;
+}
+.sidebar-brand-text {
+  font-family: "Noto Serif SC",serif; font-size: 0.9375rem;
+  font-weight: 700; color: var(--sidebar-text-hover); line-height: 1.3;
+}
+.sidebar-nav { flex: 1; padding: 1rem 0.75rem; }
+.sidebar-nav-title {
+  font-size: 0.6875rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 0.5rem 0.875rem; margin-top: 0.5rem;
+}
+.sidebar-link {
+  display: flex; align-items: center; gap: 0.625rem;
+  padding: 0.5rem 0.875rem; border-radius: 6px;
+  color: var(--sidebar-text); font-size: 0.8125rem;
+  text-decoration: none; transition: all 0.2s ease; margin-bottom: 1px;
+}
+.sidebar-link:hover { color: var(--sidebar-text-hover); background: var(--sidebar-active-bg); }
+.sidebar-link.active { color: var(--sidebar-active); background: var(--sidebar-active-bg); font-weight: 500; }
+.sidebar-count { margin-left: auto; font-size: 0.6875rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.app-main { flex: 1; margin-left: var(--sidebar-width); min-width: 0; max-width: 1100px; }
+.page-header {
+  background: var(--surface); border-bottom: 1px solid var(--border-light);
+  padding: 1rem 2.5rem 1rem; position: sticky; top: 0; z-index: 40;
+}
+.page-meta {
+  display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;
+}
+.page-meta-item {
+  font-size: 1.25rem; color: var(--text-muted);
+}
+.page-meta-item strong {
+  color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.page-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;
+}
+.search-box { display: flex; align-items: center; gap: 0.5rem; flex: 1; max-width: 360px; }
+.search-input {
+  flex: 1; padding: 0.625rem 1rem; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 0.875rem; color: var(--text); font-family: inherit;
+  transition: all 0.2s ease; outline: none;
+}
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.search-clear {
+  padding: 0.375rem 0.75rem; background: transparent;
+  border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-secondary); font-size: 0.8125rem;
+  cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+}
+.search-clear:hover { border-color: var(--accent); color: var(--accent); }
+.filter-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 4px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 999px;
+}
+.filter-tab {
+  padding: 0.4rem 0.875rem; border-radius: 999px;
+  font-size: 0.8125rem; color: var(--text-secondary);
+  cursor: pointer; border: none; background: transparent;
+  transition: all 0.2s ease; white-space: nowrap; font-family: inherit;
+}
+.filter-tab:hover { color: var(--text); }
+.filter-tab.active {
+  background: var(--surface); color: var(--accent);
+  font-weight: 500; box-shadow: var(--shadow);
+}
+.content { padding: 2rem 2.5rem 4rem; }
+.section { margin-bottom: 3rem; }
+.section-header {
+  display: flex; align-items: baseline; gap: 0.75rem;
+  margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.section-title {
+  font-family: "Noto Serif SC",serif; font-size: 1.25rem;
+  font-weight: 700; color: var(--text); letter-spacing: 0.02em;
+}
+.section-count {
+  font-size: 0.8125rem; color: var(--text-muted);
+  font-weight: 400; font-variant-numeric: tabular-nums;
+}
+.source-list { display: flex; flex-direction: column; gap: 0.625rem; }
+.source-item {
+  background: var(--surface); border: 1px solid var(--border-light);
+  border-radius: 10px; padding: 1rem 1.25rem;
+  transition: all 0.2s ease; position: relative;
+}
+.source-item:hover {
+  border-color: var(--border); box-shadow: var(--shadow-md); transform: translateY(-1px);
+}
+.source-header {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+}
+.source-name {
+  font-size: 1rem; font-weight: 700; color: var(--text);
+  text-decoration: none; display: inline-flex; align-items: center; gap: 0.375rem;
+}
+.source-name:hover { color: var(--accent); }
+.source-name svg { width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0; }
+.source-name:hover svg { color: var(--accent); }
+.source-tag {
+  font-size: 0.6875rem; font-weight: 500; color: var(--accent);
+  background: var(--accent-light); padding: 0.15rem 0.5rem;
+  border-radius: 4px; white-space: nowrap;
+}
+.source-desc {
+  margin-top: 0.375rem; font-size: 0.875rem;
+  color: var(--text-secondary); line-height: 1.65; max-width: 75ch;
+}
+.source-method {
+  margin-top: 0.375rem; font-size: 0.75rem;
+  color: var(--text-muted); line-height: 1.5;
+  font-family: ui-monospace,"SF Mono",Consolas,monospace;
+}
+.source-actions {
+  position: absolute; top: 0.75rem; right: 0.75rem;
+  display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s ease;
+}
+.source-action-btn {
+  padding: 0.25rem 0.5rem; border-radius: 4px;
+  font-size: 0.6875rem; border: none; cursor: pointer;
+  font-family: inherit; transition: all 0.2s ease;
+}
+.source-action-btn.edit {
+  background: var(--accent-light); color: var(--accent);
+}
+.source-action-btn.edit:hover { background: var(--accent); color: #fff; }
+.source-action-btn.delete {
+  background: var(--danger-light); color: var(--danger);
+}
+.source-action-btn.delete:hover { background: var(--danger); color: #fff; }
+.rss-section { margin-bottom: 3rem; }
+.rss-table-wrap { overflow-x: auto; }
+.rss-table { width: 100%; border-collapse: collapse; }
+.rss-table th, .rss-table td {
+  text-align: left; padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--border-light); font-size: 0.875rem;
+}
+.rss-table th {
+  font-weight: 600; color: var(--text-secondary); font-size: 0.8125rem;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  background: var(--surface); position: sticky; top: 0;
+}
+.rss-table td { color: var(--text); }
+.rss-table tr:hover td { background: var(--surface-hover); }
+.rss-table a { color: var(--accent); text-decoration: none; }
+.rss-table a:hover { text-decoration: underline; }
+.rss-note { color: var(--text-muted); font-size: 0.8125rem; }
+.tool-grid {
+  display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 1rem;
+}
+.tool-card {
+  background: var(--surface); border: 1px solid var(--border-light);
+  border-radius: 10px; padding: 1.25rem; transition: all 0.2s ease;
+}
+.tool-card:hover { border-color: var(--border); box-shadow: var(--shadow-md); }
+.tool-name { font-weight: 700; color: var(--text); font-size: 0.9375rem; }
+.tool-type { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+.tool-desc { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem; line-height: 1.6; }
+.empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+.empty-state-title { font-size: 1.125rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; }
+.details-block { margin-bottom: 2rem; }
+.details-block summary {
+  font-family: "Noto Serif SC",serif; font-size: 1.125rem; font-weight: 700;
+  color: var(--text); cursor: pointer; padding: 0.75rem 0; list-style: none;
+  display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border);
+}
+.details-block summary::-webkit-details-marker { display: none; }
+.details-block summary::before {
+  content: "▸"; font-size: 0.875rem; color: var(--accent); transition: transform 0.2s ease;
+}
+.details-block[open] summary::before { transform: rotate(90deg); }
+.details-content { padding: 1rem 0; }
+.method-list { display: flex; flex-direction: column; gap: 1.5rem; }
+.method-group-title { font-size: 0.9375rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+.method-group-items { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.8; }
+.method-group-items code {
+  background: var(--bg); padding: 0.1rem 0.35rem; border-radius: 4px;
+  font-family: ui-monospace,monospace; font-size: 0.8125rem; color: var(--accent);
+}
+.footer-note {
+  margin-top: 3rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--border); font-size: 0.8125rem;
+  color: var(--text-muted); line-height: 1.8;
+}
+/* Edit controls */
+.edit-controls {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+}
+.edit-btn {
+  padding: 0.4rem 0.75rem; border-radius: 6px;
+  font-size: 0.8125rem; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+}
+.edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+.edit-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.edit-btn.primary:hover { background: #a84d1f; }
+.edit-btn.danger { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+.edit-btn.danger:hover { background: var(--danger); color: #fff; }
+.edit-btn.success { background: var(--success-light); color: var(--success); border-color: var(--success); }
+.edit-btn.success:hover { background: var(--success); color: #fff; }
+.edit-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--surface); border-radius: 12px;
+  width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.modal-header {
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-light);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title { font-family: "Noto Serif SC",serif; font-size: 1.125rem; font-weight: 700; }
+.modal-close {
+  background: none; border: none; font-size: 1.5rem; color: var(--text-muted);
+  cursor: pointer; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 1.25rem 1.5rem; }
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+  display: block; font-size: 0.8125rem; font-weight: 500;
+  color: var(--text-secondary); margin-bottom: 0.375rem;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.875rem; font-family: inherit; color: var(--text);
+  background: var(--bg); transition: all 0.2s ease; outline: none;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.modal-footer {
+  padding: 1rem 1.5rem; border-top: 1px solid var(--border-light);
+  display: flex; justify-content: flex-end; gap: 0.5rem;
+}
+/* Section add button */
+.section-add-btn {
+  margin-left: auto; padding: 0.25rem 0.625rem;
+  font-size: 0.75rem; border: 1px dashed var(--border);
+  background: transparent; color: var(--text-muted);
+  border-radius: 4px; cursor: pointer; font-family: inherit;
+  transition: all 0.2s ease;
+}
+.section-add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+/* Toast */
+.toast {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(100px);
+  background: var(--text); color: #fff; padding: 0.75rem 1.5rem;
+  border-radius: 8px; font-size: 0.875rem; z-index: 200;
+  opacity: 0; transition: all 0.3s ease; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Import/Export area */
+.file-ops {
+  display: none;
+  margin-top: 0.75rem; padding: 0.75rem;
+  background: var(--bg); border-radius: 8px; border: 1px dashed var(--border);
+}
+.file-ops.show { display: block; }
+.file-ops-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+#fileInput { display: none; }
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .app-main { margin-left: 0; max-width: none; }
+  .page-header, .content { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .page-toolbar { flex-direction: column; align-items: stretch; }
+  .search-box { max-width: none; }
+  .filter-tabs { overflow-x: auto; flex-wrap: nowrap; border-radius: 8px; }
+  .section-title { font-size: 1.125rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .source-actions { opacity: 1; position: static; margin-top: 0.5rem; justify-content: flex-end; }
+}
+</style>
+</head>
+<body>
+<div class="app-layout">
+<aside class="sidebar">
+  <a href="#" class="sidebar-brand" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+    <div class="sidebar-brand-icon">IP</div>
+    <div class="sidebar-brand-text">信息源主库</div>
+  </a>
+  <nav class="sidebar-nav" id="sidebarNav"></nav>
+</aside>
+
+<main class="app-main">
+  <div class="page-header">
+    <div class="page-meta">
+      <span class="page-meta-item"><strong id="statTotal">0</strong> 个站点</span>
+      <span class="page-meta-item"><strong id="statRSS">0</strong> 个 RSS 源</span>
+      <span class="page-meta-item">更新于 <span id="updateDate">2026-05-17</span></span>
+    </div>
+    <div class="page-toolbar">
+      <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索站点名称、定位或关键词..." autocomplete="off">
+        <button class="search-clear" id="searchClear" style="display:none">清除</button>
+      </div>
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="domestic">国内</button>
+        <button class="filter-tab" data-filter="overseas">海外</button>
+        <button class="filter-tab" data-filter="acg">动漫ACG</button>
+        <button class="filter-tab" data-filter="toy">潮玩文创</button>
+        <button class="filter-tab" data-filter="film">影视游戏</button>
+        <button class="filter-tab" data-filter="finance">财经商业</button>
+        <button class="filter-tab" data-filter="media">媒体资讯</button>
+        <button class="filter-tab" data-filter="jp">日本</button>
+        <button class="filter-tab" data-filter="rss">RSS</button>
+      </div>
+    </div>
+    <div style="margin-top:0.75rem;">
+      <div class="edit-controls">
+        <button class="edit-btn primary" id="btnAddSite">+ 添加站点</button>
+        <button class="edit-btn" id="btnToggleEdit">进入编辑模式</button>
+        <button class="edit-btn success" id="btnExport">导出JSON</button>
+        <button class="edit-btn" id="btnImport">导入JSON</button>
+        <button class="edit-btn danger" id="btnReset">重置默认</button>
+      </div>
+      <div class="file-ops" id="fileOpsPanel">
+        <div class="file-ops-row">
+          <span style="font-size:0.8125rem;color:var(--text-secondary);">选择之前导出的JSON文件，数据将覆盖当前内容：</span>
+          <input type="file" id="fileInput" accept=".json,application/json">
+          <button class="edit-btn" onclick="document.getElementById('fileInput').click()">选择文件</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content" id="mainContent"></div>
+</main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">编辑站点</span>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>站点名称 *</label>
+        <input type="text" id="editName" placeholder="如：三文娱">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>URL *</label>
+          <input type="text" id="editUrl" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label>标签</label>
+          <input type="text" id="editTag" placeholder="如：动漫/IP垂直媒体">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>简介描述</label>
+        <textarea id="editDesc" placeholder="这个站点的主要内容、价值..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>抓取方式</label>
+        <input type="text" id="editMethod" placeholder="如：web-access CDP搜索 → rss-parser">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>所属分类 *</label>
+          <select id="editSection"></select>
+        </div>
+        <div class="form-group">
+          <label>区域</label>
+          <select id="editRegion">
+            <option value="domestic">国内</option>
+            <option value="overseas">海外</option>
+            <option value="japan">日本</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>标签分类（多选，用逗号分隔）</label>
+        <input type="text" id="editTags" placeholder="acg, toy, film, game, finance, media, cultural, social">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="edit-btn" id="modalCancel">取消</button>
+      <button class="edit-btn primary" id="modalSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'ipnews_data_v1';
+const linkIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+
+const defaultSections = [
+  {
+    id: 'domestic-acg', title: '动漫 / ACG 垂直媒体', region: 'domestic', tags: ['acg'],
+    items: [
+      {n:'三文娱',u:'https://www.163.com/dy/media/T1460009632064.html',t:'动漫/IP垂直媒体',d:'动漫IP行业最权威垂直媒体，日更深度内容，涵盖IP授权、潮玩产业分析、行业趋势研判，是了解国内动漫产业动态的首选信源',m:'web-access CDP搜索 → rss-parser'},
+      {n:'游民星空动漫频道',u:'https://www.gamersky.com/news/',t:'动漫+游戏综合门户',d:'动漫+游戏新闻日更，覆盖动画改编游戏、游戏IP联动等跨界内容，更新频率高，适合追踪ACG跨界动态',m:'web-access CDP搜索'},
+      {n:'哔哩哔哩(B站)国创区',u:'https://www.bilibili.com/v/anime/guochuang',t:'国创动画发布主阵地',d:'国产动画最大的发布和推广平台，国创作品上线、PV发布、数据表现等信息首发于此，是追踪国创IP动向的核心阵地',m:'B站官方API/opencli → RSSHub聚合'},
+      {n:'腾讯动漫资讯',u:'https://ac.qq.com/Comic/all',t:'腾讯系动漫IP源头',d:'腾讯动漫是国内头部漫画平台，独家IP众多，其资讯频道发布新作上线、IP改编、版权合作等一手信息',m:'web-access CDP搜索'},
+      {n:'漫客栈',u:'https://www.mkzhan.com',t:'网漫资讯平台',d:'网漫资讯聚合，可补充网漫IP动态，覆盖原创漫画连载、改编动态等',m:'web-access CDP搜索'},
+      {n:'17173动漫',u:'http://acg.17173.com',t:'老牌ACG综合站',d:'老牌ACG综合门户，覆盖动漫、游戏、周边等泛二次元内容，历史数据丰富，适合补充行业动态',m:'web-access CDP搜索'},
+      {n:'ACG批',u:'https://www.acgpipi.com',t:'ACG新闻聚合',d:'ACG新闻聚合站点，整合多平台动漫资讯，可作为行业动态补充信源',m:'web-access CDP搜索'},
+      {n:'雷报',u:'https://www.zhihu.com/people/wanshangkansha',t:'动漫IP/潮玩产业深度分析',d:'动漫IP和潮玩产业深度分析头部账号，内容专业度高，产业洞察犀利，是了解IP授权和潮玩市场趋势的重要信源',m:'需登录（知乎Cookie/扫码登录后，通过web-access CDP或Playwright抓取）'}
+    ]
+  },
+  {
+    id: 'domestic-toy', title: '潮玩 / 玩具 / IP产业', region: 'domestic', tags: ['toy'],
+    items: [
+      {n:'中外玩具网',u:'http://www.ctoy.com.cn',t:'玩具产业老牌门户',d:'玩具产业老牌门户，覆盖玩具制造、出口、市场趋势等全产业链信息，是了解玩具行业动态的基础信源',m:'web-access CDP搜索（偶有403，可尝试Scrapling兜底）'},
+      {n:'玩具产业网',u:'https://www.wjyt-china.org/',t:'玩具协会官方平台',d:'中国玩具协会官方信息平台，发布行业标准、政策解读、展会信息，权威度高',m:'web-access CDP搜索'},
+      {n:'CLE中国授权展官网',u:'http://www.licensingexpochina.com',t:'国内最大IP授权展会信息源',d:'国内最大的IP授权展会官方平台，发布参展商名单、授权案例、行业报告，是IP授权业务的核心信息源',m:'web-access CDP搜索'},
+      {n:'LCEXPO上海国际授权展',u:'http://www.lcexpo.com.cn',t:'上海授权展会信息',d:'上海授权展会官方平台，覆盖华东地区IP授权动态，可补充CLE的展会信息',m:'web-access CDP搜索'},
+    ]
+  },
+  {
+    id: 'domestic-cultural', title: '文创 / 文博 / 非遗', region: 'domestic', tags: ['cultural','toy'],
+    items: [
+      {n:'中国文化报',u:'http://www.ccdy.cn',t:'文化部主管官方媒体',d:'文化部主管的全国性文化类报纸，非遗、文创政策权威发布渠道，政策解读和行业分析价值高',m:'web-access CDP搜索'},
+      {n:'中国旅游报',u:'http://www.ctnews.com.cn',t:'文旅产业媒体',d:'文旅产业权威媒体，覆盖文旅融合、景区IP化、文旅消费趋势等，适合追踪文旅IP动态',m:'web-access CDP搜索'},
+      {n:'中国艺术报',u:'http://www.cflac.org.cn',t:'文联艺术资讯平台',d:'中国文联主管，覆盖艺术创作、展览、评论等，可补充艺术类IP和文化IP信息',m:'web-access CDP搜索'},
+      {n:'国家文物局官网',u:'http://www.ncha.gov.cn',t:'文博政策官方发布',d:'国家文物局官方网站，发布文博政策、法规、行业标准，是了解文博IP政策环境的权威来源',m:'web-access CDP搜索'},
+      {n:'中国非物质文化遗产网',u:'http://www.ihchina.cn',t:'国家非遗中心官方',d:'国家非遗中心官方网站，非遗项目数据库、传承人信息、非遗活化案例，非遗IP化研究必备',m:'web-access CDP搜索'}
+    ]
+  },
+  {
+    id: 'domestic-film-game', title: '影视 / 游戏 / 科技', region: 'domestic', tags: ['film','game'],
+    items: [
+      {n:'1905电影网',u:'http://www.1905.com',t:'国内电影资讯首选',d:'央视电影频道官方平台，国内电影资讯首选，覆盖影片上映、票房、电影节等，IP影视化改编信息丰富',m:'web-access CDP搜索 → RSSHub聚合'},
+      {n:'艺恩网',u:'http://www.endata.com.cn',t:'影视+娱乐数据平台',d:'影视行业数据与资讯平台，提供票房数据、艺人指数、行业报告，是IP影视化价值评估的数据支撑',m:'web-access CDP搜索'},
+      {n:'灯塔专业版',u:'https://lighthouse.baofeng.com',t:'票房与排片数据',d:'阿里影业旗下票房数据平台，实时票房、排片、上座率等数据，IP电影市场表现追踪利器',m:'web-access CDP搜索'},
+      {n:'猫眼专业版',u:'https://piaofang.maoyan.com',t:'实时票房+档期',d:'猫眼电影专业版，实时票房、档期分析、影片口碑，与灯塔互补，全面追踪IP电影市场',m:'web-access CDP搜索'},
+      {n:'游民星空',u:'http://www.gamersky.com',t:'游戏综合门户',d:'游戏综合门户，游戏新闻、评测、攻略全面覆盖，游戏IP改编影视/动漫的动态更新快',m:'web-access CDP搜索'},
+      {n:'游戏陀螺',u:'http://www.youxituoluo.com',t:'游戏行业垂直媒体',d:'游戏行业垂直媒体，聚焦游戏产业趋势、投融资、出海，可补充游戏IP产业动态',m:'web-access CDP搜索'},
+      {n:'IT之家',u:'https://www.ithome.com',t:'游戏+科技+IP综合',d:'科技资讯头部平台，覆盖游戏、数码、科技IP，科技IP与文创交叉领域信息丰富',m:'web-access CDP搜索'},
+      {n:'快科技',u:'https://www.mydrivers.com',t:'科技+游戏+电影',d:'科技资讯平台，科技产品、游戏硬件、影视科技等内容，可补充科技类IP信息',m:'web-access CDP搜索'}
+    ]
+  },
+  {
+    id: 'domestic-finance', title: '财经 / 商业 / 综合', region: 'domestic', tags: ['finance'],
+    items: [
+      {n:'36氪',u:'https://36kr.com',t:'创投+消费报道',d:'创投与消费领域头部媒体，覆盖新消费品牌、IP投资、潮玩融资等，IP商业化价值判断的重要参考',m:'web-access CDP搜索 → rss-parser（官方RSS）'},
+      {n:'虎嗅',u:'https://www.huxiu.com',t:'行业深度评论',d:'行业深度评论头部平台，文创、消费、IP产业分析文章质量高，观点犀利，适合了解行业趋势',m:'web-access CDP搜索 → rss-parser（官方RSS）'},
+      {n:'界面新闻',u:'https://www.jiemian.com',t:'财经+文娱报道',d:'财经+文娱报道并重，上市公司IP业务、文娱产业资本运作等报道深入，适合IP商业化追踪',m:'web-access CDP搜索'},
+      {n:'钛媒体',u:'https://www.tmtpost.com',t:'科技+商业',d:'科技商业头部媒体，TMT行业分析与评论，科技IP、数字文创等领域报道专业',m:'web-access CDP搜索 → rss-parser（官方RSS）'},
+      {n:'第一财经',u:'https://www.yicai.com',t:'财经新闻',d:'上海广播电视台旗下财经媒体，财经新闻权威，可补充IP相关财经报道',m:'web-access CDP搜索'},
+      {n:'21世纪经济报道',u:'http://www.21jingji.com',t:'财经新闻',d:'南方财经全媒体集团旗下，财经深度报道，IP产业经济分析、消费升级等议题覆盖',m:'web-access CDP搜索'},
+      {n:'新京报书评/文娱',u:'https://www.bjnews.com.cn',t:'文娱+文化报道',d:'新京报旗下文化频道，书评、文娱评论、文化现象分析深度高，文化IP评论视角独特',m:'web-access CDP搜索'},
+      {n:'同花顺财经',u:'https://news.10jqka.com.cn',t:'财经+行业动态',d:'财经资讯高频更新，IP概念股、上市公司IP业务动态等财经视角信息丰富',m:'web-access CDP搜索'},
+      {n:'新浪财经',u:'https://finance.sina.com.cn',t:'综合资讯入口',d:'新浪旗下综合财经门户，资讯覆盖面广，IP行业财经动态、市场分析等内容量大',m:'web-access CDP搜索'},
+      {n:'东方财富网',u:'https://finance.eastmoney.com',t:'商业财经动态',d:'东方财富旗下财经门户，IP相关上市公司动态、行业研报等内容丰富',m:'web-access CDP搜索'},
+      {n:'红商网',u:'http://www.redsh.com',t:'商业地产+消费业态',d:'商业地产与消费业态媒体，商场IP快闪、主题授权、商业空间IP化等案例报道',m:'web-access CDP搜索'},
+      {n:'MBA中国网',u:'https://www.mbachina.com',t:'商业评论',d:'商业管理与评论平台，IP商业模式、品牌管理等议题的商业视角分析',m:'web-access CDP搜索'},
+      {n:'搜狐网',u:'https://www.sohu.com',t:'综合门户',d:'老牌综合门户，资讯覆盖面广，可作为IP行业动态的补充信源',m:'web-access CDP搜索'}
+    ]
+  },
+  {
+    id: 'domestic-central-media', title: '中央媒体 / 综合资讯', region: 'domestic', tags: ['media'],
+    items: [
+      {n:'人民网',u:'http://www.people.com.cn',t:'央媒,行业政策权威',d:'人民日报旗下官方网站，行业政策权威发布渠道，文化产业、知识产权保护等政策解读首选',m:'web-access CDP搜索'},
+      {n:'新华网',u:'http://www.xinhuanet.com',t:'央媒,文博/政策必看',d:'新华社旗下官方网站，文博、非遗、文化产业政策报道权威，国家级文化项目动态首发',m:'web-access CDP搜索'},
+      {n:'光明网',u:'https://www.gmw.cn',t:'文化+政策+评论',d:'光明日报旗下，文化报道与评论并重，学术性强，文化IP、非遗传承等议题报道深入',m:'web-access CDP搜索'},
+      {n:'央广网',u:'https://www.cnr.cn',t:'央媒广电系',d:'中央广播电视总台旗下，广电行业政策、文化节目IP、广播IP化等动态报道',m:'web-access CDP搜索'},
+      {n:'中国新闻网',u:'https://www.chinanews.com.cn',t:'中新社综合资讯',d:'中国新闻社旗下，综合资讯覆盖面广，文化、旅游、消费等跨界IP动态丰富',m:'web-access CDP搜索'},
+      {n:'中国青年网',u:'https://www.youth.cn',t:'青年文化+二次元',d:'共青团中央旗下，青年文化、二次元、国潮等议题报道贴近年轻受众，了解Z世代IP偏好',m:'web-access CDP搜索'},
+      {n:'中国科技网',u:'https://www.stdaily.com',t:'科技+文化交叉',d:'科技日报旗下，科技与文化交叉领域报道，数字文创、科技IP、虚拟现实等前沿动态',m:'web-access CDP搜索'},
+      {n:'澎湃新闻 文化频道',u:'https://www.thepaper.cn/list_25462',t:'文化深度报道',d:'上海报业集团旗下，文化深度报道质量高，文化现象、艺术市场、IP争议等议题追踪深入',m:'web-access CDP搜索 → RSSHub聚合'}
+    ]
+  },
+  {
+    id: 'domestic-local-media', title: '地方媒体 / 城市文创', region: 'domestic', tags: ['media'],
+    items: [
+      {n:'京报网(北京日报)',u:'https://www.bjd.com.cn',t:'北京文化+文创第一线',d:'北京日报旗下，北京文化政策、文创园区、文化活动等本地深度报道，了解一线城市文创动态',m:'web-access CDP搜索'},
+      {n:'千龙网(北京)',u:'http://www.qianlong.com',t:'北京新闻+文化活动',d:'北京新闻门户，文化活动、展览、演出等信息丰富，北京地区文化消费动态追踪',m:'web-access CDP搜索'},
+      {n:'北青网(北京青年报)',u:'https://www.ynet.com',t:'北京文娱+消费',d:'北京青年报旗下，北京文娱消费、青年文化、潮流趋势等报道贴近年轻群体',m:'web-access CDP搜索'},
+      {n:'上观新闻(上海)',u:'https://www.jfdaily.com',t:'上海+长三角文化深度',d:'解放日报旗下，上海及长三角地区文化深度报道，上海文创产业政策、企业动态追踪',m:'web-access CDP搜索'},
+      {n:'新闻晨报(上海)',u:'https://www.shxwcb.com',t:'上海二次元/潮玩第一线',d:'上海主流都市报，上海二次元、潮玩、谷子经济等年轻消费文化报道活跃',m:'web-access CDP搜索'},
+      {n:'浙江日报/潮新闻',u:'http://www.zjol.com.cn',t:'杭州文创+二次元',d:'浙江日报旗下，杭州文创产业、动漫游戏、二次元经济等报道，杭州作为电商之都的IP电商动态',m:'web-access CDP搜索'},
+      {n:'湖北日报',u:'http://www.hubeidaily.net',t:'武汉商业+文创跨界',d:'湖北日报旗下，武汉商业与文创跨界报道，中部地区文创产业发展动态',m:'web-access CDP搜索'},
+      {n:'大众日报(山东)',u:'https://www.dzwww.com',t:'济南/山东展会+文创',d:'山东省委机关报，山东文创产业、展会经济、文旅融合等报道，北方地区文创动态补充',m:'web-access CDP搜索'},
+      {n:'红星新闻(成都)',u:'https://www.cdsb.com',t:'成都二次元/Cosplay',d:'成都商报旗下，成都二次元、Cosplay、电竞等青年文化报道活跃，了解西南IP市场',m:'web-access CDP搜索'},
+      {n:'极目新闻(湖北)',u:'http://www.ctdsb.net',t:'武汉商业新闻',d:'楚天都市报旗下，武汉商业新闻、消费趋势、商业空间IP化等报道',m:'web-access CDP搜索'},
+      {n:'金羊网(广州)',u:'https://www.ycwb.com',t:'广州文创+漫展',d:'羊城晚报旗下，广州文创、漫展、潮玩等岭南文化IP动态，粤港澳大湾区IP产业补充',m:'web-access CDP搜索'},
+      {n:'西安网(陕西)',u:'https://www.xiancity.cn',t:'西安文博+电竞',d:'西安广播电视台旗下，西安文博IP化、电竞产业、文旅融合等报道，西北地区文创动态',m:'web-access CDP搜索'}
+    ]
+  },
+  {
+    id: 'domestic-social', title: '社交 / UGC / 口碑', region: 'domestic', tags: ['social'],
+    items: [
+      {n:'微博热搜',u:'https://s.weibo.com/top/summary',t:'实时热点',d:'国内最大的公开社交平台热点聚合，IP相关话题、舆情、用户讨论的第一时间反映，追踪IP社会影响力必备',m:'web-access CDP搜索 → RSSHub聚合（第三方）'},
+      {n:'知乎热榜',u:'https://www.zhihu.com/hot',t:'行业讨论',d:'高质量UGC讨论平台，IP行业深度问答、用户洞察、争议事件分析等内容专业度高',m:'web-access CDP搜索 → RSSHub聚合（第三方）'},
+      {n:'小红书',u:'https://www.xiaohongshu.com',t:'生活方式+种草平台',d:'潮玩、谷子、IP周边的核心种草平台，用户真实消费反馈、产品口碑、趋势发现的重要来源，反爬极严',m:'opencli限速使用 → 影刀RPA'},
+      {n:'豆瓣电影/动漫',u:'https://www.douban.com',t:'评分与口碑',d:'中文互联网最重要的文化产品评分与评论社区，IP作品口碑、用户评价、讨论热度的重要参考',m:'web-access CDP搜索'}
+    ]
+  },
+  {
+    id: 'domestic-policy', title: '政府政策 / 产业规划 / 官方平台', region: 'domestic', tags: ['finance','media'],
+    items: [
+      {n:'文化和旅游部 政策文件库',u:'https://www.mct.gov.cn/zwgk/zcwj/zcjd/',t:'国家文旅产业政策权威发布',d:'文化和旅游部官方政策文件库，发布文化产业、动漫产业、数字文化产业、非遗保护等政策规划和指导意见，是IP/文创/潮玩产业政策环境的最高权威来源',m:'直接访问官网 → 政策文件/通知公告栏目'},
+      {n:'国家广播电视总局',u:'https://www.nrta.gov.cn/',t:'动画/动漫产业监管与政策',d:'国家广播电视总局官方网站，发布动画产业政策、动画产业基地管理、国产动画精品工程、专项资金支持等政策，动漫内容监管与产业扶持的核心部门',m:'直接访问官网 → 工作动态/政策解读栏目'},
+      {n:'中国动漫集团有限公司',u:'http://www.cnacg.com.cn',t:'文旅部直属 动漫IP国家队',d:'文化和旅游部直属央企，国家动漫游戏综合服务平台运营方，业务涵盖IP孵化、动漫创意研发、国漫文创潮玩选品中心、动漫产业年会等，动漫产业政策落地的重要执行平台',m:'web-access CDP搜索 → 官网直达'},
+      {n:'国务院政策文件库',u:'https://www.gov.cn/zhengce/zhengceku/',t:'国务院及部委政策总库',d:'国务院官方政策文件库，涵盖文化产业、知识产权、外贸出口、中小企业扶持等跨领域政策，动漫/文创/潮玩企业可享受的多项普惠政策均在此发布',m:'直接访问官网 → 按主题/部门筛选'},
+      {n:'\"十四五\"文化产业发展规划',u:'https://www.mct.gov.cn/zwgk/zcwj/zcjd/202108/t20210812_925945.htm',t:'国家文化产业纲领性文件',d:'文旅部发布的\"十四五\"文化产业发展规划，明确数字文化产业、动漫游戏、文化IP开发、文旅融合等方向的战略部署，产业投资与政策研判的基础依据',m:'直接访问官网'},
+      {n:'关于推动数字文化产业高质量发展的意见',u:'https://www.mct.gov.cn/zwgk/zcwj/zcjd/202011/t20201127_915019.htm',t:'数字文化产业顶层设计',d:'文旅部2020年发布，提出实施文化产业数字化战略，明确数字文化产业与先进制造业、消费品工业融合发展，发展品牌授权提升制造业品牌价值和文化价值',m:'直接访问官网'},
+      {n:'IP赋能文旅·授权链接未来 系列活动',u:'https://www.mct.gov.cn/',t:'文旅部IP授权官方活动',d:'由中国文化传媒集团与香港贸发局联合主办的文旅IP授权系列活动，2025-2026年在海口、重庆、南京等多地举办，文旅IP授权合作的重要官方平台',m:'文旅部官网新闻动态'},
+      {n:'浙江省文旅融合IP工程',u:'https://ct.zj.gov.cn/',t:'省级文旅IP政策标杆',d:'浙江省文化和旅游厅2019年发布《关于加快推进文旅融合IP工程建设的实施意见》，提出打造100个省级文旅融合品牌IP，文旅IP建设的省级政策先行样板',m:'浙江省文旅厅官网'},
+      {n:'东莞 中国潮玩之都',u:'https://www.dg.gov.cn/',t:'地方政府潮玩产业政策',d:'东莞市委市政府将潮玩产业作为城市名片打造，2024年出台《东莞市文化旅游体育产业高质量发展实施方案》，市委书记2025年3月调研潮玩产业，石排镇建设中国潮玩中心',m:'东莞市人民政府官网 → 政策文件/工作动态'},
+      {n:'杭州西湖区文创奖励新政',u:'https://www.hzxh.gov.cn/',t:'区县文创扶持政策',d:'西湖区2025年推出文创奖励新政，涵盖文化消费、农文旅融合、数字艺术、潮玩手办生产线等领域，成立西湖区文化创意产业发展中心',m:'西湖区政府官网'},
+      {n:'国家动漫品牌建设和保护计划',u:'https://www.mct.gov.cn/',t:'文化部动漫品牌专项',d:'文化部2012年启动，在中央财政支持下培育国家动漫品牌，推动动漫产业结构调整和优化升级，从动漫大国向动漫强国转变的战略举措',m:'文旅部官网检索'},
+      {n:'新疆文旅产业集群发展规划(2025-2030)',u:'https://www.xinjiang.gov.cn/',t:'区域文旅产业规划',d:'新疆维吾尔自治区出台，以乌鲁木齐市为核心枢纽，构建\"一核三带四心多节点\"文旅产业布局，西北地区文创产业发展的区域政策参考',m:'新疆人民政府官网'}
+    ]
+  },
+  {
+    id: 'overseas-acg', title: '海外动漫 / ACG 英文垂媒', region: 'overseas', tags: ['acg'],
+    items: [
+      {n:'Anime News Network',u:'https://www.animenewsnetwork.com',t:'全球动漫新闻第一权威',d:'全球动漫新闻领域最权威媒体，覆盖日本动画、漫画、产业动态，新闻速度快、来源可靠，海外动漫动态必读',m:'rss-parser（官方RSS） → Scrapling StealthyFetcher'},
+      {n:'Crunchyroll News',u:'https://www.crunchyroll.com/news',t:'流媒体平台官方资讯',d:'全球最大动漫流媒体平台官方资讯站，新作上线、版权合作、独家内容等一手信息',m:'rss-parser（Feedburner RSS） → Scrapling StealthyFetcher'},
+      {n:'IGN Anime',u:'https://www.ign.com/anime',t:'综合游戏+动漫评测',d:'全球头部游戏娱乐媒体动漫频道，动漫评测、推荐、产业评论专业度高，西方市场动漫接受度风向标',m:'web-access CDP搜索 → rss-parser'},
+      {n:'Cartoon Brew',u:'https://www.cartoonbrew.com',t:'全球动画产业新闻',d:'全球动画产业B端新闻头部站点，独立动画、商业动画、产业趋势报道深入，动画从业者必读',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Animation World Network (AWN)',u:'https://www.awn.com',t:'动画产业 B 端新闻',d:'动画产业B端新闻权威站点，覆盖全球动画制作、发行、技术、教育等，动画产业从业者核心信息源',m:'rss-parser（官方RSS） → Scrapling StealthyFetcher'},
+      {n:'Animation Magazine',u:'https://www.animationmagazine.net',t:'动画产业杂志',d:'动画产业专业杂志线上版，行业报道、人物专访、技术文章等内容专业',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Comic Book Resources (CBR)',u:'https://www.cbr.com',t:'漫画+动漫综合',d:'漫画与动漫综合媒体，美漫、日漫、漫改影视等内容覆盖全面，流量大更新快',m:'web-access CDP搜索 → rss-parser'},
+      {n:'Otaku USA Magazine',u:'https://otakuusamagazine.com',t:'美国宅文化媒体',d:'美国宅文化专业杂志，覆盖日本动漫在美发行、展会、周边等，了解北美动漫市场的重要窗口',m:'web-access CDP搜索 → rss-parser'},
+      {n:'ScreenRant Anime',u:'https://screenrant.com/anime',t:'流量大,资讯快',d:'娱乐资讯头部网站动漫频道，流量极大，动漫新闻更新速度快，适合追踪热门动漫话题',m:'web-access CDP搜索 → rss-parser'},
+      {n:'Polygon',u:'https://www.polygon.com',t:'游戏+动漫综合',d:'Vox Media旗下游戏娱乐媒体，动漫、游戏、流行文化交叉报道质量高，文化评论视角独特',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Kotaku',u:'https://kotaku.com',t:'游戏+动漫综合',d:'G/O Media旗下游戏媒体，游戏与动漫联动报道、产业评论等内容活跃，编辑观点鲜明',m:'rss-parser（官方RSS） → web-access CDP搜索'}
+    ]
+  },
+  {
+    id: 'overseas-licensing', title: '海外IP授权 / 玩具 / 潮玩', region: 'overseas', tags: ['toy'],
+    items: [
+      {n:'Licensing International',u:'https://licensinginternational.org',t:'全球IP授权协会官方',d:'全球IP授权行业协会官方网站，发布全球授权市场报告、行业数据、会员动态，IP授权产业全球视角的权威来源',m:'Playwright/CDP或Scrapling（Cloudflare拦截，实测成功率低）'},
+      {n:'License Global',u:'https://www.licenseglobal.com',t:'IP授权产业旗舰刊',d:'全球IP授权产业旗舰刊物，年度授权展报道、授权案例、品牌合作等内容权威，国内访问需VPN',m:'rss-parser（官方RSS） → VPN+web-access CDP'},
+      {n:'World IP Review (WIPR)',u:'https://www.worldipreview.com',t:'IP法务与产业',d:'IP法务与产业结合的专业媒体，IP法律案例、知识产权政策、品牌保护等内容，IP合规与风险参考',m:'web-access CDP搜索 → rss-parser'},
+      {n:'The Toy Book',u:'https://toybook.com',t:'美国玩具产业旗舰刊',d:'美国玩具产业头部媒体，玩具新品发布、授权合作、市场趋势等报道专业，北美玩具市场动态追踪',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Toy World Magazine',u:'https://toyworldmag.co.uk',t:'英国玩具产业杂志',d:'英国玩具产业专业杂志，欧洲玩具市场动态、英国本土IP授权等内容，补充欧洲市场信息',m:'web-access CDP搜索 → rss-parser'},
+      {n:'KidScreen',u:'https://kidscreen.com',t:'儿童内容+授权产业',d:'儿童内容与授权产业权威媒体，动画IP授权、儿童品牌、内容发行等报道深入，儿童IP产业必读',m:'rss-parser（官方RSS） → Scrapling StealthyFetcher'},
+      {n:'Total Licensing',u:'https://www.totallicensing.com',t:'全球IP授权',d:'全球IP授权产业媒体，覆盖各地区授权市场动态、案例分享，全球授权市场补充信源',m:'web-access CDP搜索 → rss-parser'},
+      {n:'Spanky Stokes',u:'https://www.spankystokes.com',t:'设计师玩具/潮玩第一权威',d:'设计师玩具/潮玩领域最权威博客，新品发布、艺术家访谈、展会报道等，潮玩设计师IP动态追踪首选',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Vinyl Pulse',u:'https://www.vinylpulse.com',t:'Designer toys 老牌',d:'设计师玩具老牌博客，sofubi、艺术玩具等内容，日本和美国设计师玩具动态补充',m:'web-access CDP搜索 → rss-parser'},
+      {n:'Clutter Magazine',u:'https://www.cluttermagazine.com',t:'Art toy 月刊',d:'艺术玩具专业月刊，艺术玩具文化、艺术家专访、展览报道等，艺术玩具IP文化深度参考',m:'web-access CDP搜索 → rss-parser'}
+    ]
+  },
+  {
+    id: 'overseas-cultural', title: '海外文化 / 博物馆 / 艺术', region: 'overseas', tags: ['cultural'],
+    items: [
+      {n:'The Art Newspaper',u:'https://www.theartnewspaper.com',t:'全球艺术博物馆产业',d:'全球艺术博物馆产业权威媒体，展览报道、博物馆运营、艺术市场等内容专业，文博IP化国际视角',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Hyperallergic',u:'https://hyperallergic.com',t:'艺术评论',d:'独立艺术评论网站，当代艺术、文化议题评论尖锐深刻，艺术文化批评视角独特',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'ArtNews',u:'https://www.artnews.com',t:'艺术产业新闻',d:'艺术产业老牌媒体，艺术市场、拍卖、展览等报道权威，艺术IP与商业结合动态',m:'web-access CDP搜索 → rss-parser'},
+      {n:'Smithsonian Magazine',u:'https://www.smithsonianmag.com',t:'史密森系博物馆',d:'史密森学会官方杂志，博物馆、历史、科学、文化等综合内容，博物馆IP开发案例丰富',m:'web-access CDP搜索 → rss-parser'}
+    ]
+  },
+  {
+    id: 'overseas-film', title: '海外影视 / 媒体行业', region: 'overseas', tags: ['film'],
+    items: [
+      {n:'Variety',u:'https://variety.com',t:'好莱坞产业旗舰刊',d:'好莱坞产业最权威媒体之一，影视制作、发行、版权交易等报道深入，IP影视化改编好莱坞动态追踪首选',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'The Hollywood Reporter',u:'https://www.hollywoodreporter.com',t:'好莱坞产业旗舰刊',d:'好莱坞产业另一权威媒体，与Variety互补，影视产业新闻、人物专访、行业分析等内容权威',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Deadline',u:'https://deadline.com',t:'影视突发新闻',d:'影视行业突发新闻最快，项目立项、casting、版权交易等消息首发率高，影视IP开发动态追踪利器',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Box Office Mojo',u:'https://www.boxofficemojo.com',t:'全球票房数据',d:'全球票房数据权威平台，IP电影市场表现数据详实，票房追踪与IP影视化价值评估数据支撑',m:'web-access CDP搜索 → rss-parser'}
+    ]
+  },
+  {
+    id: 'overseas-jp', title: '日本动漫 / 游戏', region: 'japan', tags: ['acg','game'],
+    items: [
+      {n:'Anime Anime (アニメ!アニメ!)',u:'https://animeanime.jp',t:'日本动漫综合资讯',d:'日本最大动漫综合资讯网站之一，动画新闻、声优动态、活动信息等覆盖全面，日本动漫产业动态追踪',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'Comic Natalie',u:'https://natalie.mu/comic',t:'日本漫画/动画第一权威',d:'日本文娱新闻最权威媒体之一，漫画、动画、音乐、舞台剧等报道深入，日本IP产业动态首发率高',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'ファミ通 (Famitsu)',u:'https://www.famitsu.com',t:'日本游戏产业旗舰刊',d:'日本游戏产业最权威杂志，游戏评测、销量数据、业界新闻等内容权威，游戏IP日本市场动态追踪',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'4Gamer',u:'https://www.4gamer.net',t:'日本游戏综合',d:'日本游戏综合门户，PC游戏、主机游戏、手游等内容全面，游戏新闻更新速度快',m:'rss-parser（官方RSS） → web-access CDP搜索'},
+      {n:'アニメイトタイムズ',u:'https://www.animatetimes.com',t:'动画综合资讯',d:'Animate旗下动画资讯网站，动画新闻、活动情报、商品信息等，日本动画市场动态补充',m:'web-access CDP搜索 → rss-parser'},
+      {n:'AnimeJapan 官方',u:'https://www.anime-japan.jp',t:'AnimeJapan展会信息',d:'日本最大动画展会AnimeJapan官方网站，参展商信息、活动安排、产业论坛等，日本动画产业风向标',m:'web-access CDP搜索 → rss-parser'}
+    ]
+  }
+];
+
+const defaultRssSections = [
+  {
+    title: '国内 RSS',
+    items: [
+      {n:'36氪',u:'https://36kr.com/feed',note:'官方'},
+      {n:'虎嗅',u:'https://www.huxiu.com/rss/0.xml',note:'官方'},
+      {n:'钛媒体',u:'https://www.tmtpost.com/rss.xml',note:'官方'},
+      {n:'澎湃新闻文化频道',u:'https://rsshub.app/thepaper/featured',note:'第三方'},
+      {n:'36氪深度',u:'https://rsshub.app/36kr/news/latest',note:'第三方'},
+      {n:'知乎热榜',u:'https://rsshub.app/zhihu/hotlist',note:'第三方'},
+      {n:'微博热搜',u:'https://rsshub.app/weibo/search/hot',note:'第三方'},
+      {n:'B站国创动态',u:'https://rsshub.app/bilibili/bangumi/timeline/cn',note:'第三方'},
+      {n:'三文娱(公众号)',u:'https://rsshub.app/wechat/ee/sanwenyu',note:'第三方,需替换为实际公众号biz'},
+      {n:'1905电影网',u:'https://rsshub.app/1905/news',note:'第三方'}
+    ]
+  },
+  {
+    title: '海外 RSS（英文，推荐订阅）',
+    items: [
+      {n:'Anime News Network',u:'https://www.animenewsnetwork.com/all/rss.xml',note:'官方,质量极高'},
+      {n:'Crunchyroll News',u:'https://feeds.feedburner.com/crunchyroll/animenews',note:'官方'},
+      {n:'Cartoon Brew',u:'https://www.cartoonbrew.com/feed',note:'官方'},
+      {n:'Animation World Network',u:'https://www.awn.com/news.xml',note:'官方'},
+      {n:'Animation Magazine',u:'https://www.animationmagazine.net/feed',note:'官方'},
+      {n:'Variety',u:'https://variety.com/feed',note:'官方'},
+      {n:'The Hollywood Reporter',u:'https://www.hollywoodreporter.com/feed',note:'官方'},
+      {n:'Deadline',u:'https://deadline.com/feed',note:'官方'},
+      {n:'Polygon',u:'https://www.polygon.com/rss/index.xml',note:'官方'},
+      {n:'Kotaku',u:'https://kotaku.com/rss',note:'官方'},
+      {n:'Hyperallergic',u:'https://hyperallergic.com/feed',note:'官方'},
+      {n:'The Art Newspaper',u:'https://www.theartnewspaper.com/rss.xml',note:'官方'},
+      {n:'License Global',u:'https://www.licenseglobal.com/rss.xml',note:'官方'},
+      {n:'The Toy Book',u:'https://toybook.com/feed',note:'官方'},
+      {n:'KidScreen',u:'https://kidscreen.com/feed',note:'官方'},
+      {n:'Spanky Stokes',u:'https://www.spankystokes.com/feeds/posts/default',note:'官方'}
+    ]
+  },
+  {
+    title: '日本 RSS',
+    items: [
+      {n:'Anime Anime',u:'https://animeanime.jp/rss20.xml',note:'官方'},
+      {n:'Comic Natalie',u:'https://natalie.mu/comic/feed/news',note:'官方'},
+      {n:'4Gamer',u:'https://www.4gamer.net/rss/index.xml',note:'官方'},
+      {n:'Famitsu',u:'https://www.famitsu.com/rss/news.rdf',note:'官方'}
+    ]
+  }
+];
+
+const defaultTools = [
+  {n:'Inoreader',t:'Web/客户端',d:'推荐首选。中文支持好，支持自定义规则、关键词高亮、按文件夹分组、Pro版支持IFTTT'},
+  {n:'Feedly',t:'Web/客户端',d:'海外用户首选，免费版限100个feed，UI干净'},
+  {n:'RSSHub',t:'自建/公网',d:'把不提供RSS的中文站点（微博、公众号、知乎等）转为RSS，可自部署或使用公网 rsshub.app'},
+  {n:'Tiny Tiny RSS',t:'自建',d:'开源，适合极客自部署'},
+  {n:'The Old Reader',t:'Web',d:'老牌简洁RSS阅读器'},
+  {n:'飞书订阅',t:'国内',d:'飞书内置的简易订阅，可对接RSS源'}
+];
+
+// Data state
+let sections = [];
+let rssSections = [];
+let tools = [];
+let editMode = false;
+let editingItem = null;
+let editingSectionId = null;
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      sections = data.sections || defaultSections;
+      rssSections = data.rssSections || defaultRssSections;
+      tools = data.tools || defaultTools;
+      return;
+    }
+  } catch(e) { console.error('Load failed', e); }
+  sections = JSON.parse(JSON.stringify(defaultSections));
+  rssSections = JSON.parse(JSON.stringify(defaultRssSections));
+  tools = JSON.parse(JSON.stringify(defaultTools));
+}
+
+function saveData() {
+  try {
+    const data = { sections, rssSections, tools, savedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    document.getElementById('updateDate').textContent = new Date().toLocaleDateString('zh-CN');
+  } catch(e) { console.error('Save failed', e); }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+const siteTotal = () => sections.reduce((a,s)=>a+s.items.length,0);
+const rssTotal = () => rssSections.reduce((a,s)=>a+s.items.length,0);
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = siteTotal();
+  document.getElementById('statRSS').textContent = rssTotal();
+}
+
+function renderSidebar() {
+  const nav = document.getElementById('sidebarNav');
+  let html = '';
+  html += '<div class="sidebar-nav-title">站点分类</div>';
+  sections.forEach(sec => {
+    html += `<a href="#${sec.id}" class="sidebar-link" data-section="${sec.id}">${sec.title}<span class="sidebar-count">${sec.items.length}</span></a>`;
+  });
+  html += '<div class="sidebar-nav-title">RSS 与工具</div>';
+  html += '<a href="#rss-section" class="sidebar-link" data-section="rss-section">RSS 订阅源<span class="sidebar-count">'+rssTotal()+'</span></a>';
+  html += '<a href="#tools-section" class="sidebar-link" data-section="tools-section">聚合器推荐</a>';
+  html += '<a href="#methods-section" class="sidebar-link" data-section="methods-section">抓取方式速查</a>';
+  nav.innerHTML = html;
+}
+
+function renderSourceItem(item, secId) {
+  const actions = editMode ? `
+    <div class="source-actions">
+      <button class="source-action-btn edit" data-action="edit" data-section="${secId}" data-name="${encodeURIComponent(item.n)}">编辑</button>
+      <button class="source-action-btn delete" data-action="delete" data-section="${secId}" data-name="${encodeURIComponent(item.n)}">删除</button>
+    </div>` : '';
+  return `<div class="source-item" data-section="${secId}" data-name="${item.n}">
+    ${actions}
+    <div class="source-header">
+      <a href="${item.u}" target="_blank" rel="noopener noreferrer" class="source-name">${item.n}${linkIcon}</a>
+      <span class="source-tag">${item.t}</span>
+    </div>
+    <div class="source-desc">${item.d}</div>
+    <div class="source-method">${item.m}</div>
+  </div>`;
+}
+
+function renderSection(sec) {
+  return `<div class="section" id="${sec.id}">
+    <div class="section-header">
+      <h2 class="section-title">${sec.title}</h2>
+      <span class="section-count">${sec.items.length} 个站点</span>
+      ${editMode ? `<button class="section-add-btn" onclick="openAdd('${sec.id}')">+ 添加</button>` : ''}
+    </div>
+    <div class="source-list">
+      ${sec.items.map(it => renderSourceItem(it, sec.id)).join('')}
+    </div>
+  </div>`;
+}
+
+function renderRSS() {
+  let html = '<div class="rss-section" id="rss-section">';
+  html += '<div class="section-header"><h2 class="section-title">RSS 订阅源</h2><span class="section-count">'+rssTotal()+' 个源</span></div>';
+  rssSections.forEach(rss => {
+    html += `<h3 style="font-size:0.9375rem;font-weight:600;color:var(--text);margin:1.5rem 0 0.75rem;">${rss.title}</h3>`;
+    html += '<div class="rss-table-wrap"><table class="rss-table"><thead><tr><th>站点</th><th>RSS 链接</th><th>备注</th></tr></thead><tbody>';
+    rss.items.forEach(item => {
+      html += `<tr><td>${item.n}</td><td><a href="${item.u}" target="_blank" rel="noopener noreferrer">${item.u}</a></td><td class="rss-note">${item.note}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderTools() {
+  let html = '<div class="section" id="tools-section">';
+  html += '<div class="section-header"><h2 class="section-title">RSS 聚合器与工具推荐</h2></div>';
+  html += '<div class="tool-grid">';
+  tools.forEach(t => {
+    html += `<div class="tool-card">
+      <div class="tool-name">${t.n}</div>
+      <div class="tool-type">${t.t}</div>
+      <div class="tool-desc">${t.d}</div>
+    </div>`;
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function renderMethods() {
+  return `<details class="details-block" id="methods-section">
+    <summary>抓取方式速查表</summary>
+    <div class="details-content">
+      <div class="method-list">
+        <div>
+          <div class="method-group-title">A. RSS 直接订阅（高稳定性，23个）</div>
+          <div class="method-group-items">ANN、Crunchyroll、Cartoon Brew、AWN、Animation Magazine、Variety、THR、Deadline、Polygon、Kotaku、Hyperallergic、The Art Newspaper、License Global、The Toy Book、KidScreen、Spanky Stokes、Anime Anime、Comic Natalie、4Gamer、Famitsu、36氪、虎嗅、钛媒体</div>
+        </div>
+        <div>
+          <div class="method-group-title">B. RSS + Scrapling/Playwright 兜底（偶有反爬）</div>
+          <div class="method-group-items">AWN 官网、KidScreen 官网、Crunchyroll News、ANN、License Global、Licensing International</div>
+        </div>
+        <div>
+          <div class="method-group-title">C. 需登录后才能抓取</div>
+          <div class="method-group-items">知乎雷报（知乎App扫码或Cookie）、小红书（App扫码，反爬极严）</div>
+        </div>
+        <div>
+          <div class="method-group-title">D. RSSHub 聚合（中文站无官方RSS）</div>
+          <div class="method-group-items">知乎热榜、微博热搜、B站国创动态、三文娱公众号、1905电影网、澎湃新闻文化频道</div>
+        </div>
+        <div>
+          <div class="method-group-title">E. 直接 curl/浏览器访问（无需特殊处理）</div>
+          <div class="method-group-items">国内动漫/ACG、潮玩/玩具、文创/文博、影视/游戏、财经/商业、央媒/综合、地方媒体等大部分国内站点</div>
+        </div>
+        <div>
+          <div class="method-group-title">F. 停用/不可达</div>
+          <div class="method-group-items">数娱梦工厂（DNS解析失败）、动漫之家资讯（子域名失效）、中外玩具礼品网（DNS解析失败）</div>
+        </div>
+      </div>
+    </div>
+  </details>`;
+}
+
+function matchesFilter(sec, filter) {
+  if (filter === 'all') return true;
+  if (filter === 'domestic') return sec.region === 'domestic';
+  if (filter === 'overseas') return sec.region === 'overseas';
+  if (filter === 'acg') return sec.tags.includes('acg');
+  if (filter === 'toy') return sec.tags.includes('toy') || sec.tags.includes('cultural');
+  if (filter === 'film') return sec.tags.includes('film') || sec.tags.includes('game');
+  if (filter === 'finance') return sec.tags.includes('finance');
+  if (filter === 'media') return sec.tags.includes('media') || sec.tags.includes('social');
+  if (filter === 'jp') return sec.region === 'japan';
+  return false;
+}
+
+function matchesSearch(item, query) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return item.n.toLowerCase().includes(q) ||
+    item.t.toLowerCase().includes(q) ||
+    item.d.toLowerCase().includes(q) ||
+    item.m.toLowerCase().includes(q);
+}
+
+function renderContent() {
+  const filter = document.querySelector('.filter-tab.active')?.dataset.filter || 'all';
+  const query = document.getElementById('searchInput').value.trim();
+  const container = document.getElementById('mainContent');
+
+  document.getElementById('searchClear').style.display = query ? 'inline-block' : 'none';
+
+  if (filter === 'rss') {
+    container.innerHTML = renderRSS() + renderTools();
+    return;
+  }
+
+  const filtered = sections.map(sec => {
+    if (!matchesFilter(sec, filter)) return null;
+    const items = sec.items.filter(it => matchesSearch(it, query));
+    return items.length ? {...sec, items} : null;
+  }).filter(Boolean);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-state-title">未找到匹配的站点</div>
+      <p>尝试更换筛选条件或清除搜索词</p>
+    </div>`;
+    return;
+  }
+
+  let html = filtered.map(renderSection).join('');
+  if (!query && (filter === 'all' || filter === 'domestic' || filter === 'overseas')) {
+    html += renderRSS() + renderTools() + renderMethods();
+  }
+  html += `<div class="footer-note">
+    <strong>维护记录</strong><br>
+    2026-05-10 初始版本：整合现有 search-scope.md + 新增49个国内外站点 + 25个RSS源<br>
+    2026-05-10 第一次扩库：新增28个国内来源，新增"中央媒体/综合资讯"和"地方媒体/城市文创"两个大分类<br>
+    2026-05-17 抓取方式梳理：基于curl/Scrapling/Playwright实测，将95个站点按A-F六类归类<br>
+    2026-05-17 全站表格重构：统一为5列格式，增加本地编辑功能<br>
+    维护人：老贾 + Claude Code 协作维护
+  </div>`;
+  container.innerHTML = html;
+}
+
+// Modal functions
+function openModal(title) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  editingItem = null;
+  editingSectionId = null;
+}
+
+function fillSectionSelect(selectedId) {
+  const sel = document.getElementById('editSection');
+  sel.innerHTML = sections.map(s => `<option value="${s.id}" ${s.id===selectedId?'selected':''}>${s.title}</option>`).join('');
+}
+
+function openEdit(secId, itemName) {
+  itemName = decodeURIComponent(itemName);
+  const sec = sections.find(s => s.id === secId);
+  const item = sec?.items.find(i => i.n === itemName);
+  if (!item) return;
+  editingItem = item;
+  editingSectionId = secId;
+
+  document.getElementById('editName').value = item.n;
+  document.getElementById('editUrl').value = item.u;
+  document.getElementById('editTag').value = item.t;
+  document.getElementById('editDesc').value = item.d;
+  document.getElementById('editMethod').value = item.m;
+  fillSectionSelect(secId);
+  document.getElementById('editRegion').value = sec.region;
+  document.getElementById('editTags').value = sec.tags.join(', ');
+
+  openModal('编辑站点');
+}
+
+function openAdd(secId) {
+  editingItem = null;
+  editingSectionId = secId || sections[0]?.id;
+
+  document.getElementById('editName').value = '';
+  document.getElementById('editUrl').value = '';
+  document.getElementById('editTag').value = '';
+  document.getElementById('editDesc').value = '';
+  document.getElementById('editMethod').value = '';
+  fillSectionSelect(editingSectionId);
+  const sec = sections.find(s => s.id === editingSectionId);
+  document.getElementById('editRegion').value = sec?.region || 'domestic';
+  document.getElementById('editTags').value = sec?.tags?.join(', ') || '';
+
+  openModal('添加站点');
+}
+
+function saveItem() {
+  const n = document.getElementById('editName').value.trim();
+  const u = document.getElementById('editUrl').value.trim();
+  const t = document.getElementById('editTag').value.trim();
+  const d = document.getElementById('editDesc').value.trim();
+  const m = document.getElementById('editMethod').value.trim();
+  const targetSecId = document.getElementById('editSection').value;
+  const region = document.getElementById('editRegion').value;
+  const tagsStr = document.getElementById('editTags').value;
+  const tags = tagsStr.split(',').map(s => s.trim()).filter(Boolean);
+
+  if (!n || !u) { showToast('名称和URL必填'); return; }
+
+  const newItem = {n, u, t: t || '未分类', d: d || '', m: m || ''};
+
+  if (editingItem) {
+    // Remove from old section
+    const oldSec = sections.find(s => s.id === editingSectionId);
+    if (oldSec) oldSec.items = oldSec.items.filter(i => i !== editingItem);
+  }
+
+  // Add to target section (create if not exists)
+  let targetSec = sections.find(s => s.id === targetSecId);
+  if (!targetSec) {
+    targetSec = {id: targetSecId, title: targetSecId, region, tags, items: []};
+    sections.push(targetSec);
+  }
+  targetSec.region = region;
+  targetSec.tags = tags;
+
+  // Check duplicate name
+  const existing = targetSec.items.find(i => i.n === n && i !== editingItem);
+  if (existing) { showToast('该分类下已存在同名站点'); return; }
+
+  targetSec.items.push(newItem);
+  saveData();
+  updateStats();
+  renderSidebar();
+  renderContent();
+  closeModal();
+  showToast(editingItem ? '已保存修改' : '已添加站点');
+}
+
+function deleteItem(secId, itemName) {
+  itemName = decodeURIComponent(itemName);
+  if (!confirm(`确定删除「${itemName}」？`)) return;
+  const sec = sections.find(s => s.id === secId);
+  if (sec) {
+    sec.items = sec.items.filter(i => i.n !== itemName);
+    saveData();
+    updateStats();
+    renderSidebar();
+    renderContent();
+    showToast('已删除');
+  }
+}
+
+function exportJSON() {
+  const data = { sections, rssSections, tools, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ipnews-sources-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出JSON文件');
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.sections) sections = data.sections;
+      if (data.rssSections) rssSections = data.rssSections;
+      if (data.tools) tools = data.tools;
+      saveData();
+      updateStats();
+      renderSidebar();
+      renderContent();
+      showToast('导入成功');
+    } catch(err) { showToast('JSON解析失败'); }
+  };
+  reader.readAsText(file);
+}
+
+function resetDefault() {
+  if (!confirm('确定重置为默认数据？当前所有修改将丢失。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  sections = JSON.parse(JSON.stringify(defaultSections));
+  rssSections = JSON.parse(JSON.stringify(defaultRssSections));
+  tools = JSON.parse(JSON.stringify(defaultTools));
+  saveData();
+  updateStats();
+  renderSidebar();
+  renderContent();
+  showToast('已重置为默认数据');
+}
+
+// Events
+document.getElementById('filterTabs').addEventListener('click', e => {
+  if (!e.target.classList.contains('filter-tab')) return;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  renderContent();
+});
+
+document.getElementById('searchInput').addEventListener('input', () => {
+  renderContent();
+});
+
+document.getElementById('searchClear').addEventListener('click', () => {
+  document.getElementById('searchInput').value = '';
+  renderContent();
+});
+
+window.addEventListener('scroll', () => {
+  const secs = document.querySelectorAll('.section, .rss-section, .details-block');
+  let current = '';
+  secs.forEach(sec => {
+    const rect = sec.getBoundingClientRect();
+    if (rect.top <= 200) current = sec.id;
+  });
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.classList.toggle('active', link.dataset.section === current);
+  });
+});
+
+// Event delegation for edit/delete buttons
+document.getElementById('mainContent').addEventListener('click', e => {
+  const btn = e.target.closest('.source-action-btn');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const secId = btn.dataset.section;
+  const itemName = btn.dataset.name;
+  if (action === 'edit') openEdit(secId, itemName);
+  else if (action === 'delete') deleteItem(secId, itemName);
+});
+
+// Edit controls
+document.getElementById('btnToggleEdit').addEventListener('click', () => {
+  editMode = !editMode;
+  document.getElementById('btnToggleEdit').classList.toggle('active', editMode);
+  document.getElementById('btnToggleEdit').textContent = editMode ? '退出编辑模式' : '进入编辑模式';
+  renderContent();
+  showToast(editMode ? '编辑模式已开启' : '编辑模式已关闭');
+});
+
+document.getElementById('btnAddSite').addEventListener('click', () => {
+  openAdd();
+});
+
+document.getElementById('btnExport').addEventListener('click', exportJSON);
+document.getElementById('btnImport').addEventListener('click', () => {
+  document.getElementById('fileOpsPanel').classList.toggle('show');
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) importJSON(e.target.files[0]);
+  e.target.value = '';
+  document.getElementById('fileOpsPanel').classList.remove('show');
+});
+document.getElementById('btnReset').addEventListener('click', resetDefault);
+
+// Modal events
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalSave').addEventListener('click', saveItem);
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// Init
+loadData();
+updateStats();
+renderSidebar();
+renderContent();
+</script>
+</body>
+</html>
