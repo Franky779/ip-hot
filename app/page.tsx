@@ -24,6 +24,9 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
     .not('title_cn', 'is', null)
+    .not('summary_cn', 'is', null)
+    .not('category', 'is', null)
+    .not('commentary', 'is', null)
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(500)
 
