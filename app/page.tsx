@@ -24,7 +24,7 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
     .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(50)
+    .limit(500)
 
   if (category && category !== 'all') {
     query = query.eq('category', category)
