@@ -131,7 +131,7 @@ export async function GET(request: Request) {
 
   // ===== 第2步：对新文章跑 LLM =====
   // max_tokens=3000 后每条LLM约40-60秒，4条约40-60秒，控制在60秒超时内
-  const LLM_BATCH_SIZE = 4
+  const LLM_BATCH_SIZE = 8
 
   const { data: pendingArticles, error: pendingError } = await supabase
     .from('articles')

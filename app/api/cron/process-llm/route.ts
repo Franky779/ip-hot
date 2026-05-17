@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   // Vercel Hobby plan 函数超时 10 秒，LLM 每次调用 2-5 秒
   // 并行处理 3 条，总时间约 3-7 秒，在限制内
-  const BATCH_SIZE = 3
+  const BATCH_SIZE = 8
 
   const { data: articles, error: fetchError } = await supabase
     .from('articles')
