@@ -84,8 +84,6 @@ export default async function FeaturedPage() {
                   className="article-card featured-card"
                 >
                   <div className="article-meta">
-                    <span className="article-source">{article.source}</span>
-                    <span>·</span>
                     <span>{formatDate(article.published_at)}</span>
                     {article.category && (
                       <>

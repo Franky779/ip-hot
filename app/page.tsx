@@ -134,12 +134,8 @@ export default async function Home({
                           className="article-card"
                         >
                           <div className="article-meta">
-                            <span className="article-source">{article.source}</span>
                             {article.category && (
-                              <>
-                                <span>·</span>
-                                <span>{article.category}</span>
-                              </>
+                              <span>{article.category}</span>
                             )}
                           </div>
                           <h2 className="article-title font-serif">
