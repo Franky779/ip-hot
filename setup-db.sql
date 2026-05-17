@@ -30,7 +30,12 @@ create policy "Service role full access on daily_reports" on public.daily_report
 create policy "Anon read access on daily_reports" on public.daily_reports
   for select to anon using (true);
 
--- 3. 确认 articles 表唯一索引（去重用）
+-- 3. 为 articles 表添加部分索引（加速已完成 LLM 处理文章的查询）
+create index if not exists idx_articles_complete
+  on public.articles (published_at desc)
+  where title_cn is not null and summary_cn is not null and category is not null and commentary is not null;
+
+-- 4. 确认 articles 表唯一索引（去重用）
 create unique index if not exists articles_source_url_unique
   on public.articles (source, url);
 

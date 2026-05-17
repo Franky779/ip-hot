@@ -7,7 +7,7 @@ export const metadata = {
   description: 'IP行业信息源主库管理',
 }
 
-export const revalidate = 60
+export const revalidate = 300
 
 export default async function SourcesPage() {
   const supabase = getSupabase()

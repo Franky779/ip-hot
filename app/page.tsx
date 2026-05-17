@@ -4,7 +4,7 @@ import { SearchBox } from './components/SearchBox'
 import { AdminToggle } from './components/AdminToggle'
 import { ArticleActions } from './components/ArticleActions'
 
-export const revalidate = 60
+export const revalidate = 300
 
 type Article = {
   id: string

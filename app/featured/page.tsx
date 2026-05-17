@@ -8,7 +8,7 @@ export const metadata = {
   description: 'IP、ACG、文创行业高价值精选资讯',
 }
 
-export const revalidate = 60
+export const revalidate = 300
 
 type Article = {
   id: string
