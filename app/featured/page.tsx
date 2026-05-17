@@ -110,7 +110,7 @@ export default async function FeaturedPage() {
                   )}
                   {article.commentary && (
                     <p className="article-commentary">
-                      <span className="commentary-label">贾田点评：</span>
+                      <span className="commentary-label">老贾点评：</span>
                       {article.commentary}
                     </p>
                   )}
