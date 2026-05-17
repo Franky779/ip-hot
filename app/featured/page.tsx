@@ -27,6 +27,7 @@ async function getFeatured(): Promise<Article[]> {
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at')
     .eq('is_selected', true)
+    .not('title_cn', 'is', null)
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(50)
 

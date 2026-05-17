@@ -23,6 +23,7 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   let query = supabase
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
+    .not('title_cn', 'is', null)
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(500)
 
