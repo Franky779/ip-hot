@@ -3,11 +3,42 @@ import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
 import { RSS_SOURCES } from '@/lib/sources'
+import { execSync } from 'child_process'
+import { readFileSync, unlinkSync } from 'fs'
+import { join } from 'path'
+import { tmpdir } from 'os'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const parser = new Parser({ timeout: 15000 })
+
+async function fetchFeedWithFallback(url: string): Promise<Parser.Output<{
+  [key: string]: any
+}> | null> {
+  // 1. 先用普通 fetch 尝试
+  try {
+    const feed = await parser.parseURL(url)
+    return feed
+  } catch {
+    // 2. 失败后用 Scrapling fallback（反检测 Chromium）
+    const tmpFile = join(tmpdir(), `rss-${Date.now()}.xml`)
+    const pythonExe = process.env.SCRAPLING_PYTHON || 'D:\\claudecode\\.venv-scrapling\\Scripts\\python.exe'
+    const scriptPath = 'D:\\claudecode\\临时文件夹\\github网页\\ip-hot\\scripts\\fetch-rss-scrapling.py'
+    try {
+      execSync(`"${pythonExe}" "${scriptPath}" "${url}" "${tmpFile}"`, {
+        timeout: 35000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      const xml = readFileSync(tmpFile, 'utf-8')
+      unlinkSync(tmpFile)
+      const feed = await parser.parseString(xml)
+      return feed
+    } catch {
+      return null
+    }
+  }
+}
 
 const BLOCK_PATTERNS: RegExp[] = [
   /\bto star (as|in)\b/i,
@@ -56,7 +87,12 @@ export async function GET(request: Request) {
     const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, inserted: 0 }
 
     try {
-      const feed = await parser.parseURL(source.url)
+      const feed = await fetchFeedWithFallback(source.url)
+      if (!feed) {
+        result.error = 'RSS fetch failed (including Scrapling fallback)'
+        fetchResults.push(result)
+        continue
+      }
       const rawItems = feed.items
         .map((item) => ({
           source: source.name,
