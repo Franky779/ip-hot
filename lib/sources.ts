@@ -10,6 +10,7 @@ export type RssSource = {
 // W2 完成后(Day 11)考虑加 P1 国内源(36氪/虎嗅/钛媒体)。
 // 完整信源池:d:/claudecode/.claude/skills/ip-news/references/info-sources.md
 export const RSS_SOURCES: RssSource[] = [
+  // 海外 P0
   {
     id: 'ann',
     name: 'Anime News Network',
@@ -44,5 +45,27 @@ export const RSS_SOURCES: RssSource[] = [
     url: 'https://variety.com/feed',
     language: 'en',
     priority: 'P0',
+  },
+  // 国内
+  {
+    id: '36kr',
+    name: '36氪',
+    url: 'https://36kr.com/feed',
+    language: 'zh',
+    priority: 'P1',
+  },
+  {
+    id: 'huxiu',
+    name: '虎嗅',
+    url: 'https://www.huxiu.com/rss/0.xml',
+    language: 'zh',
+    priority: 'P1',
+  },
+  {
+    id: 'tmtpost',
+    name: '钛媒体',
+    url: 'https://www.tmtpost.com/rss.xml',
+    language: 'zh',
+    priority: 'P1',
   },
 ]
