@@ -1,0 +1,26 @@
+1) 查询未处理的新闻（category IS NULL 或 title_cn IS NULL）...
+   共 157 条待处理
+   模型: kimi-k2.6 | API: https://www.token-zone.com/v1
+   策略: 单条间隔1秒 + 失败重试3次(间隔3秒)
+
+[1/157] ❌ API返回为空 | Ascendance of a Bookworm Part 
+[2/157] ❌ API返回为空 | ‘Friday the 13th’ Prequel ‘Cry
+[3/157] ❌ API返回为空 | Pedro Almodóvar Calls Out the 
+[4/157] ❌ API返回为空 | Maki Fujita's Ka no Yo no Kemo
+[5/157] ❌ API返回为空 | ‘Is God Is’ Review: Aleshea Ha
+[6/157] ❌ API返回为空 | NBC 2026 Fall Schedule: ‘The T
+[7/157]      产业动态(6) | 输入206 输出73 | 亚马逊直面流媒体广告痛点：破解重复播放困局
+[8/157] ❌ API返回为空 | Liam Neeson, John Cleese and M
+[9/157] ❌ API返回为空 | ‘Rockford Files’ Reboot, ‘Suns
+[10/157] ❌ API返回为空 | DC Super Heroes, Villains to S
+[11/157] ⭐🔄2 IP授权(8) | 输入201 输出92 | NBC批准《Wordle》游戏秀， viral神游进军电视
+[12/157] ❌ API返回为空 | Sony Publishing to Acquire Rec
+[13/157] ❌ API返回为空 | Agents of the Four Seasons: Da
+[14/157] ❌ API返回为空 | Hundred Scenes of AWAJIMA ‒ Ep
+[15/157]      新作发布(6) | 输入215 输出83 | 《昏庸王子篡位记》动画首曝PV并公布4名新声优
+[16/157] ❌ API返回为空 | Vietnamese Folk Horror ‘The 10
+[17/157] ❌ API返回为空 | Ian McKellen Says Obi-Wan Keno
+[18/157] ❌ API返回为空 | ECAM Forum Sets 2026 Last Push
+[19/157]      产业动态(4) | 输入219 输出108 | 迈阿密警察起诉本·阿弗莱克新片《The Rip》 称Netflix电影
+[20/157] ❌ API返回为空 | Piccoma to Launch Short-Form A
+[21/157] ❌ API返回为空 | Cannes’ Fantastic Pavilion Rea

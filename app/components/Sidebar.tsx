@@ -88,7 +88,7 @@ export function Sidebar() {
               </svg>
             </span>
             <span>管理信息源</span>
-          </a>
+          </Link>
         )}
       </nav>
       <div className="sidebar-footer">
