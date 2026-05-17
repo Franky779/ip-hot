@@ -33,3 +33,31 @@ create policy "Anon read access on daily_reports" on public.daily_reports
 -- 3. 确认 articles 表唯一索引（去重用）
 create unique index if not exists articles_source_url_unique
   on public.articles (source, url);
+
+-- 4. 创建 info_sources 表（信息源管理）
+create table if not exists public.info_sources (
+  id uuid primary key default gen_random_uuid(),
+  section_id text not null,
+  section_title text not null,
+  region text not null,
+  name text not null,
+  url text not null,
+  type text not null,
+  description text not null default '',
+  method text not null default '',
+  sort_order int default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_info_sources_section_id on public.info_sources (section_id);
+create index if not exists idx_info_sources_region on public.info_sources (region);
+create index if not exists idx_info_sources_sort_order on public.info_sources (sort_order);
+
+-- service_role 全权限
+alter table public.info_sources enable row level security;
+create policy "Service role full access on info_sources" on public.info_sources
+  for all to service_role using (true) with check (true);
+
+-- anon 只读
+create policy "Anon read access on info_sources" on public.info_sources
+  for select to anon using (true);

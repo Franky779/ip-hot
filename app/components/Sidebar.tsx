@@ -67,11 +67,9 @@ export function Sidebar() {
           )
         })}
         {loaded && isAdmin && (
-          <a
-            href="/info-sources.html#domestic-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="sidebar-link"
+          <Link
+            href="/sources"
+            className={`sidebar-link${pathname === '/sources' ? ' active' : ''}`}
           >
             <span className="sidebar-icon">
               <svg
