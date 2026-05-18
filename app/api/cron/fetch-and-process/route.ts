@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
-import { RSS_SOURCES } from '@/lib/sources'
+import { RSS_SOURCES, NEW_SOURCE_NAMES } from '@/lib/sources'
 import { checkLinks } from '@/lib/link-checker'
 import { execSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
@@ -156,7 +156,7 @@ export async function GET(request: Request) {
 
   const { data: pendingArticles, error: pendingError } = await supabase
     .from('articles')
-    .select('id, title, url, published_at')
+    .select('id, title, url, source, published_at')
     .is('title_cn', null)
     .order('published_at', { ascending: false })
     .limit(LLM_BATCH_SIZE)
@@ -186,14 +186,19 @@ export async function GET(request: Request) {
             return { id: article.id, ok: !updateError, error: updateError?.message }
           }
 
+          // 新增信源的文章强制归类为"待分类"，等人工审核
+          const isNewSource = NEW_SOURCE_NAMES.has(article.source)
+          const finalCategory = isNewSource ? '待分类' : llmResult.category
+          const finalIsSelected = isNewSource ? false : llmResult.is_selected
+
           const { error: updateError } = await supabase
             .from('articles')
             .update({
               title_cn: llmResult.title_cn,
               summary_cn: llmResult.summary_cn,
-              category: llmResult.category,
+              category: finalCategory,
               relevance_score: llmResult.relevance_score,
-              is_selected: llmResult.is_selected,
+              is_selected: finalIsSelected,
               commentary: llmResult.commentary,
             })
             .eq('id', article.id)

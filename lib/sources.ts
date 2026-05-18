@@ -83,3 +83,9 @@ export const RSS_SOURCES: RssSource[] = [
     priority: 'P1',
   },
 ]
+
+// 新增信源：初次抓取的文章强制归类为"待分类"，等人工审核确认后再正式展示
+export const NEW_SOURCE_IDS = new Set(['geekpark', 'gcores'])
+export const NEW_SOURCE_NAMES = new Set(
+  RSS_SOURCES.filter((s) => NEW_SOURCE_IDS.has(s.id)).map((s) => s.name)
+)

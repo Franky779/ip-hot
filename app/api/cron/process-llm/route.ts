@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
+import { NEW_SOURCE_NAMES } from '@/lib/sources'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
 
   const { data: articles, error: fetchError } = await supabase
     .from('articles')
-    .select('id, title, url, published_at')
+    .select('id, title, url, source, published_at')
     .is('title_cn', null)
     .order('published_at', { ascending: false })
     .limit(BATCH_SIZE)
@@ -65,14 +66,19 @@ export async function GET(request: Request) {
           return { id: article.id, ok: !updateError, error: updateError?.message }
         }
 
+        // 新增信源的文章强制归类为"待分类"，等人工审核
+        const isNewSource = NEW_SOURCE_NAMES.has(article.source)
+        const finalCategory = isNewSource ? '待分类' : llmResult.category
+        const finalIsSelected = isNewSource ? false : llmResult.is_selected
+
         const { error: updateError } = await supabase
           .from('articles')
           .update({
             title_cn: llmResult.title_cn,
             summary_cn: llmResult.summary_cn,
-            category: llmResult.category,
+            category: finalCategory,
             relevance_score: llmResult.relevance_score,
-            is_selected: llmResult.is_selected,
+            is_selected: finalIsSelected,
             commentary: llmResult.commentary,
           })
           .eq('id', article.id)
