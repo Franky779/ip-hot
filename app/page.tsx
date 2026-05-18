@@ -88,7 +88,7 @@ export default async function Home({
           <div>
             <h1 className="page-title font-serif">实时快讯</h1>
             <p className="page-sub">
-              动漫 / 潮玩 / IP / ACG / 文创行业自动新闻聚合
+              动漫 / IP / 潮玩 / 文创 / 文旅 / 博物馆 / 数字创意产业资讯聚合
             </p>
           </div>
           <AdminToggle />

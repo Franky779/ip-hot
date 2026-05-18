@@ -53,7 +53,7 @@ export function ArticleActions({ id, title_cn, summary_cn, commentary, category,
         <label className="article-checkbox" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
-            checked={selected}
+            checked={!!selected}
             onChange={(e) => {
               e.preventDefault()
               e.stopPropagation()

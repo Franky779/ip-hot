@@ -26,10 +26,12 @@ function formatTime(iso: string | null): string {
   if (!iso) return ''
   try {
     const d = new Date(iso)
+    // 固定用 UTC 时区，避免服务端/客户端 hydrate mismatch
     return d.toLocaleTimeString('zh-CN', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
+      timeZone: 'UTC',
     })
   } catch {
     return ''
