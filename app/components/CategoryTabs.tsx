@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import { useAdmin } from './AdminToggle'
 
-const CATEGORIES = [
+const ALL_CATEGORIES = [
   { value: 'all', label: '全部' },
   { value: '新作发布', label: '新作发布' },
   { value: 'IP授权', label: 'IP授权' },
@@ -17,9 +18,14 @@ export function CategoryTabs({
   active: string
   query: string
 }) {
+  const { isAdmin, loaded } = useAdmin()
+  const categories = loaded && !isAdmin
+    ? ALL_CATEGORIES.filter((c) => c.value !== '待分类')
+    : ALL_CATEGORIES
+
   return (
     <div className="category-tabs" role="tablist">
-      {CATEGORIES.map((c) => {
+      {categories.map((c) => {
         const params = new URLSearchParams()
         if (c.value !== 'all') params.set('category', c.value)
         if (query) params.set('q', query)

@@ -239,6 +239,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                       summary_cn={article.summary_cn}
                       commentary={article.commentary}
                       category={article.category}
+                      relevance_score={article.relevance_score}
                       selected={selectedIds.has(article.id)}
                       onToggle={() => toggleSelect(article.id)}
                     />
