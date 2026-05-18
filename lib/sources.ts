@@ -68,4 +68,18 @@ export const RSS_SOURCES: RssSource[] = [
     language: 'zh',
     priority: 'P1',
   },
+  {
+    id: 'geekpark',
+    name: '极客公园',
+    url: 'https://www.geekpark.net/rss',
+    language: 'zh',
+    priority: 'P1',
+  },
+  {
+    id: 'gcores',
+    name: '机核网',
+    url: 'https://www.gcores.com/rss',
+    language: 'zh',
+    priority: 'P1',
+  },
 ]

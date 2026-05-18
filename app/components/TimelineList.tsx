@@ -49,7 +49,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
   const filterArticles = (articles: Article[]) => {
     let filtered = isAdmin
       ? articles
-      : articles.filter((a) => (a.relevance_score ?? 10) >= 4)
+      : articles.filter((a) => (a.relevance_score ?? 10) >= 4 && a.category !== '待分类')
     if (filterScore !== null) {
       filtered = filtered.filter((a) => a.relevance_score === filterScore)
     }
@@ -67,6 +67,19 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
       })
     })
     return Array.from(scores).sort((a, b) => b - a)
+  }, [dates, dateGroups])
+
+  // 每档评分的资讯数量统计
+  const scoreCounts = useMemo(() => {
+    const counts: Record<number, number> = {}
+    dates.forEach((date) => {
+      dateGroups[date].forEach((a) => {
+        if (typeof a.relevance_score === 'number') {
+          counts[a.relevance_score] = (counts[a.relevance_score] || 0) + 1
+        }
+      })
+    })
+    return counts
   }, [dates, dateGroups])
 
   const toggleScoreFilter = useCallback((score: number) => {
@@ -149,6 +162,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                   title={`只显示评分 ${score} 的资讯`}
                 >
                   {score}
+                  <span className="score-count">{scoreCounts[score] || 0}</span>
                 </button>
               ))}
             </div>
@@ -181,6 +195,12 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                   key={article.id}
                   id={`article-${article.id}`}
                   className={`timeline-entry ${selectedIds.has(article.id) ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    if (isSelectionMode) {
+                      if ((e.target as HTMLElement).closest('.article-actions')) return
+                      toggleSelect(article.id)
+                    }
+                  }}
                 >
                   <div className="timeline-time-col">
                     <span className="timeline-time">{formatTime(article.published_at)}</span>
@@ -193,18 +213,12 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="article-card"
-                      onClick={(e) => {
-                        if (isSelectionMode) {
-                          e.preventDefault()
-                          toggleSelect(article.id)
-                        }
-                      }}
                     >
                       <div className="article-meta">
                         {typeof article.relevance_score === 'number' && (
                           <span className="relevance-score">{article.relevance_score}</span>
                         )}
-                        {article.category && <span>{article.category}</span>}
+                        {article.category && (isAdmin || article.category !== '待分类') && <span>{article.category}</span>}
                       </div>
                       <h2 className="article-title font-serif">
                         {article.title_cn ?? article.title}
@@ -225,6 +239,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                       summary_cn={article.summary_cn}
                       commentary={article.commentary}
                       category={article.category}
+                      relevance_score={article.relevance_score}
                       selected={selectedIds.has(article.id)}
                       onToggle={() => toggleSelect(article.id)}
                     />

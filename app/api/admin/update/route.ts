@@ -7,15 +7,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { id, title_cn, summary_cn, commentary, category } = await request.json()
+  const { id, title_cn, summary_cn, commentary, category, relevance_score } = await request.json()
   if (!id) {
     return NextResponse.json({ error: 'Missing id' }, { status: 400 })
   }
 
+  const updateData: Record<string, unknown> = {}
+  if (title_cn !== undefined) updateData.title_cn = title_cn
+  if (summary_cn !== undefined) updateData.summary_cn = summary_cn
+  if (commentary !== undefined) updateData.commentary = commentary
+  if (category !== undefined) updateData.category = category
+  if (relevance_score !== undefined) updateData.relevance_score = relevance_score
+
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('articles')
-    .update({ title_cn, summary_cn, commentary, category })
+    .update(updateData)
     .eq('id', id)
 
   if (error) {

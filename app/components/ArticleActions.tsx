@@ -10,11 +10,12 @@ interface ArticleActionsProps {
   summary_cn: string | null
   commentary: string | null
   category: string | null
+  relevance_score: number | null
   selected?: boolean
   onToggle?: () => void
 }
 
-export function ArticleActions({ id, title_cn, summary_cn, commentary, category, selected, onToggle }: ArticleActionsProps) {
+export function ArticleActions({ id, title_cn, summary_cn, commentary, category, relevance_score, selected, onToggle }: ArticleActionsProps) {
   const { isAdmin, loaded } = useAdmin()
   const [showEdit, setShowEdit] = useState(false)
   const [deleted, setDeleted] = useState(false)
@@ -45,6 +46,30 @@ export function ArticleActions({ id, title_cn, summary_cn, commentary, category,
     }
   }
 
+  const handleScoreChange = async () => {
+    const newScore = prompt(`当前评分: ${relevance_score ?? '无'}\n输入新评分 (0-10):`)
+    if (newScore === null) return
+    const score = parseInt(newScore, 10)
+    if (isNaN(score) || score < 0 || score > 10) {
+      alert('评分必须是 0-10 的整数')
+      return
+    }
+    const pw = localStorage.getItem(ADMIN_PW_KEY) || ''
+    const res = await fetch('/api/admin/update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-password': pw,
+      },
+      body: JSON.stringify({ id, relevance_score: score }),
+    })
+    if (res.ok) {
+      window.location.reload()
+    } else {
+      alert('改分失败')
+    }
+  }
+
   if (deleted) return null
 
   return (
@@ -70,6 +95,17 @@ export function ArticleActions({ id, title_cn, summary_cn, commentary, category,
           }}
         >
           编辑
+        </button>
+        <button
+          className="article-action-btn edit"
+          style={{ color: '#c45c26', borderColor: '#c45c26' }}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleScoreChange()
+          }}
+        >
+          改分
         </button>
         <button
           className="article-action-btn delete"
