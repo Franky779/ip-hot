@@ -20,7 +20,7 @@ const notoSerifSC = Noto_Serif_SC({
 export const metadata: Metadata = {
   title: "IP 行业资讯快报 | 新文创老贾聊IP",
   description:
-    "动漫 / IP / ACG / 文创行业自动新闻聚合,每日北京时间 7:00 抓取。来源:新文创老贾聊IP",
+    "动漫 / 潮玩 / IP / ACG / 文创行业自动新闻聚合。来源:新文创老贾聊IP",
 };
 
 const setInitialThemeScript = `

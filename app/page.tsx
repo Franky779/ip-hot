@@ -87,7 +87,7 @@ export default async function Home({
           <div>
             <h1 className="page-title font-serif">实时快讯</h1>
             <p className="page-sub">
-              动漫 / IP / ACG / 文创行业自动新闻聚合 · 每日北京时间 7:00 / 12:00 / 17:00 / 22:00 抓取 · 当前 {articles.length} 条
+              动漫 / 潮玩 / IP / ACG / 文创行业自动新闻聚合
             </p>
           </div>
           <AdminToggle />
