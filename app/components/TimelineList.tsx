@@ -13,6 +13,7 @@ interface Article {
   summary_cn: string | null
   commentary: string | null
   category: string | null
+  relevance_score: number | null
   published_at: string | null
 }
 
@@ -40,7 +41,14 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
 
-  const allIds = dates.flatMap((date) => dateGroups[date].map((a) => a.id))
+  const isSelectionMode = loaded && isAdmin && selectedIds.size > 0
+
+  const filterArticles = (articles: Article[]) =>
+    isAdmin
+      ? articles
+      : articles.filter((a) => (a.relevance_score ?? 10) >= 4)
+
+  const allIds = dates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id))
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -129,7 +137,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
               <div className="timeline-date-line" />
             </div>
             <div className="timeline-entries">
-              {dateGroups[date].map((article) => (
+              {filterArticles(dateGroups[date]).map((article) => (
                 <div
                   key={article.id}
                   id={`article-${article.id}`}
@@ -146,8 +154,17 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="article-card"
+                      onClick={(e) => {
+                        if (isSelectionMode) {
+                          e.preventDefault()
+                          toggleSelect(article.id)
+                        }
+                      }}
                     >
                       <div className="article-meta">
+                        {typeof article.relevance_score === 'number' && (
+                          <span className="relevance-score">{article.relevance_score}</span>
+                        )}
                         {article.category && <span>{article.category}</span>}
                       </div>
                       <h2 className="article-title font-serif">

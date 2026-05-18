@@ -15,6 +15,7 @@ type Article = {
   summary_cn: string | null
   commentary: string | null
   category: string | null
+  relevance_score: number | null
   published_at: string | null
 }
 
@@ -24,7 +25,7 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   const supabase = getSupabase()
   let query = supabase
     .from('articles')
-    .select('id, source, url, title, title_cn, summary_cn, commentary, category, published_at')
+    .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at')
     .not('title_cn', 'is', null)
     .not('summary_cn', 'is', null)
     .not('category', 'is', null)

@@ -753,6 +753,16 @@ body {
   color: #e94560;
 }
 
+/* 产业匹配度评分 */
+.relevance-score {
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 /* ====== 批量删除工具栏 ====== */
 
 .batch-actions-bar {
