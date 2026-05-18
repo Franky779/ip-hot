@@ -142,9 +142,9 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
               {visibleScores.map((score) => (
                 <button
                   key={score}
-                  className="score-filter-btn"
-                  onClick={() => selectByScore(score)}
-                  title={`选中所有评分 ${score} 的资讯`}
+                  className={`score-filter-btn ${filterScore === score ? 'active' : ''}`}
+                  onClick={() => toggleScoreFilter(score)}
+                  title={`只显示评分 ${score} 的资讯`}
                 >
                   {score}
                 </button>
