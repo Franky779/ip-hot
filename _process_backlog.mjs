@@ -35,19 +35,32 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-const SYSTEM_PROMPT = `你是一位动漫IP/ACG/文创行业的新闻编辑。请对以下英文新闻进行分析和处理：
+const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位：专注动漫 / IP / 潮玩谷子 / 文创 / 文旅 / 博物馆 / 旅游纪念品 / 数字创意产业等多元资讯聚合。
+请对以下新闻进行分析和处理：
 
 任务：
 1. 将标题翻译为简洁、吸引人的中文标题（不超过30字）
-2. 用80字以内的中文写摘要，突出IP/授权/商业角度
-3. 从以下5个分类中选一个最贴切的：新作发布、IP授权、潮玩谷子、产业动态、展会活动
-4. 给出0-10的相关性评分（该新闻对IP/ACG商业决策的价值，7分以上为高价值）
-5. 如果相关性评分 >= 7，标记为精选
+2. 用80字以内的中文写摘要，突出IP/商业/文旅角度
+3. 从以下6个分类中选一个最贴切的：
+   - 新作发布：动漫/游戏/IP的新作品、新动画、新游戏发布
+   - IP授权：IP授权合作、品牌联名、授权案例、商业合作
+   - 潮玩谷子：潮玩、盲盒、谷子、手办等实物商品及相关品牌动态
+   - 展会活动：行业展会、活动、市集、发布会、展览
+   - 文旅及商品：文旅项目、博物馆IP、旅游纪念品、主题公园、城市IP、文旅商品、景区联名、文化遗产数字化
+   - 待分类：无法明确归入以上5类的资讯，等待人工复核
+4. 给出0-10的产业匹配度评分：
+   - 9-10 核心命中：直接涉及动漫/漫画/游戏/IP授权/潮玩谷子/文创衍生/文旅/博物馆/旅游纪念品/城市IP/数字创意产业
+   - 7-8  强相关：含IP/动漫/潮玩/文旅元素的新闻、IP联动、跨界合作、数字创意产业政策
+   - 5-6  中度相关：科技/商业新闻里含IP/动漫/潮玩/文旅元素
+   - 0-4  弱相关或无关：纯原创真人剧集、纪录片、人物传记片、传统好莱坞商业片、与上述产业无关的纯科技/财经/政策新闻
+5. 如果产业匹配度评分 >= 8，标记为精选
+
+注意：如果内容无法明确归入"新作发布/IP授权/潮玩谷子/展会活动/文旅及商品"这5类，请务必选择"待分类"。
 
 请严格按以下JSON格式返回，不要添加任何其他文字：
 {"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true}`
 
-const CATEGORIES = ['新作发布', 'IP授权', '潮玩谷子', '产业动态', '展会活动']
+const CATEGORIES = ['新作发布', 'IP授权', '潮玩谷子', '展会活动', '文旅及商品', '待分类']
 
 // 返回 { result, usage }，usage = { prompt_tokens, completion_tokens, total_tokens }
 async function summarizeOnce(title) {
@@ -85,7 +98,7 @@ async function summarizeOnce(title) {
   }
 
   const parsed = JSON.parse(jsonMatch[0])
-  const category = CATEGORIES.includes(parsed.category) ? parsed.category : '产业动态'
+  const category = CATEGORIES.includes(parsed.category) ? parsed.category : '待分类'
   const relevance_score = Math.min(10, Math.max(0, Number(parsed.relevance_score) || 5))
 
   return {

@@ -1,6 +1,9 @@
 // lib/llm.ts — 调用超级斜杠(ricoxueai) API 生成中文摘要与分类
 // OpenAI 兼容格式
 
+import { createServiceClient } from './supabase'
+import { findRelevantLearnings, formatLearningRules } from './classification-learning'
+
 const LLM_BASE_URL = process.env.LLM_BASE_URL || ''
 const LLM_API_KEY = process.env.LLM_API_KEY || ''
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-5-mini'
@@ -60,6 +63,21 @@ export async function summarizeArticle(
     return null
   }
 
+  // 查询学习记录并注入 prompt
+  let systemPrompt = SYSTEM_PROMPT
+  try {
+    if (process.env.SUPABASE_SECRET_KEY) {
+      const supabase = createServiceClient()
+      const learnings = await findRelevantLearnings(supabase, title, 15)
+      const learningRules = formatLearningRules(learnings)
+      if (learningRules) {
+        systemPrompt += learningRules
+      }
+    }
+  } catch (e) {
+    console.error('[LLM] 查询学习记录失败:', e instanceof Error ? e.message : String(e))
+  }
+
   try {
     const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -70,7 +88,7 @@ export async function summarizeArticle(
       body: JSON.stringify({
         model: LLM_MODEL,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           {
             role: 'user',
             content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,

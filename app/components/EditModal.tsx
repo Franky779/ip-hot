@@ -17,6 +17,30 @@ export function EditModal({ id, title_cn, summary_cn, commentary, category, onCl
   const [form, setForm] = useState({ title_cn, summary_cn, commentary, category })
   const [saving, setSaving] = useState(false)
 
+  const recordLearning = async (correctedCategory: string) => {
+    // 分类没变，不记录
+    if (correctedCategory === category) return
+
+    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+    try {
+      await fetch('/api/admin/record-learning', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-password': pw,
+        },
+        body: JSON.stringify({
+          article_id: id,
+          original_title: title_cn,
+          original_category: category,
+          corrected_category: correctedCategory,
+        }),
+      })
+    } catch (e) {
+      console.error('[Learning] 记录学习行为失败:', e)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
     const pw = localStorage.getItem('ip-hot-admin-pw') || ''
@@ -31,6 +55,8 @@ export function EditModal({ id, title_cn, summary_cn, commentary, category, onCl
     setSaving(false)
 
     if (res.ok) {
+      // 异步记录学习行为（不阻塞页面刷新）
+      recordLearning(form.category)
       window.location.reload()
     } else {
       alert('保存失败')
