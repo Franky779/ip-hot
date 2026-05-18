@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 
@@ -47,6 +47,35 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
     isAdmin
       ? articles
       : articles.filter((a) => (a.relevance_score ?? 10) >= 4)
+
+  // 当前页面所有出现的 relevance_score 唯一值(管理员模式用于评分筛选)
+  const visibleScores = useMemo(() => {
+    const scores = new Set<number>()
+    dates.forEach((date) => {
+      dateGroups[date].forEach((a) => {
+        if (typeof a.relevance_score === 'number') {
+          scores.add(a.relevance_score)
+        }
+      })
+    })
+    return Array.from(scores).sort((a, b) => b - a)
+  }, [dates, dateGroups])
+
+  const selectByScore = useCallback((score: number) => {
+    const ids: string[] = []
+    dates.forEach((date) => {
+      dateGroups[date].forEach((a) => {
+        if (a.relevance_score === score) {
+          ids.push(a.id)
+        }
+      })
+    })
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      ids.forEach((id) => next.add(id))
+      return next
+    })
+  }, [dates, dateGroups])
 
   const allIds = dates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id))
 
@@ -114,6 +143,20 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
             />
             <span>全选</span>
           </label>
+          {visibleScores.length > 0 && (
+            <div className="score-filter-btns">
+              {visibleScores.map((score) => (
+                <button
+                  key={score}
+                  className="score-filter-btn"
+                  onClick={() => selectByScore(score)}
+                  title={`选中所有评分 ${score} 的资讯`}
+                >
+                  {score}
+                </button>
+              ))}
+            </div>
+          )}
           {selectedIds.size > 0 && (
             <>
               <span className="batch-count">已选 {selectedIds.size} 条</span>

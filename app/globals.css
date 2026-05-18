@@ -763,6 +763,37 @@ body {
   line-height: 1;
 }
 
+/* 评分筛选按钮 */
+.score-filter-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: 0.5rem;
+  align-items: center;
+}
+
+.score-filter-btn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.score-filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
 /* ====== 批量删除工具栏 ====== */
 
 .batch-actions-bar {
