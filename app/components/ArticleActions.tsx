@@ -10,9 +10,11 @@ interface ArticleActionsProps {
   summary_cn: string | null
   commentary: string | null
   category: string | null
+  selected?: boolean
+  onToggle?: () => void
 }
 
-export function ArticleActions({ id, title_cn, summary_cn, commentary, category }: ArticleActionsProps) {
+export function ArticleActions({ id, title_cn, summary_cn, commentary, category, selected, onToggle }: ArticleActionsProps) {
   const { isAdmin, loaded } = useAdmin()
   const [showEdit, setShowEdit] = useState(false)
   const [deleted, setDeleted] = useState(false)
@@ -48,6 +50,17 @@ export function ArticleActions({ id, title_cn, summary_cn, commentary, category 
   return (
     <>
       <div className="article-actions">
+        <label className="article-checkbox" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onToggle?.()
+            }}
+          />
+        </label>
         <button
           className="article-action-btn edit"
           onClick={(e) => {

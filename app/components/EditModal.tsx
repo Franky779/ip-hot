@@ -66,7 +66,7 @@ export function EditModal({ id, title_cn, summary_cn, commentary, category, onCl
           onChange={(e) => setForm({ ...form, summary_cn: e.target.value })}
         />
 
-        <label>老贾点评</label>
+        <label>推荐理由</label>
         <textarea
           rows={2}
           value={form.commentary}

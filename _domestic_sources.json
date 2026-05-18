@@ -1,0 +1,547 @@
+[
+  {
+    "name": "三文娱",
+    "url": "https://www.163.com/dy/media/T1460009632064.html",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "游民星空动漫频道",
+    "url": "https://www.gamersky.com/news/",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "哔哩哔哩(B站)国创区",
+    "url": "https://www.bilibili.com/v/anime/guochuang",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "腾讯动漫资讯",
+    "url": "https://ac.qq.com/Comic/all",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "漫客栈",
+    "url": "https://www.mkzhan.com",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "17173动漫",
+    "url": "http://acg.17173.com",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "雷报",
+    "url": "https://www.zhihu.com/people/wanshangkansha",
+    "section_title": "动漫 / ACG 垂直媒体"
+  },
+  {
+    "name": "中外玩具网",
+    "url": "http://www.ctoy.com.cn",
+    "section_title": "潮玩 / 玩具 / IP产业"
+  },
+  {
+    "name": "玩具产业网",
+    "url": "https://www.wjyt-china.org/",
+    "section_title": "潮玩 / 玩具 / IP产业"
+  },
+  {
+    "name": "CLE中国授权展官网",
+    "url": "http://www.licensingexpochina.com",
+    "section_title": "潮玩 / 玩具 / IP产业"
+  },
+  {
+    "name": "中国文化报",
+    "url": "http://www.ccdy.cn",
+    "section_title": "文创 / 文博 / 非遗"
+  },
+  {
+    "name": "中国旅游报",
+    "url": "http://www.ctnews.com.cn",
+    "section_title": "文创 / 文博 / 非遗"
+  },
+  {
+    "name": "中国艺术报",
+    "url": "http://www.cflac.org.cn",
+    "section_title": "文创 / 文博 / 非遗"
+  },
+  {
+    "name": "国家文物局官网",
+    "url": "http://www.ncha.gov.cn",
+    "section_title": "文创 / 文博 / 非遗"
+  },
+  {
+    "name": "中国非物质文化遗产网",
+    "url": "http://www.ihchina.cn",
+    "section_title": "文创 / 文博 / 非遗"
+  },
+  {
+    "name": "1905电影网",
+    "url": "http://www.1905.com",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "艺恩网",
+    "url": "http://www.endata.com.cn",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "猫眼专业版",
+    "url": "https://piaofang.maoyan.com",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "游民星空",
+    "url": "http://www.gamersky.com",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "游戏陀螺",
+    "url": "http://www.youxituoluo.com",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "IT之家",
+    "url": "https://www.ithome.com",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "快科技",
+    "url": "https://www.mydrivers.com",
+    "section_title": "影视 / 游戏 / 科技"
+  },
+  {
+    "name": "36氪",
+    "url": "https://36kr.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "虎嗅",
+    "url": "https://www.huxiu.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "界面新闻",
+    "url": "https://www.jiemian.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "钛媒体",
+    "url": "https://www.tmtpost.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "第一财经",
+    "url": "https://www.yicai.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "21世纪经济报道",
+    "url": "http://www.21jingji.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "新京报书评/文娱",
+    "url": "https://www.bjnews.com.cn",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "同花顺财经",
+    "url": "https://news.10jqka.com.cn",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "新浪财经",
+    "url": "https://finance.sina.com.cn",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "东方财富网",
+    "url": "https://finance.eastmoney.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "红商网",
+    "url": "http://www.redsh.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "MBA中国网",
+    "url": "https://www.mbachina.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "搜狐网",
+    "url": "https://www.sohu.com",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
+    "name": "人民网",
+    "url": "http://www.people.com.cn",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "新华网",
+    "url": "http://www.xinhuanet.com",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "光明网",
+    "url": "https://www.gmw.cn",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "央广网",
+    "url": "https://www.cnr.cn",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "中国新闻网",
+    "url": "https://www.chinanews.com.cn",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "中国青年网",
+    "url": "https://www.youth.cn",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "中国科技网",
+    "url": "https://www.stdaily.com",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "澎湃新闻 文化频道",
+    "url": "https://www.thepaper.cn/list_25462",
+    "section_title": "中央媒体 / 综合资讯"
+  },
+  {
+    "name": "京报网(北京日报)",
+    "url": "https://www.bjd.com.cn",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "千龙网(北京)",
+    "url": "http://www.qianlong.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "北青网(北京青年报)",
+    "url": "https://www.ynet.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "上观新闻(上海)",
+    "url": "https://www.jfdaily.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "新闻晨报(上海)",
+    "url": "https://www.shxwcb.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "浙江日报/潮新闻",
+    "url": "http://www.zjol.com.cn",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "湖北日报",
+    "url": "http://www.hubeidaily.net",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "大众日报(山东)",
+    "url": "https://www.dzwww.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "红星新闻(成都)",
+    "url": "https://www.cdsb.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "极目新闻(湖北)",
+    "url": "http://www.ctdsb.net",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "金羊网(广州)",
+    "url": "https://www.ycwb.com",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "西安网(陕西)",
+    "url": "https://www.xiancity.cn",
+    "section_title": "地方媒体 / 城市文创"
+  },
+  {
+    "name": "微博热搜",
+    "url": "https://s.weibo.com/top/summary",
+    "section_title": "社交 / UGC / 口碑"
+  },
+  {
+    "name": "知乎热榜",
+    "url": "https://www.zhihu.com/hot",
+    "section_title": "社交 / UGC / 口碑"
+  },
+  {
+    "name": "小红书",
+    "url": "https://www.xiaohongshu.com",
+    "section_title": "社交 / UGC / 口碑"
+  },
+  {
+    "name": "豆瓣电影/动漫",
+    "url": "https://www.douban.com",
+    "section_title": "社交 / UGC / 口碑"
+  },
+  {
+    "name": "文化和旅游部",
+    "url": "https://www.mct.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "国家广播电视总局",
+    "url": "https://www.nrta.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "中国动漫集团（国家动漫游戏综合服务平台）",
+    "url": "https://www.acgnet.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "国务院政策文件库",
+    "url": "https://www.gov.cn/zhengce/zhengceku/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "国家发展和改革委员会",
+    "url": "https://www.ndrc.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "工业和信息化部",
+    "url": "https://www.miit.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "国家知识产权局",
+    "url": "https://www.cnipa.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "浙江省文化和旅游厅",
+    "url": "https://ct.zj.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "东莞市文化广电旅游体育局",
+    "url": "https://www.dg.gov.cn/zwgk/zcwj/zcjd/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "杭州市西湖区人民政府",
+    "url": "https://www.hzxh.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "财政部",
+    "url": "https://www.mof.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "新疆维吾尔自治区文化和旅游厅",
+    "url": "https://wlt.xinjiang.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "北京市文化和旅游局",
+    "url": "https://whlyj.beijing.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "天津市文化和旅游局",
+    "url": "https://whly.tj.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "上海市文化和旅游局",
+    "url": "https://whlyj.sh.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "重庆市文化和旅游发展委员会",
+    "url": "https://wlt.cq.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "河北省文化和旅游厅",
+    "url": "https://wlt.hebei.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "山西省文化和旅游厅",
+    "url": "https://wlt.shanxi.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "辽宁省文化和旅游厅",
+    "url": "https://wlt.ln.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "吉林省文化和旅游厅",
+    "url": "https://wlt.jl.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "黑龙江省文化和旅游厅",
+    "url": "https://wlt.hlj.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "江苏省文化和旅游厅",
+    "url": "https://wlt.jiangsu.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "安徽省文化和旅游厅",
+    "url": "https://wlt.ah.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "福建省文化和旅游厅",
+    "url": "https://wlt.fujian.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "江西省文化和旅游厅",
+    "url": "https://wlt.jiangxi.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "山东省文化和旅游厅",
+    "url": "https://wlt.shandong.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "河南省文化和旅游厅",
+    "url": "https://wlt.henan.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "湖北省文化和旅游厅",
+    "url": "https://wlt.hubei.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "湖南省文化和旅游厅",
+    "url": "https://whhly.hunan.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "广东省文化和旅游厅",
+    "url": "https://wlt.gd.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "广西壮族自治区文化和旅游厅",
+    "url": "https://wlt.gxzf.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "海南省旅游和文化广电体育厅",
+    "url": "https://lwt.hainan.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "四川省文化和旅游厅",
+    "url": "https://wlt.sc.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "贵州省文化和旅游厅",
+    "url": "https://wlt.guizhou.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "云南省文化和旅游厅",
+    "url": "https://wlt.yn.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "西藏自治区文化和旅游厅",
+    "url": "https://wlt.xizang.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "陕西省文化和旅游厅",
+    "url": "https://wlt.shaanxi.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "甘肃省文化和旅游厅",
+    "url": "https://wlt.gansu.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "青海省文化和旅游厅",
+    "url": "https://wlt.qinghai.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "宁夏回族自治区文化和旅游厅",
+    "url": "https://wlt.nx.gov.cn/",
+    "section_title": "政府政策 / 产业规划 / 官方平台"
+  },
+  {
+    "name": "36氪",
+    "url": "https://36kr.com/feed",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "虎嗅",
+    "url": "https://www.huxiu.com/rss/0.xml",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "钛媒体",
+    "url": "https://www.tmtpost.com/rss.xml",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "澎湃新闻文化频道",
+    "url": "https://rsshub.app/thepaper/featured",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "36氪深度",
+    "url": "https://rsshub.app/36kr/news/latest",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "知乎热榜",
+    "url": "https://rsshub.app/zhihu/hotlist",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "微博热搜",
+    "url": "https://rsshub.app/weibo/search/hot",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "B站国创动态",
+    "url": "https://rsshub.app/bilibili/bangumi/timeline/cn",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "三文娱(公众号)",
+    "url": "https://rsshub.app/wechat/ee/sanwenyu",
+    "section_title": "国内 RSS"
+  },
+  {
+    "name": "1905电影网",
+    "url": "https://rsshub.app/1905/news",
+    "section_title": "国内 RSS"
+  }
+]

@@ -3,6 +3,7 @@ import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
 import { RSS_SOURCES } from '@/lib/sources'
+import { checkLinks } from '@/lib/link-checker'
 import { execSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -59,6 +60,7 @@ type FetchResult = {
   ok: boolean
   fetched: number
   blocked: number
+  dead: number
   inserted: number
   error?: string
 }
@@ -84,7 +86,7 @@ export async function GET(request: Request) {
   let totalInserted = 0
 
   for (const source of RSS_SOURCES) {
-    const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, inserted: 0 }
+    const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
 
     try {
       const feed = await fetchFeedWithFallback(source.url)
@@ -106,10 +108,29 @@ export async function GET(request: Request) {
       result.fetched = items.length
       result.blocked = rawItems.length - items.length
 
+      // 链接有效性预检
+      let validItems = items
       if (items.length > 0) {
+        const linkChecks = await checkLinks(
+          items.map((x) => x.url),
+          5,
+          6000
+        )
+        const validUrls = new Set(linkChecks.filter((r) => r.ok).map((r) => r.url))
+        validItems = items.filter((x) => validUrls.has(x.url))
+        result.dead = items.length - validItems.length
+
+        const deadLinks = linkChecks.filter((r) => !r.ok)
+        if (deadLinks.length > 0) {
+          console.log(`  [链接检查] 过滤 ${deadLinks.length} 条失效链接:`)
+          deadLinks.forEach((d) => console.log(`    - ${d.url} (${d.reason})`))
+        }
+      }
+
+      if (validItems.length > 0) {
         const { data, error } = await supabase
           .from('articles')
-          .upsert(items, { onConflict: 'source,url', ignoreDuplicates: true })
+          .upsert(validItems, { onConflict: 'source,url', ignoreDuplicates: true })
           .select('id')
 
         if (error) {
@@ -195,6 +216,7 @@ export async function GET(request: Request) {
     fetch: {
       totalFetched: fetchResults.reduce((s, r) => s + r.fetched, 0),
       totalBlocked: fetchResults.reduce((s, r) => s + r.blocked, 0),
+      totalDead: fetchResults.reduce((s, r) => s + r.dead, 0),
       totalInserted,
       results: fetchResults,
     },

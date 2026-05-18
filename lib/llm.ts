@@ -101,7 +101,7 @@ export async function summarizeArticle(
       is_selected: relevance_score >= 8,
       commentary: String(parsed.commentary || '')
         .replace(/[\s—–-]{0,3}贾田点评$/g, '')
-        .replace(/[\s—–-]{0,3}老贾点评$/g, '')
+        .replace(/[\s—–-]{0,3}推荐理由$/g, '')
         .slice(0, 100),
     }
   } catch (e) {

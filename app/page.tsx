@@ -2,7 +2,7 @@ import { getSupabase } from '@/lib/supabase'
 import { CategoryTabs } from './components/CategoryTabs'
 import { SearchBox } from './components/SearchBox'
 import { AdminToggle } from './components/AdminToggle'
-import { ArticleActions } from './components/ArticleActions'
+import { TimelineList } from './components/TimelineList'
 
 export const revalidate = 300
 
@@ -52,20 +52,6 @@ function formatDateLabel(iso: string | null): string {
   try {
     const d = new Date(iso)
     return `${d.getMonth() + 1}月${d.getDate()}日`
-  } catch {
-    return ''
-  }
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return ''
-  try {
-    const d = new Date(iso)
-    return d.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
   } catch {
     return ''
   }
@@ -122,60 +108,7 @@ export default async function Home({
                 : '数据库暂无数据。下次 cron 抓取后会出现内容。'}
           </p>
         ) : (
-          <div className="timeline">
-            {dates.map((date) => (
-              <div key={date} className="timeline-date-group">
-                <div className="timeline-date-header">
-                  <span className="timeline-date-label">{date}</span>
-                  <div className="timeline-date-line" />
-                </div>
-                <div className="timeline-entries">
-                  {dateGroups[date].map((article) => (
-                    <div key={article.id} id={`article-${article.id}`} className="timeline-entry">
-                      <div className="timeline-time-col">
-                        <span className="timeline-time">{formatTime(article.published_at)}</span>
-                        <div className="timeline-dot" />
-                        <div className="timeline-line" />
-                      </div>
-                      <div className="timeline-content-col">
-                        <a
-                          href={article.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="article-card"
-                        >
-                          <div className="article-meta">
-                            {article.category && (
-                              <span>{article.category}</span>
-                            )}
-                          </div>
-                          <h2 className="article-title font-serif">
-                            {article.title_cn ?? article.title}
-                          </h2>
-                          {article.summary_cn && (
-                            <p className="article-summary">{article.summary_cn}</p>
-                          )}
-                          {article.commentary && (
-                            <p className="article-commentary">
-                              <span className="commentary-label">老贾点评：</span>
-                              {article.commentary}
-                            </p>
-                          )}
-                        </a>
-                        <ArticleActions
-                          id={article.id}
-                          title_cn={article.title_cn}
-                          summary_cn={article.summary_cn}
-                          commentary={article.commentary}
-                          category={article.category}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <TimelineList dateGroups={dateGroups} dates={dates} />
         )}
       </section>
     </>
