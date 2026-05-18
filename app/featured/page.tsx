@@ -146,6 +146,7 @@ export default async function FeaturedPage() {
                   summary_cn={article.summary_cn}
                   commentary={article.commentary}
                   category={article.category}
+                  relevance_score={article.relevance_score}
                 />
               </li>
             ))}
