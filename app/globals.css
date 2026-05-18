@@ -800,6 +800,14 @@ body {
   border-color: var(--accent);
 }
 
+.score-count {
+  margin-left: 3px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
 /* ====== 批量删除工具栏 ====== */
 
 .batch-actions-bar {
