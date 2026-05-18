@@ -40,13 +40,19 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
   const { isAdmin, loaded } = useAdmin()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
+  const [filterScore, setFilterScore] = useState<number | null>(null)
 
   const isSelectionMode = loaded && isAdmin && selectedIds.size > 0
 
-  const filterArticles = (articles: Article[]) =>
-    isAdmin
+  const filterArticles = (articles: Article[]) => {
+    let filtered = isAdmin
       ? articles
       : articles.filter((a) => (a.relevance_score ?? 10) >= 4)
+    if (filterScore !== null) {
+      filtered = filtered.filter((a) => a.relevance_score === filterScore)
+    }
+    return filtered
+  }
 
   // 当前页面所有出现的 relevance_score 唯一值(管理员模式用于评分筛选)
   const visibleScores = useMemo(() => {
@@ -61,21 +67,9 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
     return Array.from(scores).sort((a, b) => b - a)
   }, [dates, dateGroups])
 
-  const selectByScore = useCallback((score: number) => {
-    const ids: string[] = []
-    dates.forEach((date) => {
-      dateGroups[date].forEach((a) => {
-        if (a.relevance_score === score) {
-          ids.push(a.id)
-        }
-      })
-    })
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      ids.forEach((id) => next.add(id))
-      return next
-    })
-  }, [dates, dateGroups])
+  const toggleScoreFilter = useCallback((score: number) => {
+    setFilterScore((prev) => (prev === score ? null : score))
+  }, [])
 
   const allIds = dates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id))
 

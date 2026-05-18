@@ -794,6 +794,12 @@ body {
   background: var(--accent-light);
 }
 
+.score-filter-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 /* ====== 批量删除工具栏 ====== */
 
 .batch-actions-bar {
