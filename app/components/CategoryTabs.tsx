@@ -6,6 +6,7 @@ const ALL_CATEGORIES = [
   { value: '新作发布', label: '新作发布' },
   { value: 'IP授权', label: 'IP授权' },
   { value: '潮玩谷子', label: '潮玩谷子' },
+  { value: '影视综艺', label: '影视综艺' },
   { value: '展会活动', label: '展会活动' },
   { value: '文旅及商品', label: '文旅及商品' },
   { value: '待分类', label: '待分类' },
