@@ -23,8 +23,24 @@ type Article = {
   published_at: string | null
 }
 
+function getBeijingTodayRange(): { start: string; end: string } {
+  const now = new Date()
+  const beijingOffset = 8 * 60 * 60 * 1000
+  const beijingTime = new Date(now.getTime() + beijingOffset)
+  const year = beijingTime.getUTCFullYear()
+  const month = beijingTime.getUTCMonth()
+  const day = beijingTime.getUTCDate()
+
+  // 北京时间当天 00:00:00 和 23:59:59 对应的 UTC 时间
+  const start = new Date(Date.UTC(year, month, day, -8, 0, 0)).toISOString()
+  const end = new Date(Date.UTC(year, month, day, 15, 59, 59)).toISOString()
+  return { start, end }
+}
+
 async function getFeatured(): Promise<Article[]> {
   const supabase = getSupabase()
+  const { start, end } = getBeijingTodayRange()
+
   const { data, error } = await supabase
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at')
@@ -33,6 +49,8 @@ async function getFeatured(): Promise<Article[]> {
     .not('summary_cn', 'is', null)
     .not('category', 'is', null)
     .not('commentary', 'is', null)
+    .gte('published_at', start)
+    .lte('published_at', end)
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(50)
 
