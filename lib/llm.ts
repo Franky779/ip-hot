@@ -10,7 +10,7 @@ const LLM_MODEL = process.env.LLM_MODEL || 'gpt-5-mini'
 
 export const CATEGORIES = [
   '新作发布',
-  'IP授权',
+  'IP/品牌/授权',
   '潮玩谷子',
   '影视综艺',
   '展会活动',
@@ -37,14 +37,14 @@ const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位
 2. 用80字以内的中文写摘要，突出IP/商业/文旅角度
 3. 从以下7个分类中选一个最贴切的：
    - 新作发布：动漫/游戏/IP的新作品、新动画、新游戏发布
-   - IP授权：IP授权合作、品牌联名、授权案例、商业合作
+   - IP/品牌/授权：IP/品牌/授权合作、品牌联名、授权案例、商业合作
    - 潮玩谷子：潮玩、盲盒、谷子、手办等实物商品及相关品牌动态。重点品牌包括：泡泡玛特、寻找独角兽、TNT SPACE、52toys、玩乐主义、JPTOYS、奇梦岛、TOP TOY、布鲁可、卡游、若来、酷彼伴、19八3、奥飞娱乐、万代、森宝积木、摩点、潮玩族、千岛、X11
    - 影视综艺：动漫改编电影/剧集、游戏改编影视、漫画改编影视、IP衍生影视内容、虚拟偶像综艺
    - 展会活动：行业展会、活动、市集、发布会、展览
    - 文旅及商品：文旅项目、博物馆IP、旅游纪念品、主题公园、城市IP、文旅商品、景区联名、文化遗产数字化。重点渠道包括：名创优品、酷乐潮玩、三福、九木杂物社、TOP TOY、X11、The Green Party、伶俐、酷玩星球等IP衍生品零售连锁
    - 待分类：无法明确归入以上6类的资讯，等待人工复核
 4. 给出 0-10 的产业匹配度评分：
-   - 9-10 核心命中：直接涉及动漫/漫画/游戏/IP授权/潮玩谷子/文创衍生/文旅/博物馆/旅游纪念品/城市IP/数字创意产业
+   - 9-10 核心命中：直接涉及动漫/漫画/游戏/IP/品牌/授权/潮玩谷子/文创衍生/文旅/博物馆/旅游纪念品/城市IP/数字创意产业
    - 7-8  强相关：含IP/动漫/潮玩/文旅元素的新闻、IP联动、跨界合作、数字创意产业政策
    - 5-6  中度相关：科技/商业新闻里含IP/动漫/潮玩/文旅元素（如某科技公司收购漫画版权、文旅集团数字化）
    - 0-4  弱相关或无关：纯原创真人剧集、纪录片、人物传记片、传统好莱坞商业片、与上述产业无关的纯科技/财经/政策新闻
@@ -61,7 +61,7 @@ const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位
 - 其他可能引发政治或社会争议、不符合中国大陆主流价值观的话题
 
 注意：
-- 如果内容无法明确归入"新作发布/IP授权/潮玩谷子/影视综艺/展会活动/文旅及商品"这6类，请选择"待分类"。
+- 如果内容无法明确归入"新作发布/IP/品牌/授权/潮玩谷子/影视综艺/展会活动/文旅及商品"这6类，请选择"待分类"。
 - 如果内容涉及上述【特别约束】中的任何一类，必须选择"待分类"，评分可保留原值作为参考，但 category 必须是"待分类"。
 
 请严格按以下JSON格式返回，不要添加任何其他文字：
@@ -92,21 +92,23 @@ export async function summarizeArticle(
   }
 
   try {
-    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+    const res = await fetch(`${LLM_BASE_URL}/v1/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LLM_API_KEY}`,
+        'x-api-key': LLM_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: LLM_MODEL,
+        system: systemPrompt,
         messages: [
-          { role: 'system', content: systemPrompt },
           {
             role: 'user',
             content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
           },
         ],
+<<<<<<< Updated upstream
         temperature: 0.2,
         max_tokens: 500,
       }),
@@ -119,7 +121,7 @@ export async function summarizeArticle(
     }
 
     const data = await res.json()
-    const raw: string = data.choices?.[0]?.message?.content ?? ''
+    const raw: string = data.content?.[0]?.text ?? ''
     if (!raw) return null
 
     const jsonMatch = raw.match(/\{[\s\S]*?\}/)

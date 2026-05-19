@@ -6,7 +6,7 @@ import { useAdmin } from './AdminToggle'
 const ALL_CATEGORIES = [
   { value: 'all', label: '全部' },
   { value: '新作发布', label: '新作发布' },
-  { value: 'IP授权', label: 'IP授权' },
+  { value: 'IP/品牌/授权', label: 'IP/品牌/授权' },
   { value: '潮玩谷子', label: '潮玩谷子' },
   { value: '影视综艺', label: '影视综艺' },
   { value: '展会活动', label: '展会活动' },

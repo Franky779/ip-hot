@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 
-const CATEGORIES = ['新作发布', 'IP授权', '潮玩谷子', '影视综艺', '展会活动', '文旅及商品']
+const CATEGORIES = ['新作发布', 'IP/品牌/授权', '潮玩谷子', '影视综艺', '展会活动', '文旅及商品']
 
 interface Article {
   id: string

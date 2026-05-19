@@ -1,10 +1,9 @@
-// 敏感内容审查：对已入库文章按新约束重新检测，涉及敏感话题的强制改为"待分类"
+// 敏感内容关键词检测：无需 LLM，纯关键词匹配
 // 用法：npx tsx _sensitive_review.ts
 
 import { readFileSync } from 'fs'
 import { createClient } from '@supabase/supabase-js'
 
-// 加载 .env.local
 const envContent = readFileSync('.env.local', 'utf8')
 for (const line of envContent.split('\n')) {
   const idx = line.indexOf('=')
@@ -15,99 +14,70 @@ for (const line of envContent.split('\n')) {
   }
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!,
+  { auth: { persistSession: false, autoRefreshToken: false } }
+)
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+const SENSITIVE_RULES = [
+  // 国家主权与领土完整
+  { tag: '台湾问题', patterns: [/台湾独立|台独|一中一台|两个中国|一中一臺|台湾主权|台湾自决|台湾共和国/i] },
+  { tag: '西藏问题', patterns: [/西藏独立|西藏主权|东突厥斯坦/i] },
+  { tag: '香港问题', patterns: [/香港独立|香港主权|香港自治|香港自决|光复香港/i] },
+  { tag: '新疆问题', patterns: [/新疆独立|东伊运|新疆分裂/i] },
+  // LGBT
+  { tag: 'LGBT', patterns: [/LGBTQ?[A-Z]?|同性恋|同性婚姻|跨性别|transgender|queer\b|性别认同|性别重置|彩虹旗|🌈|出柜|性取向|酷儿/i] },
+  // 政治敏感
+  { tag: '政治敏感', patterns: [/法轮功|falun\s*gong|法輪功|六四|天安门事件|八九学[潮运]|民主运动/i] },
+  { tag: '宗教极端', patterns: [/宗教极端|圣战|伊斯兰国|ISIS|基地组织/i] },
+  { tag: '种族', patterns: [/种族主义|种族隔离|白人至上|黑命贵|BLM|纳粹|新纳粹/i] },
+  { tag: '战争冲突', patterns: [/核武器|生化武器|大规模杀伤性武器/i] },
+]
 
 async function main() {
-  const { summarizeArticle } = await import('./lib/llm.js')
-
-  // 读取所有已入库文章（按时间倒序，最新优先）
   const { data: articles, error } = await supabase
     .from('articles')
-    .select('id, title, title_cn, category, relevance_score')
+    .select('id, title, title_cn, category')
     .order('published_at', { ascending: false })
     .limit(500)
 
-  if (error) {
-    console.error('查询失败:', error.message)
-    process.exit(1)
-  }
+  if (error) { console.error('查询失败:', error.message); process.exit(1) }
+  if (!articles?.length) { console.log('没有文章'); process.exit(0) }
 
-  if (!articles || articles.length === 0) {
-    console.log('没有文章需要审查')
-    process.exit(0)
-  }
-
-  console.log(`找到 ${articles.length} 条文章待审查`)
-  console.log(`模型: ${process.env.LLM_MODEL || 'gpt-5-mini'}`)
-  console.log()
+  console.log(`共 ${articles.length} 条，纯关键词检测，无需 LLM\n`)
 
   let flagged = 0
-  let clean = 0
-  let failed = 0
+  let skipped = 0
 
-  for (let i = 0; i < articles.length; i++) {
-    const article = articles[i]
-    const tag = `[${i + 1}/${articles.length}]`
+  for (const article of articles) {
+    const title = article.title_cn || article.title || ''
+    if (!title) { skipped++; continue }
 
-    try {
-      // 只传 title 重新跑分类（老数据可能没有原文内容）
-      const result = await summarizeArticle(article.title, '')
+    if (article.category === '待分类') { skipped++; continue }
 
-      if (!result) {
-        console.log(`${tag} ❌ LLM 返回空 | ${article.title_cn?.slice(0, 40) || article.title.slice(0, 40)}`)
-        failed++
-        continue
-      }
+    const matched = SENSITIVE_RULES.find((r) =>
+      r.patterns.some((p) => p.test(title))
+    )
 
-      // 如果新分类是"待分类"，且当前分类不是"待分类"，说明触发了敏感内容约束
-      if (result.category === '待分类' && article.category !== '待分类') {
-        const { error: updateError } = await supabase
-          .from('articles')
-          .update({
-            category: '待分类',
-            relevance_score: result.relevance_score,
-            is_selected: result.is_selected,
-            commentary: result.commentary,
-          })
-          .eq('id', article.id)
+    if (matched) {
+      const { error: updateError } = await supabase
+        .from('articles')
+        .update({ category: '待分类' })
+        .eq('id', article.id)
 
-        if (updateError) {
-          console.log(`${tag} ❌ 更新失败: ${updateError.message}`)
-          failed++
-        } else {
-          console.log(`${tag} 🚩 标记为待分类 | 原分类:${article.category} | ${article.title_cn?.slice(0, 40) || article.title.slice(0, 40)}`)
-          flagged++
-        }
-      } else if (result.category === '待分类' && article.category === '待分类') {
-        console.log(`${tag} ✓ 原本就是待分类`)
-        clean++
+      if (updateError) {
+        console.log(`❌ 更新失败: ${updateError.message.slice(0, 60)} | ${title.slice(0, 30)}`)
       } else {
-        console.log(`${tag} ✓ ${result.category}(${result.relevance_score}) | ${result.title_cn?.slice(0, 40)}`)
-        clean++
+        console.log(`🚩 [${matched.tag}] ${article.category} → 待分类 | ${title.slice(0, 50)}`)
+        flagged++
       }
-    } catch (e) {
-      console.log(`${tag} ❌ ${e instanceof Error ? e.message : String(e)}`)
-      failed++
-    }
-
-    // 每次请求间隔 1.5 秒，避免 API 限流
-    if (i < articles.length - 1) {
-      await new Promise((r) => setTimeout(r, 1500))
     }
   }
 
-  console.log()
-  console.log('====================================')
-  console.log(`标记为待分类: ${flagged} | 正常: ${clean} | 失败: ${failed}`)
-  console.log('====================================')
+  console.log(`\n==============================`)
+  console.log(`标记: ${flagged} | 原待分类/跳过: ${skipped}`)
+  console.log(`==============================`)
 }
 
-main().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+main().catch((e) => { console.error(e); process.exit(1) })
