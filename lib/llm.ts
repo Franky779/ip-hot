@@ -108,7 +108,7 @@ export async function summarizeArticle(
           },
         ],
         temperature: 0.2,
-        max_tokens: 3000,
+        max_tokens: 500,
       }),
     })
 

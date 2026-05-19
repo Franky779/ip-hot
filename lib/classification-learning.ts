@@ -44,7 +44,7 @@ export function extractKeywords(title: string): string[] {
 export async function findRelevantLearnings(
   supabase: SupabaseClient,
   title: string,
-  limit: number = 15
+  limit: number = 8
 ): Promise<Array<{ original_title: string; corrected_category: string; match_count: number }>> {
   const keywords = extractKeywords(title)
 
