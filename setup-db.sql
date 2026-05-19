@@ -66,3 +66,17 @@ create policy "Service role full access on info_sources" on public.info_sources
 -- anon 只读
 create policy "Anon read access on info_sources" on public.info_sources
   for select to anon using (true);
+
+-- 5. 创建 changelogs 表（版本迭代日志）
+create table if not exists public.changelogs (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+alter table public.changelogs enable row level security;
+create policy "Service role full access on changelogs" on public.changelogs
+  for all to service_role using (true) with check (true);
+create policy "Anon read access on changelogs" on public.changelogs
+  for select to anon using (true);
