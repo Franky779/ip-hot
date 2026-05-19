@@ -86,20 +86,22 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
   const startTime = Date.now()
   const triggerType = isAdminAuth ? 'manual' : 'cron'
+  let logId: string | null = null
 
-  // 创建日志记录
-  const { data: logData, error: logError } = await supabase
-    .from('cron_logs')
-    .insert({ trigger_type: triggerType, status: 'running' })
-    .select('id')
-    .single()
+  try {
+    // 创建日志记录
+    const { data: logData, error: logError } = await supabase
+      .from('cron_logs')
+      .insert({ trigger_type: triggerType, status: 'running' })
+      .select('id')
+      .single()
 
-  const logId = logData?.id ?? null
-  if (logError) {
-    console.error('[CronLog] 创建日志失败:', logError.message)
-  }
+    logId = logData?.id ?? null
+    if (logError) {
+      console.error('[CronLog] 创建日志失败:', logError.message)
+    }
 
-  // ===== 第1步：抓取 RSS =====
+    // ===== 第1步：抓取 RSS =====
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
@@ -261,22 +263,43 @@ export async function GET(request: Request) {
       .eq('id', logId)
   }
 
-  return NextResponse.json({
-    ok: true,
-    timestamp: new Date().toISOString(),
-    elapsedMs: elapsed,
-    fetch: {
-      totalFetched,
-      totalBlocked,
-      totalDead,
-      totalInserted,
-      results: fetchResults,
-    },
-    llm: {
-      pending: pendingArticles?.length ?? 0,
-      processed: processedCount,
-      failed: (pendingArticles?.length ?? 0) - processedCount,
-      results: processResults,
-    },
-  })
+    return NextResponse.json({
+      ok: true,
+      timestamp: new Date().toISOString(),
+      elapsedMs: elapsed,
+      fetch: {
+        totalFetched,
+        totalBlocked,
+        totalDead,
+        totalInserted,
+        results: fetchResults,
+      },
+      llm: {
+        pending: pendingArticles?.length ?? 0,
+        processed: processedCount,
+        failed: (pendingArticles?.length ?? 0) - processedCount,
+        results: processResults,
+      },
+    })
+  } catch (err: any) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[fetch-and-process] 未捕获异常:', message)
+
+    // 更新日志为失败状态
+    if (logId) {
+      await supabase
+        .from('cron_logs')
+        .update({
+          ended_at: new Date().toISOString(),
+          status: 'error',
+          error_message: message,
+        })
+        .eq('id', logId)
+    }
+
+    return NextResponse.json(
+      { ok: false, error: message },
+      { status: 500 }
+    )
+  }
 }
