@@ -4,6 +4,8 @@ import { useState, useCallback, useMemo } from 'react'
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 
+const CATEGORIES = ['新作发布', 'IP授权', '潮玩谷子', '影视综艺', '展会活动', '文旅及商品']
+
 interface Article {
   id: string
   source: string
@@ -43,6 +45,8 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
   const [filterScore, setFilterScore] = useState<number | null>(null)
+  const [batchCategory, setBatchCategory] = useState('')
+  const [categorizing, setCategorizing] = useState(false)
 
   const isSelectionMode = loaded && isAdmin && selectedIds.size > 0
 
@@ -140,6 +144,38 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
     }
   }
 
+  const handleBatchCategorize = async () => {
+    if (selectedIds.size === 0) return
+    if (!batchCategory) {
+      alert('请先选择分类')
+      return
+    }
+    if (!confirm(`确定将选中的 ${selectedIds.size} 条资讯分类为「${batchCategory}」？`)) return
+
+    setCategorizing(true)
+    const pw = localStorage.getItem(ADMIN_PW_KEY) || ''
+    const ids = Array.from(selectedIds)
+
+    const res = await fetch('/api/admin/update-batch', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-password': pw,
+      },
+      body: JSON.stringify({ ids, category: batchCategory }),
+    })
+
+    setCategorizing(false)
+
+    if (res.ok) {
+      setSelectedIds(new Set())
+      setBatchCategory('')
+      window.location.reload()
+    } else {
+      alert('批量分类失败')
+    }
+  }
+
   const isAllSelected = allIds.length > 0 && selectedIds.size === allIds.length
 
   return (
@@ -171,14 +207,35 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
           )}
           {selectedIds.size > 0 && (
             <>
-              <span className="batch-count">已选 {selectedIds.size} 条</span>
-              <button
-                className="batch-delete-btn"
-                onClick={handleBatchDelete}
-                disabled={deleting}
-              >
-                {deleting ? '删除中...' : '批量删除'}
-              </button>
+              <div className="batch-actions-right">
+                <span className="batch-count">已选 {selectedIds.size} 条</span>
+                <div className="batch-categorize">
+                  <select
+                    value={batchCategory}
+                    onChange={(e) => setBatchCategory(e.target.value)}
+                    disabled={categorizing}
+                  >
+                    <option value="">选择分类…</option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="batch-categorize-btn"
+                    onClick={handleBatchCategorize}
+                    disabled={categorizing || !batchCategory}
+                  >
+                    {categorizing ? '分类中…' : '确认分类'}
+                  </button>
+                </div>
+                <button
+                  className="batch-delete-btn"
+                  onClick={handleBatchDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? '删除中...' : '批量删除'}
+                </button>
+              </div>
             </>
           )}
         </div>

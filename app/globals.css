@@ -845,7 +845,6 @@ body {
 }
 
 .batch-delete-btn {
-  margin-left: auto;
   padding: 0.375rem 0.875rem;
   border-radius: 6px;
   font-size: 0.8125rem;
@@ -863,6 +862,64 @@ body {
 }
 
 .batch-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 批量分类 */
+.batch-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-left: auto;
+}
+
+.batch-categorize {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.batch-categorize select {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.batch-categorize select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.batch-categorize select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.batch-categorize-btn {
+  padding: 0.375rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.batch-categorize-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.batch-categorize-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

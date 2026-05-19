@@ -1,0 +1,29 @@
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase'
+
+export async function POST(request: Request) {
+  const authHeader = request.headers.get('x-admin-password')
+  if (!authHeader || authHeader !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { ids, category } = await request.json()
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: 'Missing or invalid ids' }, { status: 400 })
+  }
+  if (!category || typeof category !== 'string') {
+    return NextResponse.json({ error: 'Missing or invalid category' }, { status: 400 })
+  }
+
+  const supabase = createServiceClient()
+  const { error } = await supabase
+    .from('articles')
+    .update({ category })
+    .in('id', ids)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, updated: ids.length })
+}
