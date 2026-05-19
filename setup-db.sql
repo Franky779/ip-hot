@@ -80,3 +80,28 @@ create policy "Service role full access on changelogs" on public.changelogs
   for all to service_role using (true) with check (true);
 create policy "Anon read access on changelogs" on public.changelogs
   for select to anon using (true);
+
+-- 6. 创建 cron_logs 表（抓取任务日志）
+create table if not exists public.cron_logs (
+  id uuid primary key default gen_random_uuid(),
+  trigger_type text not null default 'cron', -- 'cron' | 'manual'
+  started_at timestamptz not null default now(),
+  ended_at timestamptz,
+  fetch_total_fetched int default 0,
+  fetch_total_inserted int default 0,
+  llm_pending int default 0,
+  llm_processed int default 0,
+  llm_failed int default 0,
+  status text not null default 'running', -- 'running' | 'success' | 'error'
+  error_message text,
+  details jsonb default '{}'
+);
+
+-- 索引：按时间倒序查最近日志
+create index if not exists idx_cron_logs_started_at on public.cron_logs (started_at desc);
+
+alter table public.cron_logs enable row level security;
+create policy "Service role full access on cron_logs" on public.cron_logs
+  for all to service_role using (true) with check (true);
+create policy "Anon read access on cron_logs" on public.cron_logs
+  for select to anon using (true);

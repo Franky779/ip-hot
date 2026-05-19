@@ -72,14 +72,32 @@ type ProcessResult = {
 }
 
 export async function GET(request: Request) {
+  // 支持两种验证方式：Vercel Cron (Bearer CRON_SECRET) 或 管理员手动触发 (x-admin-password)
   const authHeader = request.headers.get('authorization')
   const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
-  if (!process.env.CRON_SECRET || authHeader !== expectedAuth) {
+  const adminPw = request.headers.get('x-admin-password')
+  const isCronAuth = process.env.CRON_SECRET && authHeader === expectedAuth
+  const isAdminAuth = adminPw === process.env.ADMIN_PASSWORD
+
+  if (!isCronAuth && !isAdminAuth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const supabase = createServiceClient()
   const startTime = Date.now()
+  const triggerType = isAdminAuth ? 'manual' : 'cron'
+
+  // 创建日志记录
+  const { data: logData, error: logError } = await supabase
+    .from('cron_logs')
+    .insert({ trigger_type: triggerType, status: 'running' })
+    .select('id')
+    .single()
+
+  const logId = logData?.id ?? null
+  if (logError) {
+    console.error('[CronLog] 创建日志失败:', logError.message)
+  }
 
   // ===== 第1步：抓取 RSS =====
   const fetchResults: FetchResult[] = []
@@ -213,15 +231,44 @@ export async function GET(request: Request) {
   }
 
   const elapsed = Date.now() - startTime
+  const totalFetched = fetchResults.reduce((s, r) => s + r.fetched, 0)
+  const totalBlocked = fetchResults.reduce((s, r) => s + r.blocked, 0)
+  const totalDead = fetchResults.reduce((s, r) => s + r.dead, 0)
+
+  // 更新日志记录
+  if (logId) {
+    const hasFetchError = fetchResults.some((r) => r.error)
+    const hasLlmError = processResults.some((r) => r.error)
+    const status = hasFetchError || hasLlmError ? 'error' : 'success'
+    const errorMessages = [
+      ...fetchResults.filter((r) => r.error).map((r) => `[${r.source}] ${r.error}`),
+      ...processResults.filter((r) => r.error).map((r) => `[LLM] ${r.error}`),
+    ]
+
+    await supabase
+      .from('cron_logs')
+      .update({
+        ended_at: new Date().toISOString(),
+        fetch_total_fetched: totalFetched,
+        fetch_total_inserted: totalInserted,
+        llm_pending: pendingArticles?.length ?? 0,
+        llm_processed: processedCount,
+        llm_failed: (pendingArticles?.length ?? 0) - processedCount,
+        status,
+        error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
+        details: { fetchResults, processResults, elapsedMs: elapsed },
+      })
+      .eq('id', logId)
+  }
 
   return NextResponse.json({
     ok: true,
     timestamp: new Date().toISOString(),
     elapsedMs: elapsed,
     fetch: {
-      totalFetched: fetchResults.reduce((s, r) => s + r.fetched, 0),
-      totalBlocked: fetchResults.reduce((s, r) => s + r.blocked, 0),
-      totalDead: fetchResults.reduce((s, r) => s + r.dead, 0),
+      totalFetched,
+      totalBlocked,
+      totalDead,
       totalInserted,
       results: fetchResults,
     },
