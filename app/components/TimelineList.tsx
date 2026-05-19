@@ -86,7 +86,9 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
     setFilterScore((prev) => (prev === score ? null : score))
   }, [])
 
-  const allIds = dates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id))
+  const visibleDates = dates.filter((date) => filterArticles(dateGroups[date]).length > 0)
+
+  const allIds = visibleDates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id))
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -183,7 +185,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
       )}
 
       <div className="timeline">
-        {dates.map((date) => (
+        {visibleDates.map((date) => (
           <div key={date} className="timeline-date-group">
             <div className="timeline-date-header">
               <span className="timeline-date-label">{date}</span>
