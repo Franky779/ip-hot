@@ -108,7 +108,6 @@ export async function summarizeArticle(
             content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
           },
         ],
-<<<<<<< Updated upstream
         temperature: 0.2,
         max_tokens: 500,
       }),
