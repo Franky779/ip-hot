@@ -43,3 +43,7 @@ dev.log
 
 .vercel
 _crawl_results.json
+_pipeline_state.json
+_pipeline.log
+_tmp_pipeline_sources.json
+_source_scores.json
