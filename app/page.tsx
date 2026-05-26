@@ -30,6 +30,7 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
     .not('title_cn', 'is', null)
     .not('summary_cn', 'is', null)
     .not('category', 'is', null)
+    .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false, nullsFirst: false })
     .limit(500)
 
