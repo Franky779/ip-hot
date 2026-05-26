@@ -17,6 +17,7 @@ type Article = {
   category: string | null
   relevance_score: number | null
   published_at: string | null
+  created_at: string | null
 }
 
 type SearchParams = { category?: string; q?: string }
@@ -25,12 +26,11 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   const supabase = getSupabase()
   let query = supabase
     .from('articles')
-    .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at')
+    .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
     .not('title_cn', 'is', null)
     .not('summary_cn', 'is', null)
     .not('category', 'is', null)
-    .not('commentary', 'is', null)
-    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false, nullsFirst: false })
     .limit(500)
 
   if (category && category !== 'all') {
@@ -58,10 +58,14 @@ function formatDateLabel(iso: string | null): string {
   }
 }
 
+function getDisplayDate(article: Article): string {
+  return formatDateLabel(article.published_at || article.created_at)
+}
+
 function groupByDate(articles: Article[]): Record<string, Article[]> {
   const groups: Record<string, Article[]> = {}
   for (const article of articles) {
-    const date = formatDateLabel(article.published_at)
+    const date = getDisplayDate(article)
     if (!date) continue
     if (!groups[date]) groups[date] = []
     groups[date].push(article)
