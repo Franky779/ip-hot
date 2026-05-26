@@ -1,0 +1,1192 @@
+[
+  {
+    "id": "ann",
+    "name": "Anime News Network",
+    "url": "https://www.animenewsnetwork.com/all/rss.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "crunchyroll",
+    "name": "Crunchyroll News",
+    "url": "https://feeds.feedburner.com/crunchyroll/animenews",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "cartoonbrew",
+    "name": "Cartoon Brew",
+    "url": "https://www.cartoonbrew.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "awn",
+    "name": "Animation World Network",
+    "url": "https://www.awn.com/news.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "animationmag",
+    "name": "Animation Magazine",
+    "url": "https://www.animationmagazine.net/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "otakuusa",
+    "name": "Otaku USA Magazine",
+    "url": "https://otakuusamagazine.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "variety",
+    "name": "Variety",
+    "url": "https://variety.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "thr",
+    "name": "The Hollywood Reporter",
+    "url": "https://www.hollywoodreporter.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "deadline",
+    "name": "Deadline",
+    "url": "https://deadline.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "polygon",
+    "name": "Polygon",
+    "url": "https://www.polygon.com/rss/index.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "kotaku",
+    "name": "Kotaku",
+    "url": "https://kotaku.com/rss",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "hyperallergic",
+    "name": "Hyperallergic",
+    "url": "https://hyperallergic.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "artnewspaper",
+    "name": "The Art Newspaper",
+    "url": "https://www.theartnewspaper.com/rss.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "toybook",
+    "name": "The Toy Book",
+    "url": "https://toybook.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "spankystokes",
+    "name": "Spanky Stokes",
+    "url": "https://www.spankystokes.com/feeds/posts/default",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "animeanime",
+    "name": "Anime Anime",
+    "url": "https://animeanime.jp/rss20.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "natalie",
+    "name": "Comic Natalie",
+    "url": "https://natalie.mu/comic/feed/news",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "4gamer",
+    "name": "4Gamer",
+    "url": "https://www.4gamer.net/rss/index.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "famitsu",
+    "name": "Famitsu",
+    "url": "https://www.famitsu.com/rss/news.rdf",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "36kr",
+    "name": "36氪",
+    "url": "https://36kr.com/feed",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "huxiu",
+    "name": "虎嗅",
+    "url": "https://www.huxiu.com/rss/0.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "tmtpost",
+    "name": "钛媒体",
+    "url": "https://www.tmtpost.com/rss.xml",
+    "category": "RSS",
+    "isRss": true,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "sanwenyu-web",
+    "name": "三文娱",
+    "url": "https://www.163.com/dy/media/T1460009632064.html",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "gamersky-acg",
+    "name": "游民星空动漫",
+    "url": "https://www.gamersky.com/news/",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "17173-acg",
+    "name": "17173动漫",
+    "url": "http://acg.17173.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": true,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "ctoy",
+    "name": "中外玩具网",
+    "url": "http://www.ctoy.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "wjyt",
+    "name": "玩具产业网",
+    "url": "https://www.wjyt-china.org/",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "cle",
+    "name": "CLE中国授权展",
+    "url": "http://www.licensingexpochina.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "lcexpo",
+    "name": "LCEXPO上海国际授权展",
+    "url": "http://www.lcexpo.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "licenseglobal",
+    "name": "License Global",
+    "url": "https://www.licenseglobal.com/latest-news",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": true,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "licensingint",
+    "name": "Licensing International",
+    "url": "https://www.licensing.org.cn/news/inside-licensing",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": true,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "ccdy",
+    "name": "中国文化报",
+    "url": "http://www.ccdy.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "ctnews",
+    "name": "中国旅游报",
+    "url": "http://www.ctnews.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "cflac",
+    "name": "中国艺术报",
+    "url": "http://www.cflac.org.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "ncha",
+    "name": "国家文物局",
+    "url": "http://www.ncha.gov.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "ihchina",
+    "name": "中国非物质文化遗产网",
+    "url": "http://www.ihchina.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "1905-web",
+    "name": "1905电影网",
+    "url": "http://www.1905.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "endata",
+    "name": "艺恩网",
+    "url": "http://www.endata.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "gamersky",
+    "name": "游民星空",
+    "url": "http://www.gamersky.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "youxituoluo",
+    "name": "游戏陀螺",
+    "url": "http://www.youxituoluo.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "ithome",
+    "name": "IT之家",
+    "url": "https://www.ithome.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "mydrivers",
+    "name": "快科技",
+    "url": "https://www.mydrivers.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "jiemian",
+    "name": "界面新闻",
+    "url": "https://www.jiemian.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "yicai",
+    "name": "第一财经",
+    "url": "https://www.yicai.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "21jingji",
+    "name": "21世纪经济报道",
+    "url": "http://www.21jingji.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "bjnews",
+    "name": "新京报",
+    "url": "https://www.bjnews.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "10jqka",
+    "name": "同花顺财经",
+    "url": "https://news.10jqka.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sina-finance",
+    "name": "新浪财经",
+    "url": "https://finance.sina.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "eastmoney",
+    "name": "东方财富网",
+    "url": "https://finance.eastmoney.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "redsh",
+    "name": "红商网",
+    "url": "http://www.redsh.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "mbachina",
+    "name": "MBA中国网",
+    "url": "https://www.mbachina.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sohu",
+    "name": "搜狐网",
+    "url": "https://www.sohu.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "people",
+    "name": "人民网",
+    "url": "http://www.people.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "xinhuanet",
+    "name": "新华网",
+    "url": "http://www.xinhuanet.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "gmw",
+    "name": "光明网",
+    "url": "https://www.gmw.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "cnr",
+    "name": "央广网",
+    "url": "https://www.cnr.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "chinanews",
+    "name": "中国新闻网",
+    "url": "https://www.chinanews.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "youth",
+    "name": "中国青年网",
+    "url": "https://www.youth.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "stdaily",
+    "name": "中国科技网",
+    "url": "https://www.stdaily.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "thepaper",
+    "name": "澎湃新闻",
+    "url": "https://www.thepaper.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "bjd",
+    "name": "京报网",
+    "url": "https://www.bjd.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "qianlong",
+    "name": "千龙网",
+    "url": "http://www.qianlong.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "ynet",
+    "name": "北青网",
+    "url": "https://www.ynet.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "jfdaily",
+    "name": "上观新闻",
+    "url": "https://www.jfdaily.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "shxwcb",
+    "name": "新闻晨报",
+    "url": "https://www.shxwcb.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "zjol",
+    "name": "浙江日报/潮新闻",
+    "url": "http://www.zjol.com.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "hubeidaily",
+    "name": "湖北日报",
+    "url": "http://www.hubeidaily.net",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "dzwww",
+    "name": "大众日报",
+    "url": "https://www.dzwww.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "cdsb",
+    "name": "红星新闻",
+    "url": "https://www.cdsb.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "ctdsb",
+    "name": "极目新闻",
+    "url": "http://www.ctdsb.net",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "ycwb",
+    "name": "金羊网",
+    "url": "https://www.ycwb.com",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "xiancity",
+    "name": "西安网",
+    "url": "https://www.xiancity.cn",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "weibo-hot-web",
+    "name": "微博热搜",
+    "url": "https://s.weibo.com/top/summary",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "zhihu-hot-web",
+    "name": "知乎热榜",
+    "url": "https://www.zhihu.com/hot",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "thepaper-cdp",
+    "name": "澎湃新闻",
+    "url": "https://www.thepaper.cn/list_25462",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "screenrant-cdp",
+    "name": "ScreenRant",
+    "url": "https://screenrant.com/category/anime/",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "cbr-cdp",
+    "name": "CBR",
+    "url": "https://www.cbr.com/category/anime/",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P0"
+  },
+  {
+    "id": "zhihu-leibao",
+    "name": "知乎雷报",
+    "url": "https://www.zhihu.com/people/wanshangkansha/posts",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": true,
+    "priority": "P1"
+  },
+  {
+    "id": "xiaohongshu",
+    "name": "小红书",
+    "url": "https://www.xiaohongshu.com/explore",
+    "category": "WEB",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": true,
+    "priority": "P1"
+  },
+  {
+    "id": "mct",
+    "name": "文化和旅游部",
+    "url": "https://www.mct.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "nrta",
+    "name": "国家广播电视总局",
+    "url": "https://www.nrta.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "acgg",
+    "name": "中国动漫集团",
+    "url": "http://www.acgg.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "gov-cn",
+    "name": "国务院",
+    "url": "https://www.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "ndrc",
+    "name": "国家发改委",
+    "url": "https://www.ndrc.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "miit",
+    "name": "工业和信息化部",
+    "url": "https://www.miit.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "cnipa",
+    "name": "国家知识产权局",
+    "url": "https://www.cnipa.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "mof",
+    "name": "财政部",
+    "url": "https://www.mof.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P1"
+  },
+  {
+    "id": "zj-wlt",
+    "name": "浙江省文旅厅",
+    "url": "https://ct.zj.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "dg-gov",
+    "name": "东莞市人民政府",
+    "url": "https://www.dg.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "hz-xh",
+    "name": "杭州西湖区政府",
+    "url": "https://www.hzxh.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "xj-wlt",
+    "name": "新疆文旅厅",
+    "url": "https://wlt.xinjiang.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "bj-wlj",
+    "name": "北京市文旅局",
+    "url": "https://whlyj.beijing.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "tj-wl",
+    "name": "天津市文旅局",
+    "url": "https://whly.tj.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sh-wlj",
+    "name": "上海市文旅局",
+    "url": "https://whlyj.sh.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "cq-wl",
+    "name": "重庆市文旅委",
+    "url": "https://wlt.cq.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "heb-wlt",
+    "name": "河北省文旅厅",
+    "url": "https://wlt.hebei.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sx-wlt",
+    "name": "山西省文旅厅",
+    "url": "https://wlt.shanxi.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "ln-wlt",
+    "name": "辽宁省文旅厅",
+    "url": "https://wlt.ln.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "jl-wlt",
+    "name": "吉林省文旅厅",
+    "url": "https://wlt.jl.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "hlj-wlt",
+    "name": "黑龙江省文旅厅",
+    "url": "https://wlt.hlj.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "js-wlt",
+    "name": "江苏省文旅厅",
+    "url": "https://wlt.jiangsu.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "ah-wlt",
+    "name": "安徽省文旅厅",
+    "url": "https://wlt.ah.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "fj-wlt",
+    "name": "福建省文旅厅",
+    "url": "https://wlt.fujian.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "jx-wlt",
+    "name": "江西省文旅厅",
+    "url": "https://wlt.jiangxi.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sd-wlt",
+    "name": "山东省文旅厅",
+    "url": "https://wlt.shandong.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "henan-wlt",
+    "name": "河南省文旅厅",
+    "url": "https://wlt.henan.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "hubei-wlt",
+    "name": "湖北省文旅厅",
+    "url": "https://wlt.hubei.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "hunan-wlt",
+    "name": "湖南省文旅厅",
+    "url": "https://whhly.hunan.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "gd-wlt",
+    "name": "广东省文旅厅",
+    "url": "https://wlt.gd.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "gx-wlt",
+    "name": "广西文旅厅",
+    "url": "https://wlt.gxzf.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "hainan-lwt",
+    "name": "海南省旅文厅",
+    "url": "https://lwt.hainan.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sc-wlt",
+    "name": "四川省文旅厅",
+    "url": "https://wlt.sc.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "gz-wlt",
+    "name": "贵州省文旅厅",
+    "url": "https://wlt.guizhou.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "yn-wlt",
+    "name": "云南省文旅厅",
+    "url": "https://wlt.yn.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "xz-wlt",
+    "name": "西藏文旅厅",
+    "url": "https://wlt.xizang.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "sn-wlt",
+    "name": "陕西省文旅厅",
+    "url": "https://wlt.shaanxi.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "gs-wlt",
+    "name": "甘肃省文旅厅",
+    "url": "https://wlt.gansu.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "qh-wlt",
+    "name": "青海省文旅厅",
+    "url": "https://wlt.qinghai.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  },
+  {
+    "id": "nx-wlt",
+    "name": "宁夏文旅厅",
+    "url": "https://wlt.nx.gov.cn/",
+    "category": "GOV",
+    "isRss": false,
+    "needsLocalCdp": false,
+    "loginRequired": false,
+    "priority": "P2"
+  }
+]

@@ -1,0 +1,939 @@
+{
+  "success": [
+    {
+      "id": "cle",
+      "name": "CLE中国授权展",
+      "url": "http://www.licensingexpochina.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.licensingexpochina.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "ctnews",
+      "name": "中国旅游报",
+      "url": "http://www.ctnews.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.ctnews.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "cflac",
+      "name": "中国艺术报",
+      "url": "http://www.cflac.org.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.cflac.org.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "ncha",
+      "name": "国家文物局",
+      "url": "http://www.ncha.gov.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".list li, table tr, ul li",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.ncha.gov.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "ihchina",
+      "name": "中国非物质文化遗产网",
+      "url": "http://www.ihchina.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".list li, .news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.ihchina.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "1905-web",
+      "name": "1905电影网",
+      "url": "http://www.1905.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, .movie-list .item, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.1905.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "endata",
+      "name": "艺恩网",
+      "url": "http://www.endata.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.endata.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 0
+    },
+    {
+      "id": "gamersky",
+      "name": "游民星空",
+      "url": "http://www.gamersky.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".imgLB li, .content .txt, ul li",
+        "titleSelector": ".tit a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.gamersky.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "youxituoluo",
+      "name": "游戏陀螺",
+      "url": "http://www.youxituoluo.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h2 a, h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.youxituoluo.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "ithome",
+      "name": "IT之家",
+      "url": "https://www.ithome.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, .news-item, ul li",
+        "titleSelector": "h2 a, h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.ithome.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 1
+    },
+    {
+      "id": "mydrivers",
+      "name": "快科技",
+      "url": "https://www.mydrivers.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, .item, ul li",
+        "titleSelector": "h2 a, h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.mydrivers.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 1
+    },
+    {
+      "id": "jiemian",
+      "name": "界面新闻",
+      "url": "https://www.jiemian.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.jiemian.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "yicai",
+      "name": "第一财经",
+      "url": "https://www.yicai.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.yicai.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "21jingji",
+      "name": "21世纪经济报道",
+      "url": "http://www.21jingji.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.21jingji.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "bjnews",
+      "name": "新京报",
+      "url": "https://www.bjnews.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.bjnews.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "10jqka",
+      "name": "同花顺财经",
+      "url": "https://news.10jqka.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://news.10jqka.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "sina-finance",
+      "name": "新浪财经",
+      "url": "https://finance.sina.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-item, .news-list li, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://finance.sina.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "eastmoney",
+      "name": "东方财富网",
+      "url": "https://finance.eastmoney.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://finance.eastmoney.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "redsh",
+      "name": "红商网",
+      "url": "http://www.redsh.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.redsh.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "mbachina",
+      "name": "MBA中国网",
+      "url": "https://www.mbachina.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.mbachina.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "people",
+      "name": "人民网",
+      "url": "http://www.people.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.people.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "xinhuanet",
+      "name": "新华网",
+      "url": "http://www.xinhuanet.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.xinhuanet.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "gmw",
+      "name": "光明网",
+      "url": "https://www.gmw.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.gmw.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 1
+    },
+    {
+      "id": "cnr",
+      "name": "央广网",
+      "url": "https://www.cnr.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.cnr.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "chinanews",
+      "name": "中国新闻网",
+      "url": "https://www.chinanews.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.chinanews.com.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "youth",
+      "name": "中国青年网",
+      "url": "https://www.youth.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.youth.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "stdaily",
+      "name": "中国科技网",
+      "url": "https://www.stdaily.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.stdaily.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 1
+    },
+    {
+      "id": "thepaper",
+      "name": "澎湃新闻",
+      "url": "https://www.thepaper.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.thepaper.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 1
+    },
+    {
+      "id": "qianlong",
+      "name": "千龙网",
+      "url": "http://www.qianlong.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.qianlong.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "ynet",
+      "name": "北青网",
+      "url": "https://www.ynet.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.ynet.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "jfdaily",
+      "name": "上观新闻",
+      "url": "https://www.jfdaily.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.jfdaily.com",
+        "maxItems": 10
+      },
+      "fetched": 4,
+      "inserted": 2
+    },
+    {
+      "id": "hubeidaily",
+      "name": "湖北日报",
+      "url": "http://www.hubeidaily.net",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.hubeidaily.net",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "dzwww",
+      "name": "大众日报",
+      "url": "https://www.dzwww.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.dzwww.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "cdsb",
+      "name": "红星新闻",
+      "url": "https://www.cdsb.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, article, ul li",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.cdsb.com",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "ctdsb",
+      "name": "极目新闻",
+      "url": "http://www.ctdsb.net",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.ctdsb.net",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "xiancity",
+      "name": "西安网",
+      "url": "https://www.xiancity.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.xiancity.cn",
+        "maxItems": 10
+      },
+      "fetched": 5,
+      "inserted": 5
+    }
+  ],
+  "failed": [
+    {
+      "id": "ctoy",
+      "name": "中外玩具网",
+      "url": "http://www.ctoy.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, table tr, ul li",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.ctoy.com.cn",
+        "maxItems": 10
+      },
+      "error": "HTTP 403"
+    },
+    {
+      "id": "wjyt",
+      "name": "玩具产业网",
+      "url": "https://www.wjyt-china.org/",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".list li, table tr, ul li",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.wjyt-china.org",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "lcexpo",
+      "name": "LCEXPO上海国际授权展",
+      "url": "http://www.lcexpo.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.lcexpo.com.cn",
+        "maxItems": 10
+      },
+      "error": "fetch failed"
+    },
+    {
+      "id": "ccdy",
+      "name": "中国文化报",
+      "url": "http://www.ccdy.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.ccdy.cn",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "sohu",
+      "name": "搜狐网",
+      "url": "https://www.sohu.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-item, .news-list li, article",
+        "titleSelector": "h3 a, h2 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.sohu.com",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "bjd",
+      "name": "京报网",
+      "url": "https://www.bjd.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.bjd.com.cn",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "shxwcb",
+      "name": "新闻晨报",
+      "url": "https://www.shxwcb.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.shxwcb.com",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "zjol",
+      "name": "浙江日报/潮新闻",
+      "url": "http://www.zjol.com.cn",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "http://www.zjol.com.cn",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "ycwb",
+      "name": "金羊网",
+      "url": "https://www.ycwb.com",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": ".news-list li, ul li",
+        "titleSelector": "h3 a, a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.ycwb.com",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "weibo-hot-web",
+      "name": "微博热搜",
+      "url": "https://s.weibo.com/top/summary",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": "td.td-02 a",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "maxItems": 20
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "zhihu-hot-web",
+      "name": "知乎热榜",
+      "url": "https://www.zhihu.com/hot",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": "a[href*=\"/question/\"]",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.zhihu.com",
+        "maxItems": 15
+      },
+      "error": "HTTP 403"
+    },
+    {
+      "id": "thepaper-cdp",
+      "name": "澎湃新闻",
+      "url": "https://www.thepaper.cn/list_25462",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P2",
+      "scrapeConfig": {
+        "itemSelector": "h2 a, h3 a",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "linkPrefix": "https://www.thepaper.cn",
+        "maxItems": 10
+      },
+      "error": "无有效条目"
+    },
+    {
+      "id": "screenrant-cdp",
+      "name": "ScreenRant",
+      "url": "https://screenrant.com/category/anime/",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "scrapeConfig": {
+        "itemSelector": "h3 a[href]",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "maxItems": 10
+      },
+      "error": "fetch failed"
+    },
+    {
+      "id": "cbr-cdp",
+      "name": "CBR",
+      "url": "https://www.cbr.com/category/anime/",
+      "category": "WEB",
+      "isRss": false,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "scrapeConfig": {
+        "itemSelector": "h3 a[href]",
+        "titleSelector": "a",
+        "linkSelector": "a",
+        "maxItems": 10
+      },
+      "error": "fetch failed"
+    }
+  ]
+}

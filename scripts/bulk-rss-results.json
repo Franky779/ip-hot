@@ -1,0 +1,259 @@
+{
+  "success": [
+    {
+      "id": "cartoonbrew",
+      "name": "Cartoon Brew",
+      "url": "https://www.cartoonbrew.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "animationmag",
+      "name": "Animation Magazine",
+      "url": "https://www.animationmagazine.net/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "otakuusa",
+      "name": "Otaku USA Magazine",
+      "url": "https://otakuusamagazine.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "variety",
+      "name": "Variety",
+      "url": "https://variety.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 2
+    },
+    {
+      "id": "thr",
+      "name": "The Hollywood Reporter",
+      "url": "https://www.hollywoodreporter.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 3
+    },
+    {
+      "id": "hyperallergic",
+      "name": "Hyperallergic",
+      "url": "https://hyperallergic.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 1
+    },
+    {
+      "id": "toybook",
+      "name": "The Toy Book",
+      "url": "https://toybook.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "spankystokes",
+      "name": "Spanky Stokes",
+      "url": "https://www.spankystokes.com/feeds/posts/default",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "natalie",
+      "name": "Comic Natalie",
+      "url": "https://natalie.mu/comic/feed/news",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 5
+    },
+    {
+      "id": "4gamer",
+      "name": "4Gamer",
+      "url": "https://www.4gamer.net/rss/index.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "fetched": 5,
+      "inserted": 4
+    },
+    {
+      "id": "tmtpost",
+      "name": "钛媒体",
+      "url": "https://www.tmtpost.com/rss.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "fetched": 5,
+      "inserted": 1
+    }
+  ],
+  "failed": [
+    {
+      "id": "ann",
+      "name": "Anime News Network",
+      "url": "https://www.animenewsnetwork.com/all/rss.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "Status code 403"
+    },
+    {
+      "id": "crunchyroll",
+      "name": "Crunchyroll News",
+      "url": "https://feeds.feedburner.com/crunchyroll/animenews",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "connect ETIMEDOUT 142.250.204.46:443"
+    },
+    {
+      "id": "awn",
+      "name": "Animation World Network",
+      "url": "https://www.awn.com/news.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "Status code 403"
+    },
+    {
+      "id": "deadline",
+      "name": "Deadline",
+      "url": "https://deadline.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "connect ETIMEDOUT 31.13.71.19:443"
+    },
+    {
+      "id": "polygon",
+      "name": "Polygon",
+      "url": "https://www.polygon.com/rss/index.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "socket hang up"
+    },
+    {
+      "id": "kotaku",
+      "name": "Kotaku",
+      "url": "https://kotaku.com/rss",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "Status code 403"
+    },
+    {
+      "id": "artnewspaper",
+      "name": "The Art Newspaper",
+      "url": "https://www.theartnewspaper.com/rss.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "connect ETIMEDOUT 173.208.182.68:443"
+    },
+    {
+      "id": "animeanime",
+      "name": "Anime Anime",
+      "url": "https://animeanime.jp/rss20.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "Status code 404"
+    },
+    {
+      "id": "famitsu",
+      "name": "Famitsu",
+      "url": "https://www.famitsu.com/rss/news.rdf",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P0",
+      "error": "Status code 404"
+    },
+    {
+      "id": "36kr",
+      "name": "36氪",
+      "url": "https://36kr.com/feed",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "error": "Unexpected close tag\nLine: 1\nColumn: 57\nChar: >"
+    },
+    {
+      "id": "huxiu",
+      "name": "虎嗅",
+      "url": "https://www.huxiu.com/rss/0.xml",
+      "category": "RSS",
+      "isRss": true,
+      "needsLocalCdp": false,
+      "loginRequired": false,
+      "priority": "P1",
+      "error": "Request timed out after 60000ms"
+    }
+  ]
+}
