@@ -6,6 +6,7 @@ import io
 import re
 import json
 import time
+import random
 import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta
@@ -56,7 +57,13 @@ SITE_RULES = {
 }
 
 def get_sources():
-    """从JSON文件读取国内信息源"""
+    """从JSON文件读取国内信息源 或 通过 --sources-file 指定"""
+    if '--sources-file' in sys.argv:
+        idx = sys.argv.index('--sources-file')
+        if idx + 1 < len(sys.argv):
+            path = sys.argv[idx + 1]
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
     with open('_domestic_sources.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -232,6 +239,15 @@ def insert_to_supabase(all_results):
 
 
 def main():
+    # --no-delay: 跳过随机延迟 (分散式流水线用)
+    if '--no-delay' not in sys.argv:
+        delay_sec = random.randint(300, 900)
+        print(f"随机延迟 {delay_sec}s ({delay_sec/60:.0f}min) 后开始...")
+        time.sleep(delay_sec)
+    else:
+        # 分组模式用短延迟避风控
+        time.sleep(random.randint(10, 30))
+
     print("获取国内信息源列表...")
     sources = get_sources()
     print(f"共 {len(sources)} 个\n")
