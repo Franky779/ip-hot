@@ -5,6 +5,7 @@ import os
 import io
 import re
 import json
+import time
 import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta
@@ -18,7 +19,18 @@ from scrapling.fetchers import StealthyFetcher
 from bs4 import BeautifulSoup
 
 SUPABASE_URL = "https://rbjygwpoxuutmxmkzkqz.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJianlnd3BveHV1dG14bWt6a3F6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODM5NzA2MCwiZXhwIjoyMDkzOTczMDYwfQ.YX7z8Ps6qhSRIdvRb3cIaiXkz35U5QwG4T8RmKwL_yk"
+
+# 从 .env.local 读取密钥
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env.local')
+SUPABASE_KEY = ""
+if os.path.exists(_env_path):
+    with open(_env_path, 'r', encoding='utf-8') as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if '=' in _line and not _line.startswith('#'):
+                _k, _v = _line.split('=', 1)
+                if _k.strip() == 'SUPABASE_SERVICE_ROLE_KEY':
+                    SUPABASE_KEY = _v.strip()
 
 fetcher = StealthyFetcher()
 
@@ -172,6 +184,53 @@ def extract_articles(html, base_url, site_domain):
 
     return articles[:10]
 
+def insert_to_supabase(all_results):
+    """批量写入 Supabase，source+url 去重"""
+    if not SUPABASE_KEY:
+        print("跳过入库: 缺少 SUPABASE_KEY")
+        return 0
+
+    articles = []
+    seen = set()
+    for r in all_results:
+        source = r['source']
+        for a in r['articles']:
+            key = f"{source}::{a['url']}"
+            if key in seen:
+                continue
+            seen.add(key)
+            articles.append({
+                'source': source,
+                'url': a['url'],
+                'title': a['title'],
+            })
+
+    if not articles:
+        return 0
+
+    insert_url = f"{SUPABASE_URL}/rest/v1/articles?on_conflict=source,url"
+    headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+    }
+
+    inserted = 0
+    for i in range(0, len(articles), 10):
+        batch = articles[i:i + 10]
+        data = json.dumps(batch).encode('utf-8')
+        req = urllib.request.Request(insert_url, data=data, headers=headers, method='POST')
+        try:
+            urllib.request.urlopen(req, timeout=15)
+            inserted += len(batch)
+        except Exception as e:
+            print(f"  入库批次失败: {e}")
+        time.sleep(0.3)
+
+    return inserted
+
+
 def main():
     print("获取国内信息源列表...")
     sources = get_sources()
@@ -225,6 +284,10 @@ def main():
     print(f"\n结果已保存到: {output_path}")
     total = sum(len(r['articles']) for r in all_results)
     print(f"共提取 {total} 条文章链接")
+
+    # 自动入库
+    inserted = insert_to_supabase(all_results)
+    print(f"入库: {inserted}/{total} 条")
 
 if __name__ == '__main__':
     main()
