@@ -1,0 +1,220 @@
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase'
+import { isIrrelevantByCommentary } from '@/lib/llm'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+const LLM_BASE_URL = process.env.LLM_BASE_URL || ''
+const LLM_API_KEY = process.env.LLM_API_KEY || ''
+const LLM_MODEL = process.env.LLM_MODEL || 'kimi-for-coding'
+const BACKUP_URL = process.env.LLM_BACKUP_URL || ''
+const BACKUP_KEY = process.env.LLM_BACKUP_KEY || ''
+const BACKUP_MODEL = process.env.LLM_BACKUP_MODEL || 'deepseek-chat'
+
+const CATEGORIES = [
+  '创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺',
+  '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '待分类',
+]
+
+const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。请对以下新闻进行分析：
+1. 将标题翻译为简洁、吸引人的中文标题（不超过30字）
+2. 用80字以内的中文写摘要，突出IP/商业/文旅角度
+3. 从以下10个分类中选一个最贴切的：创作/上新、IP/品牌/授权、潮玩谷子、零售/渠道、影视综艺、游戏/体育、AI/新技术、展会活动、文旅及商品、艺术/亚文化、待分类
+4. 给出 0-10 的产业匹配度评分
+5. 如果评分>=8，标记为精选
+6. 一句话行业解读（犀利、有洞察，20字以内）
+
+请严格按JSON格式返回：{"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true,"commentary":"..."}`
+
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
+
+async function callLLM(title: string, baseUrl: string, apiKey: string, model: string): Promise<any> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 20000) // 20s 超时
+  // 兼容 baseUrl 可能已带 /v1 或 /v1/messages 的情况
+  const normalizedUrl = baseUrl.replace(/\/v1(\/messages)?\/?$/, '') + '/v1/messages'
+  const res = await fetch(normalizedUrl, {
+    signal: controller.signal,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: `标题: ${title}` }], temperature: 0.2, max_tokens: 500 }),
+  })
+  clearTimeout(timeout)
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`API ${res.status}: ${text.slice(0, 120)}`)
+  }
+  const data = await res.json()
+  const raw = data.content?.[0]?.text ?? ''
+  if (!raw) throw new Error('Empty response')
+  const jsonMatch = raw.match(/\{[\s\S]*?\}/)
+  if (!jsonMatch) throw new Error(`No JSON in: ${raw.slice(0, 80)}`)
+  const parsed = JSON.parse(jsonMatch[0])
+  const category = CATEGORIES.includes(parsed.category) ? parsed.category : '待分类'
+  const score = Math.min(10, Math.max(0, Number(parsed.relevance_score) || 5))
+  return {
+    title_cn: String(parsed.title_cn || title).slice(0, 100),
+    summary_cn: String(parsed.summary_cn || '').slice(0, 200),
+    category,
+    relevance_score: score,
+    is_selected: score >= 8,
+    commentary: String(parsed.commentary || '').slice(0, 100),
+  }
+}
+
+/** 带重试+备选模型的 summarize，返回时附带首个实际错误 */
+async function summarizeArticle(title: string): Promise<any> {
+  let lastError = ''
+
+  // 主力 Kimi 3 次重试
+  for (let i = 0; i < 3; i++) {
+    try { return await callLLM(title, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL) } catch (e: any) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (!lastError) lastError = `Kimi[${i}]: ${msg}`
+    }
+    if (i < 2) await sleep(2000)
+  }
+
+  // 备选 DeepSeek 2 次重试
+  if (BACKUP_URL && BACKUP_KEY) {
+    for (let i = 0; i < 2; i++) {
+      try { return await callLLM(title, BACKUP_URL, BACKUP_KEY, BACKUP_MODEL) } catch (e: any) {
+        const msg = e instanceof Error ? e.message : String(e)
+        if (!lastError) lastError = `DS[${i}]: ${msg}`
+      }
+      if (i < 1) await sleep(2000)
+    }
+  }
+
+  throw new Error(`LLM all attempts failed: ${lastError}`)
+}
+
+export async function POST(request: Request) {
+  const authHeader = request.headers.get('x-admin-password')
+  if (!authHeader || authHeader !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = createServiceClient()
+  const BATCH_SIZE = 5  // Vercel 60s 上限内最多处理 5 条（每条约 10-15s）
+
+  const { data: pending, error } = await supabase
+    .from('articles')
+    .select('id, title')
+    .is('title_cn', null)
+    .order('published_at', { ascending: false })
+    .limit(BATCH_SIZE)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const batchTotal = pending?.length ?? 0
+  if (!batchTotal) return NextResponse.json({ ok: true, processed: 0 })
+
+  // === 第一阶段：写入 running 日志 ===
+  const { data: logRecord, error: logErr } = await supabase
+    .from('cron_logs')
+    .insert({
+      trigger_type: 'manual_llm',
+      status: 'running',
+      llm_pending: batchTotal,
+      details: { batch_total: batchTotal, action: 'manual_llm' },
+    })
+    .select('id')
+    .single()
+
+  if (logErr) return NextResponse.json({ error: logErr.message }, { status: 500 })
+
+  const logId = logRecord.id
+
+  // === 第二阶段：处理 ===
+  let processed = 0
+  let failed = 0
+  let irrelevantDeleted = 0
+  let firstError: string | null = null
+
+  try {
+    for (const article of pending) {
+      try {
+        const result = await summarizeArticle(article.title)
+        // 最后一道筛选：推荐理由明确表示无关 → 直接删除
+        if (isIrrelevantByCommentary(result.commentary)) {
+          await supabase.from('articles').delete().eq('id', article.id)
+          irrelevantDeleted++
+          continue
+        }
+        const { error: upErr } = await supabase
+          .from('articles')
+          .update({
+            title_cn: result.title_cn,
+            summary_cn: result.summary_cn,
+            category: result.category,
+            relevance_score: result.relevance_score,
+            is_selected: result.is_selected,
+            commentary: result.commentary,
+          })
+          .eq('id', article.id)
+
+        if (upErr) { failed++ } else { processed++ }
+      } catch (e: any) {
+        const msg = (e instanceof Error ? e.message : String(e)).slice(0, 200)
+        if (!firstError) firstError = msg
+        await supabase.from('articles').update({
+          title_cn: article.title.slice(0, 60),
+          summary_cn: '',
+          category: '待分类',
+          relevance_score: null,
+          is_selected: false,
+          commentary: null,
+        }).eq('id', article.id)
+        failed++
+      }
+      await new Promise(r => setTimeout(r, 500))
+    }
+
+    // 查剩余队列
+    const { count: remaining } = await supabase
+      .from('articles')
+      .select('*', { count: 'exact', head: true })
+      .is('title_cn', null)
+
+    // === 第三阶段：更新为 success ===
+    await supabase.from('cron_logs').update({
+      status: 'success',
+      ended_at: new Date().toISOString(),
+      llm_processed: processed,
+      llm_failed: failed,
+      llm_pending: remaining ?? 0,
+      details: {
+        batch_total: batchTotal,
+        batch_processed: processed,
+        batch_failed: failed,
+        batch_irrelevant_deleted: irrelevantDeleted,
+        first_error: firstError,
+        action: 'manual_llm',
+      },
+    }).eq('id', logId)
+
+    return NextResponse.json({ ok: true, processed, failed, remaining: remaining ?? 0, irrelevantDeleted })
+  } catch (err: any) {
+    // 异常时也更新日志为 error
+    const msg = err instanceof Error ? err.message : String(err)
+    await supabase.from('cron_logs').update({
+      status: 'error',
+      ended_at: new Date().toISOString(),
+      llm_processed: processed,
+      llm_failed: failed,
+      error_message: msg,
+      details: {
+        batch_total: batchTotal,
+        batch_processed: processed,
+        batch_failed: failed,
+        first_error: firstError,
+        action: 'manual_llm',
+      },
+    }).eq('id', logId)
+
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
