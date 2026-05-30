@@ -11,7 +11,7 @@ interface EditModalProps {
   onClose: () => void
 }
 
-const CATEGORIES = ['新作发布', 'IP/品牌/授权', '潮玩谷子', '影视综艺', '展会活动', '文旅及商品', '待分类']
+const CATEGORIES = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护', '待分类']
 
 export function EditModal({ id, title_cn, summary_cn, commentary, category, onClose }: EditModalProps) {
   const [form, setForm] = useState({ title_cn, summary_cn, commentary, category })

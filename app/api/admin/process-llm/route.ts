@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { isIrrelevantByCommentary } from '@/lib/llm'
+import { shouldIgnoreArticle } from '@/lib/llm'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -14,13 +14,14 @@ const BACKUP_MODEL = process.env.LLM_BACKUP_MODEL || 'deepseek-chat'
 
 const CATEGORIES = [
   '创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺',
-  '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '待分类',
+  '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化',
+  '政策规则', '版权保护', '待分类',
 ]
 
 const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。请对以下新闻进行分析：
 1. 将标题翻译为简洁、吸引人的中文标题（不超过30字）
 2. 用80字以内的中文写摘要，突出IP/商业/文旅角度
-3. 从以下10个分类中选一个最贴切的：创作/上新、IP/品牌/授权、潮玩谷子、零售/渠道、影视综艺、游戏/体育、AI/新技术、展会活动、文旅及商品、艺术/亚文化、待分类
+3. 从以下12个分类中选一个最贴切的：创作/上新、IP/品牌/授权、潮玩谷子、零售/渠道、影视综艺、游戏/体育、AI/新技术、展会活动、文旅及商品、艺术/亚文化、政策规则、版权保护、待分类
 4. 给出 0-10 的产业匹配度评分
 5. 如果评分>=8，标记为精选
 6. 一句话行业解读（犀利、有洞察，20字以内）
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
   const results = await Promise.allSettled(
     pending.map(async (article) => {
       const result = await summarizeArticle(article.title)
-      if (isIrrelevantByCommentary(result.commentary)) {
+      if (shouldIgnoreArticle(result.relevance_score, result.commentary)) {
         await supabase.from('articles').delete().eq('id', article.id)
         return { status: 'irrelevant' }
       }

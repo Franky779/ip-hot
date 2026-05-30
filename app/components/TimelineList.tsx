@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 
-const CATEGORIES = ['新作发布', 'IP/品牌/授权', '潮玩谷子', '影视综艺', '展会活动', '文旅及商品']
+const CATEGORIES = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护']
 
 interface Article {
   id: string
@@ -47,61 +47,13 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
   const [filterScore, setFilterScore] = useState<number | null>(null)
   const [batchCategory, setBatchCategory] = useState('')
   const [categorizing, setCategorizing] = useState(false)
-  const [fetching, setFetching] = useState(false)
-  const [showLogs, setShowLogs] = useState(false)
-  const [logs, setLogs] = useState<any[]>([])
 
   const isSelectionMode = loaded && isAdmin && selectedIds.size > 0
-
-  const handleManualFetch = async () => {
-    if (!confirm('确定手动触发一次资讯抓取？')) return
-    setFetching(true)
-    const pw = localStorage.getItem(ADMIN_PW_KEY) || ''
-    try {
-      const res = await fetch('/api/cron/fetch-and-process', {
-        method: 'GET',
-        headers: { 'x-admin-password': pw },
-      })
-      const data = await res.json()
-      if (res.ok) {
-        alert(`抓取完成！\n抓取: ${data.fetch?.totalFetched ?? 0} 条\n入库: ${data.fetch?.totalInserted ?? 0} 条\nLLM处理: ${data.llm?.processed ?? 0} 条`)
-        window.location.reload()
-      } else {
-        alert('抓取失败: ' + (data.error || '未知错误'))
-      }
-    } catch (e) {
-      alert('请求失败: ' + (e instanceof Error ? e.message : String(e)))
-    } finally {
-      setFetching(false)
-    }
-  }
-
-  const loadLogs = async () => {
-    const pw = localStorage.getItem(ADMIN_PW_KEY) || ''
-    try {
-      const res = await fetch('/api/admin/cron-logs', {
-        headers: { 'x-admin-password': pw },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setLogs(data.logs ?? [])
-      }
-    } catch (e) {
-      console.error('加载日志失败:', e)
-    }
-  }
-
-  const toggleLogs = () => {
-    if (!showLogs) {
-      loadLogs()
-    }
-    setShowLogs((prev) => !prev)
-  }
 
   const filterArticles = (articles: Article[]) => {
     let filtered = isAdmin
       ? articles
-      : articles.filter((a) => (a.relevance_score ?? 10) >= 4 && a.category !== '待分类')
+      : articles.filter((a) => (a.relevance_score ?? 10) >= 4 && a.category !== '待分类' && a.commentary)
     if (filterScore !== null) {
       filtered = filtered.filter((a) => a.relevance_score === filterScore)
     }
@@ -228,71 +180,6 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
 
   return (
     <>
-      {loaded && isAdmin && (
-        <div className="admin-toolbar">
-          <button
-            className="admin-toolbar-btn fetch"
-            onClick={handleManualFetch}
-            disabled={fetching}
-          >
-            {fetching ? '抓取中…' : '手动抓取'}
-          </button>
-          <button
-            className="admin-toolbar-btn logs"
-            onClick={toggleLogs}
-          >
-            {showLogs ? '隐藏日志' : '查看日志'}
-          </button>
-        </div>
-      )}
-
-      {showLogs && (
-        <div className="cron-logs-panel">
-          <h4>抓取任务日志（最近20条）</h4>
-          {logs.length === 0 ? (
-            <p className="cron-logs-empty">暂无日志</p>
-          ) : (
-            <table className="cron-logs-table">
-              <thead>
-                <tr>
-                  <th>时间</th>
-                  <th>触发方式</th>
-                  <th>抓取</th>
-                  <th>入库</th>
-                  <th>LLM处理</th>
-                  <th>耗时</th>
-                  <th>状态</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
-                  <tr key={log.id}>
-                    <td>{log.started_at ? new Date(log.started_at).toLocaleString('zh-CN') : '-'}</td>
-                    <td>{log.trigger_type === 'manual' ? '手动' : '定时'}</td>
-                    <td>{log.fetch_total_fetched ?? 0}</td>
-                    <td>{log.fetch_total_inserted ?? 0}</td>
-                    <td>{log.llm_processed ?? 0} / {log.llm_pending ?? 0}</td>
-                    <td>
-                      {log.ended_at && log.started_at
-                        ? Math.round((new Date(log.ended_at).getTime() - new Date(log.started_at).getTime()) / 1000) + 's'
-                        : '-'}
-                    </td>
-                    <td>
-                      <span className={`cron-log-status ${log.status}`}>
-                        {log.status === 'success' ? '✅ 成功' : log.status === 'error' ? '❌ 失败' : '⏳ 运行中'}
-                      </span>
-                      {log.error_message && (
-                        <span className="cron-log-error" title={log.error_message}> ⚠️</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
       {loaded && isAdmin && allIds.length > 0 && (
         <div className="batch-actions-bar">
           <label className="batch-checkbox-label">
@@ -388,9 +275,12 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
                     >
                       <div className="article-meta">
                         {typeof article.relevance_score === 'number' && (
-                          <span className="relevance-score">{article.relevance_score}</span>
+                          <span className={`relevance-score ${article.relevance_score <= 3 ? 'score-low' : article.relevance_score >= 7 ? 'score-high' : 'score-mid'}`}>
+                            {article.relevance_score}
+                          </span>
                         )}
                         {article.category && (isAdmin || article.category !== '待分类') && <span>{article.category}</span>}
+                        {article.source && <span className="article-source">{article.source}</span>}
                       </div>
                       <h2 className="article-title font-serif">
                         {article.title_cn ?? article.title}
