@@ -73,6 +73,7 @@ export default function MonitorPage() {
   const [testingSource, setTestingSource] = useState<string | null>(null)
   const [sourceUrlUpdates, setSourceUrlUpdates] = useState<Record<string, string>>({})
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
+  const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
 
   const fetchData = useCallback(async () => {
     const pw = getPw(); if (!pw) return
@@ -164,6 +165,56 @@ export default function MonitorPage() {
       if (res.ok) fetchData()
       else alert('标记失败')
     } catch { alert('请求失败') } finally { setReviewing(p => { const n = { ...p }; delete n[id]; return n }) }
+  }
+
+  // 批量处理：删除
+  const handleBatchDelete = async () => {
+    const ids = Array.from(selectedReviews)
+    if (ids.length === 0) { alert('请先勾选文章'); return }
+    if (!confirm(`确定批量删除 ${ids.length} 条资讯？`)) return
+    const pw = getPw() || ''
+    let ok = 0, fail = 0
+    for (const id of ids) {
+      setReviewing(p => ({ ...p, [id]: 'delete' }))
+      try {
+        const res = await fetch('/api/admin/article-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+          body: JSON.stringify({ id }),
+        })
+        if (res.ok) ok++
+        else fail++
+      } catch { fail++ }
+      setReviewing(p => { const n = { ...p }; delete n[id]; return n })
+    }
+    setSelectedReviews(new Set())
+    alert(`批量删除完成：成功 ${ok} 条，失败 ${fail} 条`)
+    fetchData()
+  }
+
+  // 批量处理：精选
+  const handleBatchSelect = async () => {
+    const ids = Array.from(selectedReviews)
+    if (ids.length === 0) { alert('请先勾选文章'); return }
+    if (!confirm(`确定批量标记 ${ids.length} 条为精选？`)) return
+    const pw = getPw() || ''
+    let ok = 0, fail = 0
+    for (const id of ids) {
+      setReviewing(p => ({ ...p, [id]: 'select' }))
+      try {
+        const res = await fetch('/api/admin/article-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+          body: JSON.stringify({ id, is_selected: true }),
+        })
+        if (res.ok) ok++
+        else fail++
+      } catch { fail++ }
+      setReviewing(p => { const n = { ...p }; delete n[id]; return n })
+    }
+    setSelectedReviews(new Set())
+    alert(`批量精选完成：成功 ${ok} 条，失败 ${fail} 条`)
+    fetchData()
   }
 
   // 保存网址
@@ -434,32 +485,85 @@ export default function MonitorPage() {
             {data.reviewQueue && data.reviewQueue.length > 0 && (
               <div>
                 <h2 className="monitor-section-title" style={{ color: '#f59e0b' }}>待人工复核 · {data.reviewQueue.length}</h2>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                   LLM 拿不准分类但觉得还有点价值（评分4-6），你来决定留不留
                 </p>
+                {/* 批量操作工具栏 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedReviews.size === data.reviewQueue.length && data.reviewQueue.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedReviews(new Set(data.reviewQueue.map(r => r.id)))
+                        } else {
+                          setSelectedReviews(new Set())
+                        }
+                      }}
+                    />
+                    全选
+                  </label>
+                  {selectedReviews.size > 0 && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>已选 {selectedReviews.size} 条</span>
+                  )}
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.375rem' }}>
+                    <button
+                      className="monitor-action-btn"
+                      style={{ fontSize: '0.6875rem', color: '#e94560', borderColor: '#e94560' }}
+                      onClick={handleBatchDelete}
+                      disabled={selectedReviews.size === 0}
+                    >
+                      批量删除
+                    </button>
+                    <button
+                      className="monitor-action-btn"
+                      style={{ fontSize: '0.6875rem' }}
+                      onClick={handleBatchSelect}
+                      disabled={selectedReviews.size === 0}
+                    >
+                      批量精选
+                    </button>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {data.reviewQueue.map(r => (
                     <div key={r.id} style={{
                       background: 'var(--bg-secondary)', border: '1px solid var(--border)',
                       borderRadius: 8, padding: '0.75rem 1rem',
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.375rem' }}>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.4 }}>{r.titleCn}</div>
-                        <span style={{
-                          fontSize: '0.75rem', padding: '0.125rem 0.375rem', borderRadius: 4,
-                          background: 'rgba(245,158,11,0.12)', color: '#f59e0b',
-                          fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-                        }}>
-                          评分 {r.relevanceScore}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.25rem', lineHeight: 1.5 }}>{r.summaryCn}</div>
-                      {r.commentary && (
-                        <div style={{ fontSize: '0.75rem', color: '#c97b3b', marginBottom: '0.5rem' }}>
-                          推荐理由：{r.commentary}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.375rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedReviews.has(r.id)}
+                          onChange={(e) => {
+                            const next = new Set(selectedReviews)
+                            if (e.target.checked) next.add(r.id)
+                            else next.delete(r.id)
+                            setSelectedReviews(next)
+                          }}
+                          style={{ marginTop: 2 }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.4 }}>{r.titleCn}</div>
+                            <span style={{
+                              fontSize: '0.75rem', padding: '0.125rem 0.375rem', borderRadius: 4,
+                              background: 'rgba(245,158,11,0.12)', color: '#f59e0b',
+                              fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+                            }}>
+                              评分 {r.relevanceScore}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.5 }}>{r.summaryCn}</div>
+                          {r.commentary && (
+                            <div style={{ fontSize: '0.75rem', color: '#c97b3b', marginTop: '0.25rem' }}>
+                              推荐理由：{r.commentary}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.375rem', paddingLeft: '1.25rem' }}>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.source} · {formatTime(r.createdAt)}</span>
                         <div style={{ display: 'flex', gap: '0.375rem' }}>
                           <button
