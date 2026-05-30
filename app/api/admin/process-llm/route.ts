@@ -128,58 +128,56 @@ export async function POST(request: Request) {
 
   const logId = logRecord.id
 
-  // === 第二阶段：处理 ===
+  // === 第二阶段：并发处理 ===
+  // 全部并行跑 LLM + 数据库更新，10 条约 15s 而非 150s
+  const results = await Promise.allSettled(
+    pending.map(async (article) => {
+      const result = await summarizeArticle(article.title)
+      if (isIrrelevantByCommentary(result.commentary)) {
+        await supabase.from('articles').delete().eq('id', article.id)
+        return { status: 'irrelevant' }
+      }
+      const { error: upErr } = await supabase
+        .from('articles')
+        .update({
+          title_cn: result.title_cn,
+          summary_cn: result.summary_cn,
+          category: result.category,
+          relevance_score: result.relevance_score,
+          is_selected: result.is_selected,
+          commentary: result.commentary,
+        })
+        .eq('id', article.id)
+      if (upErr) throw new Error(upErr.message)
+      return { status: 'ok' }
+    })
+  )
+
   let processed = 0
   let failed = 0
   let irrelevantDeleted = 0
   let firstError: string | null = null
 
-  try {
-    for (const article of pending) {
-      try {
-        const result = await summarizeArticle(article.title)
-        // 最后一道筛选：推荐理由明确表示无关 → 直接删除
-        if (isIrrelevantByCommentary(result.commentary)) {
-          await supabase.from('articles').delete().eq('id', article.id)
-          irrelevantDeleted++
-          continue
-        }
-        const { error: upErr } = await supabase
-          .from('articles')
-          .update({
-            title_cn: result.title_cn,
-            summary_cn: result.summary_cn,
-            category: result.category,
-            relevance_score: result.relevance_score,
-            is_selected: result.is_selected,
-            commentary: result.commentary,
-          })
-          .eq('id', article.id)
-
-        if (upErr) { failed++ } else { processed++ }
-      } catch (e: any) {
-        const msg = (e instanceof Error ? e.message : String(e)).slice(0, 200)
-        if (!firstError) firstError = msg
-        await supabase.from('articles').update({
-          title_cn: article.title.slice(0, 60),
-          summary_cn: '',
-          category: '待分类',
-          relevance_score: null,
-          is_selected: false,
-          commentary: null,
-        }).eq('id', article.id)
-        failed++
-      }
-      await new Promise(r => setTimeout(r, 500))
+  for (const r of results) {
+    if (r.status === 'fulfilled') {
+      const v = r.value
+      if (v.status === 'irrelevant') { irrelevantDeleted++; continue }
+      processed++
+    } else {
+      const msg = (r.reason instanceof Error ? r.reason.message : String(r.reason)).slice(0, 200)
+      if (!firstError) firstError = msg
+      failed++
     }
+  }
 
+  try {
     // 查剩余队列
     const { count: remaining } = await supabase
       .from('articles')
       .select('*', { count: 'exact', head: true })
       .is('title_cn', null)
 
-    // === 第三阶段：更新为 success ===
+    // === 第三阶段：更新日志为 success ===
     await supabase.from('cron_logs').update({
       status: 'success',
       ended_at: new Date().toISOString(),
@@ -198,7 +196,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, processed, failed, remaining: remaining ?? 0, irrelevantDeleted })
   } catch (err: any) {
-    // 异常时也更新日志为 error
     const msg = err instanceof Error ? err.message : String(err)
     await supabase.from('cron_logs').update({
       status: 'error',
@@ -214,7 +211,6 @@ export async function POST(request: Request) {
         action: 'manual_llm',
       },
     }).eq('id', logId)
-
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
