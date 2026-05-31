@@ -493,10 +493,10 @@ export default function MonitorPage() {
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
-                      checked={selectedReviews.size === data.reviewQueue.length && data.reviewQueue.length > 0}
+                      checked={selectedReviews.size === (data.reviewQueue?.length ?? 0) && (data.reviewQueue?.length ?? 0) > 0}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedReviews(new Set(data.reviewQueue.map(r => r.id)))
+                          setSelectedReviews(new Set((data.reviewQueue ?? []).map(r => r.id)))
                         } else {
                           setSelectedReviews(new Set())
                         }

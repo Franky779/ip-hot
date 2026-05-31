@@ -99,7 +99,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = createServiceClient()
-  const BATCH_SIZE = 5  // Vercel 60s 上限内最多处理 5 条（每条约 10-15s）
+  const BATCH_SIZE = 3  // Vercel 60s 上限内处理 3 条（每条约 10-15s），留足安全余量
 
   const { data: pending, error } = await supabase
     .from('articles')
@@ -129,8 +129,22 @@ export async function POST(request: Request) {
 
   const logId = logRecord.id
 
+  // === 安全超时守护：45秒后若仍未完成，强制更新日志并返回 ===
+  let completed = false
+  const timeoutGuard = setTimeout(async () => {
+    if (completed) return
+    try {
+      await supabase.from('cron_logs').update({
+        status: 'error',
+        ended_at: new Date().toISOString(),
+        error_message: 'Vercel函数即将超时，任务被安全终止',
+        details: { timeout_reason: 'vercel_60s_guard', batch_total: batchTotal },
+      }).eq('id', logId)
+    } catch {}
+  }, 45000)
+
   // === 第二阶段：并发处理 ===
-  // 全部并行跑 LLM + 数据库更新，10 条约 15s 而非 150s
+  // 全部并行跑 LLM + 数据库更新，3 条约 30-45s
   const results = await Promise.allSettled(
     pending.map(async (article) => {
       const result = await summarizeArticle(article.title)
@@ -153,6 +167,10 @@ export async function POST(request: Request) {
       return { status: 'ok' }
     })
   )
+
+  // 标记处理已完成，取消超时守护
+  completed = true
+  clearTimeout(timeoutGuard)
 
   let processed = 0
   let failed = 0
