@@ -149,10 +149,22 @@ export async function POST(request: Request) {
     pending.map(async (article) => {
       const result = await summarizeArticle(article.title)
       if (shouldIgnoreArticle(result.relevance_score, result.commentary)) {
+        // 删除失败时改为标记为已忽略，避免同一批文章反复进入队列空转
         const { error: deleteError } = await supabase.from('articles').delete().eq('id', article.id)
         if (deleteError) {
-          console.error('[process-llm] 删除无关文章失败:', deleteError.message, 'articleId:', article.id)
-          throw new Error(`删除无关文章失败: ${deleteError.message}`)
+          console.warn('[process-llm] 删除无关文章失败，改为标记为已忽略:', deleteError.message, 'articleId:', article.id)
+          const { error: markError } = await supabase.from('articles').update({
+            title_cn: article.title.slice(0, 60),
+            summary_cn: '',
+            category: '待分类',
+            relevance_score: 0,
+            is_selected: false,
+            commentary: '',
+          }).eq('id', article.id)
+          if (markError) {
+            console.error('[process-llm] 标记已忽略也失败:', markError.message)
+            throw new Error(`删除并标记无关文章均失败: ${deleteError.message}; ${markError.message}`)
+          }
         }
         return { status: 'irrelevant' }
       }
