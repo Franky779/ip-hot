@@ -1,4 +1,10 @@
-import { ScrapeConfig } from './scraper'
+export type ScrapeConfig = {
+  itemSelector: string
+  titleSelector: string
+  linkSelector: string
+  linkPrefix?: string
+  maxItems?: number
+}
 
 export type NewsSource = {
   id: string
@@ -22,12 +28,12 @@ export type NewsSource = {
 // ============================================================
 // RSS 源（A类+B类+D类）— 共30个
 // ============================================================
-const RSS_SOURCES: NewsSource[] = [
+export const RSS_SOURCES: NewsSource[] = [
   // 海外动漫/ACG
   { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
   { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.crunchyroll.com', maxItems: 10 } },
   { id: 'cartoonbrew', name: 'Cartoon Brew', url: 'https://www.cartoonbrew.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
-  { id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/news.xml', language: 'en', priority: 'P0', type: 'rss', isRss: true, needsScraplingFallback: true },
+  { id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/rss.xml', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'animationmag', name: 'Animation Magazine', url: 'https://www.animationmagazine.net/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // cbr RSS不可达 → 改用本地CDP，见 scripts/fetch-cdp-local.mjs
   { id: 'otakuusa', name: 'Otaku USA Magazine', url: 'https://otakuusamagazine.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
@@ -113,8 +119,19 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.news-list li, ul li', titleSelector: 'h3 a, a', linkSelector: 'a', linkPrefix: 'http://www.licensingexpochina.com', maxItems: 10 },
   },
-  {
   // --- 海外IP授权/潮玩 ---
+  {
+    id: 'artnews', name: 'ArtNews', url: 'https://www.artnews.com',
+    language: 'en', priority: 'P0', type: 'rss', isRss: true,
+  },
+  {
+    id: 'vinylpulse', name: 'Vinyl Pulse', url: 'https://www.vinylpulse.com/feed',
+    language: 'en', priority: 'P0', type: 'rss', isRss: true,
+  },
+  {
+    id: 'total-licensing', name: 'Total Licensing', url: 'https://www.totallicensing.com/feed',
+    language: 'en', priority: 'P0', type: 'rss', isRss: true,
+  },
   {
     id: 'licenseglobal', name: 'License Global', url: 'https://www.licenseglobal.com/latest-news',
     language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,

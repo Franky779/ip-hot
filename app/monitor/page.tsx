@@ -79,7 +79,6 @@ export default function MonitorPage() {
   // 源网址编辑
   const [editingUrl, setEditingUrl] = useState<{ id: string; name: string } | null>(null)
   const [editUrlVal, setEditUrlVal] = useState('')
-  const [testingSource, setTestingSource] = useState<string | null>(null)
   const [sourceUrlUpdates, setSourceUrlUpdates] = useState<Record<string, string>>({})
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
@@ -361,25 +360,6 @@ export default function MonitorPage() {
     } catch {}
   }
 
-  // 单源测试抓取
-  const handleTestSource = async (name: string, url: string) => {
-    setTestingSource(name)
-    const pw = getPw() || ''
-    try {
-      const res = await fetch('/api/admin/test-fetch-source', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-        body: JSON.stringify({ url, name }),
-      })
-      const resp = await res.json()
-      if (resp.ok) {
-        alert(`✅ ${name}\n抓取成功！\n共 ${resp.itemCount} 条\n前5条:\n${resp.sample.map((s: any) => '· ' + s.title).join('\n')}\n耗时: ${resp.elapsedMs}ms`)
-      } else {
-        alert(`❌ ${name}\n抓取失败: ${resp.error}`)
-      }
-    } catch (e) { alert('请求失败') } finally { setTestingSource(null) }
-  }
-
   const getSourceUrl = (s: SourceItem) => sourceUrlUpdates[s.id] || s.url || ''
 
   const task = data?.todayTask
@@ -517,9 +497,6 @@ export default function MonitorPage() {
                           ) : (
                             <span className="source-compact-url" onClick={() => { setEditingUrl({ id: s.id, name: s.name }); setEditUrlVal(displayUrl) }} title="点击编辑">{displayUrl || '(无网址)'}</span>
                           )}
-                          <button className="monitor-action-btn" onClick={() => handleTestSource(s.name, displayUrl)} disabled={testingSource === s.name} style={{ fontSize: '0.6875rem' }}>
-                            {testingSource === s.name ? '测试中' : '测试抓取'}
-                          </button>
                           <button className="monitor-action-btn" onClick={() => handleDeleteSource(s.id, s.name)} style={{ fontSize: '0.6875rem', color: '#e94560', borderColor: '#e94560' }}>
                             删除
                           </button>
@@ -552,9 +529,6 @@ export default function MonitorPage() {
                             <span className="source-compact-url" onClick={() => { setEditingUrl({ id: s.id, name: s.name }); setEditUrlVal(displayUrl) }} title="点击编辑">{displayUrl || '(无网址)'}</span>
                           )}
                           <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>{s.count7d || 0}篇/7d</span>
-                          <button className="monitor-action-btn" onClick={() => handleTestSource(s.name, displayUrl)} disabled={testingSource === s.name} style={{ fontSize: '0.6875rem' }}>
-                            {testingSource === s.name ? '测试中' : '测试抓取'}
-                          </button>
                         </div>
                       )
                     })}
