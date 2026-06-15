@@ -91,6 +91,27 @@ export function Sidebar() {
               <span>管理信息源</span>
             </Link>
             <Link
+              href="/monitor"
+              className={`sidebar-link${pathname === '/monitor' ? ' active' : ''}`}
+            >
+              <span className="sidebar-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                  <path d="M6 10l4 4 4-5 4 3" />
+                </svg>
+              </span>
+              <span>运营监控</span>
+            </Link>
+            <Link
               href="/changelog"
               className={`sidebar-link${pathname === '/changelog' ? ' active' : ''}`}
             >
