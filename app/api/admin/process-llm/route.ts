@@ -149,7 +149,11 @@ export async function POST(request: Request) {
     pending.map(async (article) => {
       const result = await summarizeArticle(article.title)
       if (shouldIgnoreArticle(result.relevance_score, result.commentary)) {
-        await supabase.from('articles').delete().eq('id', article.id)
+        const { error: deleteError } = await supabase.from('articles').delete().eq('id', article.id)
+        if (deleteError) {
+          console.error('[process-llm] 删除无关文章失败:', deleteError.message, 'articleId:', article.id)
+          throw new Error(`删除无关文章失败: ${deleteError.message}`)
+        }
         return { status: 'irrelevant' }
       }
       const { error: upErr } = await supabase
@@ -213,7 +217,7 @@ export async function POST(request: Request) {
       },
     }).eq('id', logId)
 
-    return NextResponse.json({ ok: true, processed, failed, remaining: remaining ?? 0, irrelevantDeleted })
+    return NextResponse.json({ ok: true, processed, failed, remaining: remaining ?? 0, irrelevantDeleted, firstError })
   } catch (err: any) {
     const msg = err instanceof Error ? err.message : String(err)
     await supabase.from('cron_logs').update({

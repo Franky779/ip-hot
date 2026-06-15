@@ -174,6 +174,8 @@ export default function MonitorPage() {
     let totalProcessed = 0
     let totalFailed = 0
     let totalRounds = 0
+    let lastRemaining = data.queue
+    let staleCount = 0
 
     try {
       while (!stopLlmRef.current) {
@@ -188,9 +190,10 @@ export default function MonitorPage() {
         totalProcessed += resp.processed ?? 0
         totalFailed += resp.failed ?? 0
         totalRounds++
-        setLlmProgress({ processed: totalProcessed, remaining: resp.remaining ?? 0, rounds: totalRounds })
+        const remaining = resp.remaining ?? 0
+        setLlmProgress({ processed: totalProcessed, remaining, rounds: totalRounds })
 
-        if (resp.remaining === 0) {
+        if (remaining === 0) {
           const msg = totalFailed > 0
             ? `全部完成！共处理 ${totalProcessed} 条，失败 ${totalFailed} 条，${totalRounds} 轮`
             : `全部完成！共处理 ${totalProcessed} 条，${totalRounds} 轮`
@@ -198,9 +201,21 @@ export default function MonitorPage() {
           break
         }
 
+        // 死循环保护：剩余数量连续 3 轮没有减少，说明删除/更新没生效，立即止损
+        if (remaining >= lastRemaining) {
+          staleCount++
+          if (staleCount >= 3) {
+            alert(`连续 ${staleCount} 轮剩余数量没有减少（当前剩余 ${remaining} 条），已自动停止，避免空转。请检查 Supabase 删除权限或联系开发。`)
+            break
+          }
+        } else {
+          staleCount = 0
+        }
+        lastRemaining = remaining
+
         // 如果本轮处理了0条且剩余>0，说明有问题，停止
-        if ((resp.processed ?? 0) === 0 && (resp.failed ?? 0) === 0) {
-          alert(`本轮未处理任何文章，剩余 ${resp.remaining} 条。可能LLM配置有问题，请检查日志。`)
+        if ((resp.processed ?? 0) === 0 && (resp.failed ?? 0) === 0 && (resp.irrelevantDeleted ?? 0) === 0) {
+          alert(`本轮未处理任何文章，剩余 ${remaining} 条。可能LLM配置有问题，请检查日志。`)
           break
         }
 
