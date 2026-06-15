@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useAdmin } from '../components/AdminToggle'
 
@@ -57,6 +57,14 @@ function getHealthLabel(lastActive: string | null): string {
   const h = (Date.now() - new Date(lastActive).getTime()) / 36e5
   return h < 24 ? '健康' : h < 72 ? '一般' : '离线'
 }
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return '00:00:00'
+  const totalSeconds = Math.ceil(ms / 1000)
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
 
 export default function MonitorPage() {
   const { isAdmin, loaded } = useAdmin()
@@ -64,7 +72,8 @@ export default function MonitorPage() {
   const [loading, setLoading] = useState(true)
   const [fetching, setFetching] = useState(false)
   const [llming, setLlming] = useState(false)
-  const [cleaning, setCleaning] = useState(false)
+  const [llmProgress, setLlmProgress] = useState<{ processed: number; remaining: number; rounds: number } | null>(null)
+  const stopLlmRef = useRef(false)
   const [showLogs, setShowLogs] = useState(false)
   const [logs, setLogs] = useState<any[]>([])
   // 源网址编辑
@@ -74,6 +83,13 @@ export default function MonitorPage() {
   const [sourceUrlUpdates, setSourceUrlUpdates] = useState<Record<string, string>>({})
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
+
+  // 自动处理 LLM 配置
+  const AUTO_LLM_KEY = 'ip-hot-auto-llm-enabled'
+  const AUTO_LLM_NEXT_KEY = 'ip-hot-auto-llm-next-at'
+  const AUTO_INTERVAL_MS = 3 * 60 * 60 * 1000 // 3小时
+  const [autoLlmEnabled, setAutoLlmEnabled] = useState(false)
+  const [autoLlmRemaining, setAutoLlmRemaining] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     const pw = getPw(); if (!pw) return
@@ -88,6 +104,44 @@ export default function MonitorPage() {
     const t = setInterval(() => { if (loaded) fetchData() }, 30000)
     return () => clearInterval(t)
   }, [loaded, fetchData])
+
+  // 初始化自动处理状态
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const enabled = localStorage.getItem(AUTO_LLM_KEY) === '1'
+    setAutoLlmEnabled(enabled)
+    const nextAt = parseInt(localStorage.getItem(AUTO_LLM_NEXT_KEY) || '0', 10)
+    if (enabled && nextAt > 0) {
+      setAutoLlmRemaining(Math.max(0, nextAt - Date.now()))
+    }
+  }, [])
+
+  // 自动处理倒计时
+  useEffect(() => {
+    if (!autoLlmEnabled) {
+      setAutoLlmRemaining(null)
+      return
+    }
+
+    const tick = () => {
+      const nextAt = parseInt(localStorage.getItem(AUTO_LLM_NEXT_KEY) || '0', 10)
+      const remaining = nextAt > 0 ? nextAt - Date.now() : AUTO_INTERVAL_MS
+      setAutoLlmRemaining(Math.max(0, remaining))
+
+      if (remaining <= 0 && !llming && data && data.queue > 0) {
+        handleTriggerLlm()
+      } else if (remaining <= 0) {
+        // 队列为空或正在处理，直接安排下一次
+        const next = Date.now() + AUTO_INTERVAL_MS
+        localStorage.setItem(AUTO_LLM_NEXT_KEY, String(next))
+        setAutoLlmRemaining(AUTO_INTERVAL_MS)
+      }
+    }
+
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [autoLlmEnabled, llming, data?.queue])
 
   const handleManualFetch = async () => {
     if (!confirm('确定手动触发一次资讯抓取？')) return
@@ -113,27 +167,87 @@ export default function MonitorPage() {
 
   const handleTriggerLlm = async () => {
     if (!data?.queue || data.queue === 0) { alert('暂无待处理文章'); return }
-    if (!confirm(`确定运行 LLM 处理（最多 10 条）？当前队列: ${data.queue} 条`)) return
+    if (!confirm(`确定运行 LLM 批量处理？当前队列: ${data.queue} 条。将自动循环处理直到清空。`)) return
     setLlming(true)
+    stopLlmRef.current = false
+    setLlmProgress({ processed: 0, remaining: data.queue, rounds: 0 })
     const pw = getPw() || ''
+    let totalProcessed = 0
+    let totalFailed = 0
+    let totalRounds = 0
+
     try {
-      const res = await fetch('/api/admin/process-llm', { method: 'POST', headers: { 'x-admin-password': pw } })
-      const resp = await res.json()
-      alert(resp.ok ? `完成！处理: ${resp.processed} 条\n失败: ${resp.failed} 条\n剩余: ${resp.remaining} 条` : '失败: ' + (resp.error || ''))
+      while (!stopLlmRef.current) {
+        const res = await fetch('/api/admin/process-llm', { method: 'POST', headers: { 'x-admin-password': pw } })
+        const resp = await res.json()
+
+        if (!resp.ok) {
+          alert(`处理失败: ${resp.error || '未知错误'}`)
+          break
+        }
+
+        totalProcessed += resp.processed ?? 0
+        totalFailed += resp.failed ?? 0
+        totalRounds++
+        setLlmProgress({ processed: totalProcessed, remaining: resp.remaining ?? 0, rounds: totalRounds })
+
+        if (resp.remaining === 0) {
+          const msg = totalFailed > 0
+            ? `全部完成！共处理 ${totalProcessed} 条，失败 ${totalFailed} 条，${totalRounds} 轮`
+            : `全部完成！共处理 ${totalProcessed} 条，${totalRounds} 轮`
+          alert(msg)
+          break
+        }
+
+        // 如果本轮处理了0条且剩余>0，说明有问题，停止
+        if ((resp.processed ?? 0) === 0 && (resp.failed ?? 0) === 0) {
+          alert(`本轮未处理任何文章，剩余 ${resp.remaining} 条。可能LLM配置有问题，请检查日志。`)
+          break
+        }
+
+        // 如果超时了但还有剩余，继续下一轮
+        if (resp.timedOut) {
+          // 继续下一轮，API会自动接着处理
+          await new Promise(r => setTimeout(r, 500)) // 短暂间隔避免请求过密
+          continue
+        }
+
+        // 正常情况继续下一轮
+        await new Promise(r => setTimeout(r, 500))
+      }
+    } catch (e) {
+      alert('请求失败: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setLlming(false)
+      setLlmProgress(null)
       fetchData()
-    } catch (e) { alert('请求失败: ' + (e instanceof Error ? e.message : String(e))) } finally { setLlming(false) }
+      if (autoLlmEnabled) {
+        const next = Date.now() + AUTO_INTERVAL_MS
+        localStorage.setItem(AUTO_LLM_NEXT_KEY, String(next))
+        setAutoLlmRemaining(AUTO_INTERVAL_MS)
+      }
+    }
   }
 
-  const handleCleanupIrrelevant = async () => {
-    if (!confirm('清理所有推荐理由明确无关的资讯（不可恢复）？')) return
-    setCleaning(true)
-    const pw = getPw() || ''
-    try {
-      const res = await fetch('/api/admin/cleanup-irrelevant', { method: 'POST', headers: { 'x-admin-password': pw } })
-      const resp = await res.json()
-      alert(resp.ok ? `清理完成！删除了 ${resp.deleted} 条无关资讯（共检查 ${resp.total_checked} 条）` : '失败: ' + (resp.error || ''))
-      fetchData()
-    } catch (e) { alert('请求失败') } finally { setCleaning(false) }
+  const handleStopLlm = () => {
+    stopLlmRef.current = true
+    setLlming(false)
+    setLlmProgress(null)
+  }
+
+  const toggleAutoLlm = () => {
+    const nextEnabled = !autoLlmEnabled
+    setAutoLlmEnabled(nextEnabled)
+    if (typeof window === 'undefined') return
+    localStorage.setItem(AUTO_LLM_KEY, nextEnabled ? '1' : '0')
+    if (nextEnabled) {
+      const next = Date.now() + AUTO_INTERVAL_MS
+      localStorage.setItem(AUTO_LLM_NEXT_KEY, String(next))
+      setAutoLlmRemaining(AUTO_INTERVAL_MS)
+    } else {
+      localStorage.removeItem(AUTO_LLM_NEXT_KEY)
+      setAutoLlmRemaining(null)
+    }
   }
 
   // 待复核：删除
@@ -142,7 +256,7 @@ export default function MonitorPage() {
     setReviewing(p => ({ ...p, [id]: 'delete' }))
     const pw = getPw() || ''
     try {
-      const res = await fetch('/api/admin/article-delete', {
+      const res = await fetch('/api/admin/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id }),
@@ -157,7 +271,7 @@ export default function MonitorPage() {
     setReviewing(p => ({ ...p, [id]: 'select' }))
     const pw = getPw() || ''
     try {
-      const res = await fetch('/api/admin/article-update', {
+      const res = await fetch('/api/admin/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id, is_selected: true }),
@@ -167,51 +281,46 @@ export default function MonitorPage() {
     } catch { alert('请求失败') } finally { setReviewing(p => { const n = { ...p }; delete n[id]; return n }) }
   }
 
-  // 批量处理：删除
+  // 批量处理：删除（并行）
   const handleBatchDelete = async () => {
     const ids = Array.from(selectedReviews)
     if (ids.length === 0) { alert('请先勾选文章'); return }
     if (!confirm(`确定批量删除 ${ids.length} 条资讯？`)) return
     const pw = getPw() || ''
-    let ok = 0, fail = 0
-    for (const id of ids) {
-      setReviewing(p => ({ ...p, [id]: 'delete' }))
-      try {
-        const res = await fetch('/api/admin/article-delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-          body: JSON.stringify({ id }),
-        })
-        if (res.ok) ok++
-        else fail++
-      } catch { fail++ }
-      setReviewing(p => { const n = { ...p }; delete n[id]; return n })
-    }
+
+    // 整批用 /api/admin/delete-batch 一个请求搞定
+    try {
+      const res = await fetch('/api/admin/delete-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ ids }),
+      })
+      const resp = await res.json()
+      if (resp.ok) {
+        alert(`批量删除完成：${resp.deleted ?? ids.length} 条`)
+      } else {
+        alert(`批量删除失败：${resp.error || '未知错误'}`)
+      }
+    } catch { alert('请求失败') }
     setSelectedReviews(new Set())
-    alert(`批量删除完成：成功 ${ok} 条，失败 ${fail} 条`)
     fetchData()
   }
 
-  // 批量处理：精选
+  // 批量处理：精选（并行）
   const handleBatchSelect = async () => {
     const ids = Array.from(selectedReviews)
     if (ids.length === 0) { alert('请先勾选文章'); return }
     if (!confirm(`确定批量标记 ${ids.length} 条为精选？`)) return
     const pw = getPw() || ''
-    let ok = 0, fail = 0
-    for (const id of ids) {
-      setReviewing(p => ({ ...p, [id]: 'select' }))
-      try {
-        const res = await fetch('/api/admin/article-update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-          body: JSON.stringify({ id, is_selected: true }),
-        })
-        if (res.ok) ok++
-        else fail++
-      } catch { fail++ }
-      setReviewing(p => { const n = { ...p }; delete n[id]; return n })
-    }
+    const results = await Promise.all(ids.map((id) =>
+      fetch('/api/admin/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ id, is_selected: true }),
+      }).then((r) => r.ok).catch(() => false)
+    ))
+    const ok = results.filter(Boolean).length
+    const fail = results.length - ok
     setSelectedReviews(new Set())
     alert(`批量精选完成：成功 ${ok} 条，失败 ${fail} 条`)
     fetchData()
@@ -309,9 +418,37 @@ export default function MonitorPage() {
               <div className="monitor-stat-card">
                 <div className="monitor-stat-value" style={{ color: '#f59e0b' }}>{data.queue}</div>
                 <div className="monitor-stat-label">LLM 待处理</div>
-                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-                  <button className="monitor-action-btn" onClick={handleTriggerLlm} disabled={llming}>{llming ? '处理中…' : '手动处理LLM'}</button>
-                  <button className="monitor-action-btn" onClick={handleCleanupIrrelevant} disabled={cleaning} style={{ color: '#e94560', borderColor: '#e94560' }}>{cleaning ? '清理中…' : '清理无关资讯'}</button>
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.375rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {llming ? (
+                    <>
+                      <button className="monitor-action-btn" onClick={handleStopLlm} style={{ color: '#e94560', borderColor: '#e94560' }}>停止处理</button>
+                      {llmProgress && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          已处理 {llmProgress.processed} 条 · 剩余 {llmProgress.remaining} 条 · 第 {llmProgress.rounds} 轮
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <button className="monitor-action-btn" onClick={handleTriggerLlm}>手动处理LLM</button>
+                      <button
+                        className="monitor-action-btn"
+                        onClick={toggleAutoLlm}
+                        style={{
+                          borderColor: autoLlmEnabled ? '#2e9d5a' : 'var(--border)',
+                          color: autoLlmEnabled ? '#2e9d5a' : 'var(--text-muted)',
+                        }}
+                        title="每3小时自动触发一次LLM处理"
+                      >
+                        {autoLlmEnabled ? '自动处理 ON' : '自动处理 OFF'}
+                      </button>
+                      {autoLlmEnabled && autoLlmRemaining !== null && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                          下次 {formatCountdown(autoLlmRemaining)}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
               <div className="monitor-stat-card">
