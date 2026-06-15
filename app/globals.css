@@ -909,6 +909,227 @@ body {
   cursor: help;
 }
 
+/* ====== 运营监控面板 ====== */
+
+.monitor-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .monitor-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .monitor-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.monitor-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.monitor-stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 0.375rem;
+}
+
+.monitor-stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.monitor-action-btn {
+  padding: 0.3rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.monitor-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.monitor-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 源健康度紧凑列表 */
+.source-compact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.source-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+}
+
+.source-compact-row:hover {
+  background: var(--surface);
+}
+
+.source-compact-row:nth-child(even) {
+  background: rgba(0,0,0,0.02);
+}
+
+.source-compact-row:nth-child(even):hover {
+  background: var(--surface);
+}
+
+.source-compact-name {
+  width: 160px;
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-compact-url {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.source-compact-url:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.monitor-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.monitor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.monitor-table th,
+.monitor-table td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.monitor-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.monitor-table tr:hover td {
+  background: var(--surface);
+}
+
+.trigger-tag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.trigger-tag.manual {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.monitor-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.monitor-category-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.monitor-category-name {
+  width: 6rem;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.monitor-category-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.monitor-category-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.monitor-category-count {
+  width: 3rem;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ====== 批量删除工具栏 ====== */
 
 .batch-actions-bar {
