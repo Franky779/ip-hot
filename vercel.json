@@ -19,7 +19,7 @@
     },
     {
       "path": "/api/cron/process-llm",
-      "schedule": "0 * * * *"
+      "schedule": "0 23 * * *"
     }
   ]
 }
