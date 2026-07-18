@@ -5,6 +5,8 @@ import { AdminToggle } from './components/AdminToggle'
 import { TimelineList } from './components/TimelineList'
 
 export const revalidate = 300
+const ARTICLES_PER_PAGE = 20
+const MAX_PAGE = 50
 
 type Article = {
   id: string
@@ -20,19 +22,35 @@ type Article = {
   created_at: string | null
 }
 
-type SearchParams = { category?: string; q?: string }
+type SearchParams = { category?: string; q?: string; page?: string }
 
-async function getArticles(category: string, q: string): Promise<Article[]> {
+type ArticleResult = {
+  articles: Article[]
+  hasMore: boolean
+}
+
+function parsePage(value: string | undefined): number {
+  const page = Number.parseInt(value ?? '1', 10)
+  if (!Number.isFinite(page) || page < 1) return 1
+  return Math.min(page, MAX_PAGE)
+}
+
+async function getArticles(category: string, q: string, page: number): Promise<ArticleResult> {
   const supabase = getSupabase()
+  const totalToShow = page * ARTICLES_PER_PAGE
   let query = supabase
     .from('articles')
     .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
     .not('title_cn', 'is', null)
     .not('summary_cn', 'is', null)
     .not('category', 'is', null)
+    .not('commentary', 'is', null)
+    .neq('commentary', '')
+    .neq('category', '待分类')
+    .gte('relevance_score', 4)
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false, nullsFirst: false })
-    .limit(500)
+    .range(0, totalToShow)
 
   if (category && category !== 'all') {
     query = query.eq('category', category)
@@ -44,9 +62,13 @@ async function getArticles(category: string, q: string): Promise<Article[]> {
   const { data, error } = await query
   if (error) {
     console.error('Failed to fetch articles:', error)
-    return []
+    return { articles: [], hasMore: false }
   }
-  return (data ?? []) as Article[]
+  const rows = (data ?? []) as Article[]
+  return {
+    articles: rows.slice(0, totalToShow),
+    hasMore: rows.length > totalToShow,
+  }
 }
 
 function formatDateLabel(iso: string | null): string {
@@ -82,7 +104,8 @@ export default async function Home({
   const params = await searchParams
   const category = params.category ?? 'all'
   const q = params.q ?? ''
-  const articles = await getArticles(category, q)
+  const page = parsePage(params.page)
+  const { articles, hasMore } = await getArticles(category, q, page)
   const dateGroups = groupByDate(articles)
   const dates = Object.keys(dateGroups)
 
@@ -114,7 +137,14 @@ export default async function Home({
                 : '数据库暂无数据。下次 cron 抓取后会出现内容。'}
           </p>
         ) : (
-          <TimelineList dateGroups={dateGroups} dates={dates} />
+          <TimelineList
+            dateGroups={dateGroups}
+            dates={dates}
+            currentPage={page}
+            hasMore={hasMore}
+            category={category}
+            query={q}
+          />
         )}
       </section>
     </>

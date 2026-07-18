@@ -516,6 +516,39 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0 0.5rem;
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  min-height: 42px;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.load-more-btn:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.load-more-btn.loading {
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
 /* ====== 主题切换器(放在 sidebar 底部,3 图标 segmented) ====== */
 
 .theme-toggle-wrap {

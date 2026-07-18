@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState, useCallback, useMemo, useEffect, useRef, useTransition } from 'react'
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 
@@ -22,6 +24,10 @@ interface Article {
 interface TimelineListProps {
   dateGroups: Record<string, Article[]>
   dates: string[]
+  currentPage: number
+  hasMore: boolean
+  category: string
+  query: string
 }
 
 function formatTime(iso: string | null): string {
@@ -40,17 +46,37 @@ function formatTime(iso: string | null): string {
   }
 }
 
-export function TimelineList({ dateGroups, dates }: TimelineListProps) {
+function buildPageHref(category: string, query: string, page: number): string {
+  const params = new URLSearchParams()
+  if (category && category !== 'all') params.set('category', category)
+  if (query) params.set('q', query)
+  if (page > 1) params.set('page', String(page))
+  const search = params.toString()
+  return search ? `/?${search}` : '/'
+}
+
+export function TimelineList({
+  dateGroups,
+  dates,
+  currentPage,
+  hasMore,
+  category,
+  query,
+}: TimelineListProps) {
+  const router = useRouter()
   const { isAdmin, loaded } = useAdmin()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
   const [filterScore, setFilterScore] = useState<number | null>(null)
   const [batchCategory, setBatchCategory] = useState('')
   const [categorizing, setCategorizing] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const triggeredPageRef = useRef<number | null>(null)
 
   const isSelectionMode = loaded && isAdmin && selectedIds.size > 0
 
-  const filterArticles = (articles: Article[]) => {
+  const filterArticles = useCallback((articles: Article[]) => {
     let filtered = isAdmin
       ? articles
       : articles.filter((a) => (a.relevance_score ?? 10) >= 4 && a.category !== '待分类' && a.commentary)
@@ -58,7 +84,7 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
       filtered = filtered.filter((a) => a.relevance_score === filterScore)
     }
     return filtered
-  }
+  }, [filterScore, isAdmin])
 
   // 当前页面所有出现的 relevance_score 唯一值(管理员模式用于评分筛选)
   const visibleScores = useMemo(() => {
@@ -90,9 +116,40 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
     setFilterScore((prev) => (prev === score ? null : score))
   }, [])
 
-  const visibleDates = dates.filter((date) => filterArticles(dateGroups[date]).length > 0)
+  const visibleDates = useMemo(
+    () => dates.filter((date) => filterArticles(dateGroups[date]).length > 0),
+    [dateGroups, dates, filterArticles]
+  )
 
-  const allIds = visibleDates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id))
+  const allIds = useMemo(
+    () => visibleDates.flatMap((date) => filterArticles(dateGroups[date]).map((a) => a.id)),
+    [dateGroups, filterArticles, visibleDates]
+  )
+  const nextPageHref = useMemo(
+    () => buildPageHref(category, query, currentPage + 1),
+    [category, query, currentPage]
+  )
+
+  useEffect(() => {
+    if (!hasMore || isPending) return
+    const target = loadMoreRef.current
+    if (!target) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return
+        if (triggeredPageRef.current === currentPage) return
+        triggeredPageRef.current = currentPage
+        startTransition(() => {
+          router.push(nextPageHref, { scroll: false })
+        })
+      },
+      { rootMargin: '600px 0px' }
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [currentPage, hasMore, isPending, nextPageHref, router])
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -312,6 +369,18 @@ export function TimelineList({ dateGroups, dates }: TimelineListProps) {
           </div>
         ))}
       </div>
+      {hasMore && (
+        <div className="load-more-wrap" ref={loadMoreRef}>
+          <Link
+            href={nextPageHref}
+            scroll={false}
+            className={`load-more-btn${isPending ? ' loading' : ''}`}
+            aria-disabled={isPending}
+          >
+            {isPending ? '正在加载...' : '加载更多资讯'}
+          </Link>
+        </div>
+      )}
     </>
   )
 }
