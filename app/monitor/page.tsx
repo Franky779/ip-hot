@@ -4,14 +4,6 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useAdmin } from '../components/AdminToggle'
 
-type SourceItem = {
-  name: string
-  url: string
-  id: string
-  lastActive?: string
-  count7d?: number
-}
-
 type MonitorData = {
   todayTask: {
     status: string; triggerType: string; startedAt: string; endedAt: string | null
@@ -26,12 +18,6 @@ type MonitorData = {
   }>
   queue: number
   todayInserted: number
-  failedSources: number
-  deadSources: number
-  activeSources: number
-  deadSourceList: SourceItem[]
-  failedSourceList: SourceItem[]
-  activeSourceList: SourceItem[]
   categoryStats: Array<{ category: string; count: number }>
   recentErrors: Array<{ id: string; startedAt: string; status: string; errorMessage: string | null }>
   sourceQuality?: Array<{ name: string; total: number; low: number; rate: number }>
@@ -48,15 +34,6 @@ function formatTime(iso: string | null): string {
 }
 function getStatusColor(s: string) { return s === 'success' ? '#2e9d5a' : s === 'running' ? '#3b82f6' : s === 'error' ? '#e94560' : '#888' }
 function getStatusLabel(s: string) { return s === 'success' ? '成功' : s === 'running' ? '运行中' : s === 'error' ? '失败' : s }
-function getHealthColor(lastActive: string | null): string {
-  if (!lastActive) return '#e94560'
-  return (Date.now() - new Date(lastActive).getTime()) / 36e5 < 24 ? '#2e9d5a' : (Date.now() - new Date(lastActive).getTime()) / 36e5 < 72 ? '#f59e0b' : '#e94560'
-}
-function getHealthLabel(lastActive: string | null): string {
-  if (!lastActive) return '从未活跃'
-  const h = (Date.now() - new Date(lastActive).getTime()) / 36e5
-  return h < 24 ? '健康' : h < 72 ? '一般' : '离线'
-}
 function formatCountdown(ms: number): string {
   if (ms <= 0) return '00:00:00'
   const totalSeconds = Math.ceil(ms / 1000)
@@ -76,10 +53,6 @@ export default function MonitorPage() {
   const stopLlmRef = useRef(false)
   const [showLogs, setShowLogs] = useState(false)
   const [logs, setLogs] = useState<any[]>([])
-  // 源网址编辑
-  const [editingUrl, setEditingUrl] = useState<{ id: string; name: string } | null>(null)
-  const [editUrlVal, setEditUrlVal] = useState('')
-  const [sourceUrlUpdates, setSourceUrlUpdates] = useState<Record<string, string>>({})
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
 
@@ -93,7 +66,10 @@ export default function MonitorPage() {
   const fetchData = useCallback(async () => {
     const pw = getPw(); if (!pw) return
     try {
-      const res = await fetch('/api/admin/monitor', { headers: { 'x-admin-password': pw } })
+      const res = await fetch('/api/admin/monitor', {
+        cache: 'no-store',
+        headers: { 'x-admin-password': pw },
+      })
       if (res.ok) setData(await res.json())
     } catch {} finally { setLoading(false) }
   }, [])
@@ -340,43 +316,6 @@ export default function MonitorPage() {
     fetchData()
   }
 
-  // 保存网址
-  const handleSaveUrl = async (id: string) => {
-    const pw = getPw() || ''
-    try {
-      const res = await fetch('/api/admin/sources', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-        body: JSON.stringify({ id, url: editUrlVal }),
-      })
-      if (res.ok) {
-        setSourceUrlUpdates(p => ({ ...p, [id]: editUrlVal }))
-        setEditingUrl(null)
-        fetchData()
-      } else { alert('保存失败') }
-    } catch {}
-  }
-
-  // 删除信源
-  const handleDeleteSource = async (id: string, name: string) => {
-    if (!confirm(`确定删除信源「${name}」？此操作不可撤销。`)) return
-    const pw = getPw() || ''
-    try {
-      const res = await fetch('/api/admin/sources/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-        body: JSON.stringify({ id }),
-      })
-      if (res.ok) {
-        fetchData()
-      } else {
-        alert('删除失败')
-      }
-    } catch {}
-  }
-
-  const getSourceUrl = (s: SourceItem) => sourceUrlUpdates[s.id] || s.url || ''
-
   const task = data?.todayTask
   const allCats = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护', '待分类']
   const catMap = new Map((data?.categoryStats || []).map(c => [c.category, c.count]))
@@ -446,14 +385,6 @@ export default function MonitorPage() {
                   )}
                 </div>
               </div>
-              <div className="monitor-stat-card">
-                <div className="monitor-stat-value" style={{ color: '#2e9d5a' }}>{data.activeSources}</div>
-                <div className="monitor-stat-label">活跃信息源</div>
-                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '0.75rem' }}>
-                  <span style={{ color: '#e94560' }}>失效 {data.failedSources}</span>
-                  <span style={{ color: '#888' }}>未跑通 {data.deadSources}</span>
-                </div>
-              </div>
             </div>
 
             {/* 日志面板 */}
@@ -476,109 +407,15 @@ export default function MonitorPage() {
             <div>
               <h2 className="monitor-section-title">分类资讯数量统计</h2>
               {data.categoryStats.length === 0 ? <p className="empty-state">暂无数据</p> : (
-                <table className="monitor-table">
-                  <thead><tr><th>分类</th><th style={{ textAlign: 'right' }}>数量</th></tr></thead>
-                  <tbody>
-                    {allCats.map(cat => (
-                      <tr key={cat}><td>{cat}</td><td style={{ textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{catMap.get(cat) || 0}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="monitor-category-grid">
+                  {allCats.map(cat => (
+                    <div key={cat} className="monitor-category-card">
+                      <span>{cat}</span>
+                      <strong>{catMap.get(cat) || 0}</strong>
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
-
-            {/* 源健康度 */}
-            <div>
-              <h2 className="monitor-section-title">源健康度（7天）</h2>
-
-              {/* 3.1 未跑通 */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#e94560', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#e94560', display: 'inline-block' }} />未跑通 · {data.deadSourceList.length}
-                </h3>
-                {data.deadSourceList.length === 0 ? <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>无</p> : (
-                  <div className="source-compact-list">
-                    {data.deadSourceList.map(s => {
-                      const displayUrl = getSourceUrl(s)
-                      return (
-                        <div key={s.id} className="source-compact-row">
-                          <span className="source-compact-name">{s.name}</span>
-                          {editingUrl?.id === s.id ? (
-                            <span style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flex: 1 }}>
-                              <input value={editUrlVal} onChange={e => setEditUrlVal(e.target.value)} style={{ flex: 1, padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid var(--border)', borderRadius: 4 }} />
-                              <button className="monitor-action-btn" onClick={() => handleSaveUrl(s.id)}>确认</button>
-                              <button className="monitor-action-btn" onClick={() => setEditingUrl(null)}>取消</button>
-                            </span>
-                          ) : (
-                            <span className="source-compact-url" onClick={() => { setEditingUrl({ id: s.id, name: s.name }); setEditUrlVal(displayUrl) }} title="点击编辑">{displayUrl || '(无网址)'}</span>
-                          )}
-                          <button className="monitor-action-btn" onClick={() => handleDeleteSource(s.id, s.name)} style={{ fontSize: '0.6875rem', color: '#e94560', borderColor: '#e94560' }}>
-                            删除
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* 3.2 失效 */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#f59e0b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />失效 · {data.failedSourceList.length}
-                </h3>
-                {data.failedSourceList.length === 0 ? <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>无</p> : (
-                  <div className="source-compact-list">
-                    {data.failedSourceList.map(s => {
-                      const displayUrl = getSourceUrl(s)
-                      return (
-                        <div key={s.id} className="source-compact-row">
-                          <span className="source-compact-name">{s.name}</span>
-                          {editingUrl?.id === s.id ? (
-                            <span style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flex: 1 }}>
-                              <input value={editUrlVal} onChange={e => setEditUrlVal(e.target.value)} style={{ flex: 1, padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid var(--border)', borderRadius: 4 }} />
-                              <button className="monitor-action-btn" onClick={() => handleSaveUrl(s.id)}>确认</button>
-                              <button className="monitor-action-btn" onClick={() => setEditingUrl(null)}>取消</button>
-                            </span>
-                          ) : (
-                            <span className="source-compact-url" onClick={() => { setEditingUrl({ id: s.id, name: s.name }); setEditUrlVal(displayUrl) }} title="点击编辑">{displayUrl || '(无网址)'}</span>
-                          )}
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>{s.count7d || 0}篇/7d</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* 3.3 活跃 */}
-              <div>
-                <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#2e9d5a', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#2e9d5a', display: 'inline-block' }} />活跃 · {data.activeSourceList.length}
-                </h3>
-                {data.activeSourceList.length === 0 ? <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>无</p> : (
-                  <div className="source-compact-list">
-                    {data.activeSourceList.map(s => {
-                      const displayUrl = getSourceUrl(s)
-                      return (
-                        <div key={s.id} className="source-compact-row">
-                          <span className="source-compact-name">{s.name}</span>
-                          {editingUrl?.id === s.id ? (
-                            <span style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flex: 1 }}>
-                              <input value={editUrlVal} onChange={e => setEditUrlVal(e.target.value)} style={{ flex: 1, padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid var(--border)', borderRadius: 4 }} />
-                              <button className="monitor-action-btn" onClick={() => handleSaveUrl(s.id)}>确认</button>
-                              <button className="monitor-action-btn" onClick={() => setEditingUrl(null)}>取消</button>
-                            </span>
-                          ) : (
-                            <span className="source-compact-url" onClick={() => { setEditingUrl({ id: s.id, name: s.name }); setEditUrlVal(displayUrl) }} title="点击编辑">{displayUrl || '(无网址)'}</span>
-                          )}
-                          <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>{s.count7d || 0}篇/7d</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* 信源质量（7天低分率） */}

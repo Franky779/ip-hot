@@ -986,7 +986,7 @@ body {
 
 .monitor-stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 }
 
@@ -1053,60 +1053,6 @@ body {
 .monitor-action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 源健康度紧凑列表 */
-.source-compact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.source-compact-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
-}
-
-.source-compact-row:hover {
-  background: var(--surface);
-}
-
-.source-compact-row:nth-child(even) {
-  background: rgba(0,0,0,0.02);
-}
-
-.source-compact-row:nth-child(even):hover {
-  background: var(--surface);
-}
-
-.source-compact-name {
-  width: 160px;
-  flex-shrink: 0;
-  font-weight: 600;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.source-compact-url {
-  flex: 1;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  min-width: 0;
-}
-
-.source-compact-url:hover {
-  color: var(--accent);
-  text-decoration: underline;
 }
 
 .monitor-section-title {
@@ -1332,6 +1278,51 @@ body {
   grid-template-columns: minmax(280px, auto) minmax(520px, 1fr) auto;
   align-items: center;
   gap: 2rem;
+}
+
+.monitor-category-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.monitor-category-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.monitor-category-card span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-category-card strong {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1200px) {
+  .monitor-category-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .monitor-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .sources-header-stats {

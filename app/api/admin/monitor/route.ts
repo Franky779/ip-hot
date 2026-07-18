@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
+const MONITOR_CATEGORIES = [
+  '创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺',
+  '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化',
+  '政策规则', '版权保护', '待分类',
+]
+
 function getBeijingTodayRange(): { start: string; end: string } {
   const now = new Date()
   const beijingOffset = 8 * 60 * 60 * 1000
@@ -64,20 +72,18 @@ export async function GET(request: Request) {
       .gte('created_at', todayStart)
       .lte('created_at', todayEnd)
 
-    // 5. 分类统计 — 仅统计已完整处理的文章（与首页展示条件一致）
-    const { data: categoryRows, error: e5 } = await supabase
-      .from('articles')
-      .select('category')
-      .not('title_cn', 'is', null)
-      .not('summary_cn', 'is', null)
-      .not('category', 'is', null)
-
-    // 6. 源健康度 — 查所有文章的 source + created_at，在代码里聚合
-    const { data: sourceRows, error: e6 } = await supabase
-      .from('articles')
-      .select('source, created_at')
-      .not('source', 'is', null)
-      .order('created_at', { ascending: false })
+    // 5. 分类统计 — 对每个分类执行数据库精确计数，避免 Supabase 默认1000行上限截断。
+    const categoryResults = await Promise.all(
+      MONITOR_CATEGORIES.map(async (category) => {
+        const { count, error } = await supabase
+          .from('articles')
+          .select('*', { count: 'exact', head: true })
+          .eq('category', category)
+          .not('title_cn', 'is', null)
+          .not('summary_cn', 'is', null)
+        return { category, count: count ?? 0, error }
+      })
+    )
 
     // 7. 最近错误
     const { data: recentErrors, error: e7 } = await supabase
@@ -134,90 +140,15 @@ export async function GET(request: Request) {
       }
     } catch { /* 表不存在时静默 */ }
 
-    const errors = [e1, e2, e3, e4, e5, e6, e7, e8, e9].filter(Boolean)
+    const errors = [
+      e1, e2, e3, e4, e7, e8, e9,
+      ...categoryResults.map((result) => result.error),
+    ].filter(Boolean)
     if (errors.length > 0) {
       console.error('[monitor] 查询错误:', errors.map((e) => (e as any).message || e))
     }
 
-    // 组装分类统计
-    const categoryCounts: Record<string, number> = {}
-    if (categoryRows) {
-      for (const row of categoryRows as any[]) {
-        if (row.category) {
-          categoryCounts[row.category] = (categoryCounts[row.category] || 0) + 1
-        }
-      }
-    }
-    const categoryStats = Object.entries(categoryCounts)
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count)
-
-    // 组装源健康度数据
-    const sourceHealthMap = new Map<string, { lastActive: string | null; count7d: number }>()
-    if (sourceRows) {
-      const seen = new Set<string>()
-      for (const row of sourceRows as any[]) {
-        if (!seen.has(row.source)) {
-          seen.add(row.source)
-          sourceHealthMap.set(row.source, { lastActive: row.created_at, count7d: 0 })
-        }
-        // 统计7天内数量
-        if (row.created_at >= sevenDaysAgo) {
-          const existing = sourceHealthMap.get(row.source)
-          if (existing) {
-            existing.count7d += 1
-          }
-        }
-      }
-    }
-
-    // 查询 info_sources 表获取所有源的名字和网址
-    const { data: allSources } = await supabase
-      .from('info_sources')
-      .select('id, name, url')
-
-    const sourceUrlMap = new Map<string, { id: string; url: string }>()
-    if (allSources) {
-      for (const row of allSources as any[]) {
-        sourceUrlMap.set(row.name, { id: row.id, url: row.url || '' })
-      }
-    }
-
-    // 分类：死源(从未活跃) / 失效(>72h) / 活跃
-    const now = Date.now()
-    const deadList: Array<{ name: string; url: string; id: string }> = []
-    const failedList: Array<{ name: string; url: string; id: string; lastActive: string; count7d: number }> = []
-    const activeList: Array<{ name: string; url: string; id: string; lastActive: string; count7d: number }> = []
-
-    for (const [name, data] of sourceHealthMap.entries()) {
-      const sourceInfo = sourceUrlMap.get(name) || { id: '', url: '' }
-      if (!data.lastActive) {
-        deadList.push({ name, url: sourceInfo.url, id: sourceInfo.id })
-      } else {
-        const hoursInactive = (now - new Date(data.lastActive).getTime()) / (1000 * 60 * 60)
-        if (hoursInactive > 72) {
-          failedList.push({ name, url: sourceInfo.url, id: sourceInfo.id, lastActive: data.lastActive, count7d: data.count7d })
-        } else {
-          activeList.push({ name, url: sourceInfo.url, id: sourceInfo.id, lastActive: data.lastActive, count7d: data.count7d })
-        }
-      }
-    }
-    // info_sources 里有但 articles 里从未出现过的，也是死源
-    if (allSources) {
-      for (const row of allSources as any[]) {
-        if (!sourceHealthMap.has(row.name)) {
-          deadList.push({ name: row.name, url: row.url || '', id: row.id })
-        }
-      }
-    }
-    // 排序：按名字
-    deadList.sort((a, b) => a.name.localeCompare(b.name))
-    failedList.sort((a, b) => a.name.localeCompare(b.name))
-    activeList.sort((a, b) => a.name.localeCompare(b.name))
-
-    const failedSources = failedList.length
-    const deadSources = deadList.length
-    const activeSourceCount = activeList.length
+    const categoryStats = categoryResults.map(({ category, count }) => ({ category, count }))
 
     const todayTask = todayTaskRaw
       ? {
@@ -277,18 +208,7 @@ export async function GET(request: Request) {
       history,
       queue: queueCount || 0,
       todayInserted: todayInserted || 0,
-      failedSources,
-      deadSources,
-      activeSources: activeSourceCount,
-      deadSourceList: deadList,
-      failedSourceList: failedList,
-      activeSourceList: activeList,
-      categoryStats: (categoryStats || []).map((r: any) => ({ category: r.category, count: r.count })),
-      sourceHealth: Array.from(sourceHealthMap.entries()).map(([name, data]) => ({
-        name,
-        lastActive: data.lastActive,
-        count7d: data.count7d,
-      })),
+      categoryStats,
       recentErrors: (recentErrors || []).map((e: any) => ({
         id: e.id,
         startedAt: e.started_at,
