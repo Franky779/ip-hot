@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useCallback, useMemo, useEffect, useRef, useTransition } from 'react'
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
+import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 
 const CATEGORIES = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护']
 
@@ -79,7 +80,12 @@ export function TimelineList({
   const filterArticles = useCallback((articles: Article[]) => {
     let filtered = isAdmin
       ? articles
-      : articles.filter((a) => (a.relevance_score ?? 10) >= 4 && a.category !== '待分类' && a.commentary)
+      : articles.filter((a) =>
+          (a.relevance_score ?? 10) >= 7
+          && a.category !== '待分类'
+          && a.commentary
+          && !isClearlyIndirectTechTitle(a.title, a.category)
+        )
     if (filterScore !== null) {
       filtered = filtered.filter((a) => a.relevance_score === filterScore)
     }

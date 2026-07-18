@@ -2,6 +2,7 @@ import { getSupabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { AdminToggle } from '../components/AdminToggle'
 import { ArticleActions } from '../components/ArticleActions'
+import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 
 export const metadata = {
   title: '今日精选 - IP 行业资讯快报',
@@ -58,7 +59,9 @@ async function getFeatured(): Promise<Article[]> {
     console.error('Failed to fetch featured:', error)
     return []
   }
-  return (data ?? []) as Article[]
+  return ((data ?? []) as Article[]).filter(
+    (article) => !isClearlyIndirectTechTitle(article.title, article.category)
+  )
 }
 
 function formatDate(iso: string | null): string {

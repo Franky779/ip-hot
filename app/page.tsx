@@ -3,6 +3,7 @@ import { CategoryTabs } from './components/CategoryTabs'
 import { SearchBox } from './components/SearchBox'
 import { AdminToggle } from './components/AdminToggle'
 import { TimelineList } from './components/TimelineList'
+import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 
 export const revalidate = 300
 const ARTICLES_PER_PAGE = 20
@@ -47,7 +48,7 @@ async function getArticles(category: string, q: string, page: number): Promise<A
     .not('commentary', 'is', null)
     .neq('commentary', '')
     .neq('category', '待分类')
-    .gte('relevance_score', 4)
+    .gte('relevance_score', 7)
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false, nullsFirst: false })
     .range(0, totalToShow)
@@ -64,7 +65,9 @@ async function getArticles(category: string, q: string, page: number): Promise<A
     console.error('Failed to fetch articles:', error)
     return { articles: [], hasMore: false }
   }
-  const rows = (data ?? []) as Article[]
+  const rows = ((data ?? []) as Article[]).filter(
+    (article) => !isClearlyIndirectTechTitle(article.title, article.category)
+  )
   return {
     articles: rows.slice(0, totalToShow),
     hasMore: rows.length > totalToShow,
