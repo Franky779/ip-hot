@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { shouldIgnoreArticle } from '@/lib/llm'
-import { enforceDirectIndustryScore } from '@/lib/relevance'
+import { enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from '@/lib/relevance'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -20,6 +20,8 @@ const CATEGORIES = [
 ]
 
 const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。请对以下新闻进行分析：
+${INDUSTRY_SCOPE_RULES}
+
 【直接相关性门槛】只有新闻的核心事件、产品、交易对象或主要参与者直接属于动漫、漫画、IP开发、品牌授权、潮玩谷子、衍生品、文创、博物馆文创、文旅项目、主题乐园、城市IP、旅游纪念品等目标行业，评分才允许达到7分。
 泛AI、泛科技、泛财经、泛消费或泛政策资讯，即使可能影响、支持或可用于目标行业，也属于间接相关，最高3分。AI资讯只有在明确报道新技术用于具体动画、IP、授权、潮玩、博物馆或文旅项目时，才属于直接相关。禁止从无关新闻中强行提炼IP或文旅角度。
 

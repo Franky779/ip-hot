@@ -5,7 +5,7 @@
 
 import { createServiceClient } from './supabase'
 import { findRelevantLearnings, formatLearningRules } from './classification-learning'
-import { enforceDirectIndustryScore } from './relevance'
+import { enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
 
 const LLM_BASE_URL = process.env.LLM_BASE_URL || ''
 const LLM_API_KEY = process.env.LLM_API_KEY || ''
@@ -46,12 +46,15 @@ export type LlmResult = {
 const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位：专注动漫 / IP / 潮玩谷子 / 文创 / 文旅 / 博物馆 / 旅游纪念品 / 数字创意产业等多元资讯聚合。
 请对以下新闻进行分析和处理：
 
+${INDUSTRY_SCOPE_RULES}
+
 【最高优先级：直接行业相关性门槛】
 只有新闻的核心事件、核心产品、交易对象或主要参与者直接属于以下目标行业，才允许评分达到7分：
-- 动漫、漫画、IP开发与运营、品牌授权、联名及衍生品
+- 文创、动漫IP、影视IP、游戏IP、文学IP、传统文化IP、文旅IP、体育IP、艺术家IP、明星/虚拟角色IP、企业品牌IP的开发与运营
+- IP授权、品牌授权、版权交易、内容改编、授权代理、品牌联名、联合营销、商品化开发
 - 潮玩、谷子、手办、卡牌、玩具及其零售渠道
-- 动画/漫画/游戏IP改编与商业化、相关影视内容
-- 文创商品、博物馆文创、文化遗产活化、文旅项目、主题乐园、城市IP、旅游纪念品
+- IP衍生消费品、体验型授权与数字型授权业务
+- 文创商品、博物馆文创、文化遗产活化、文旅项目、主题乐园、商业空间、城市IP、旅游纪念品
 - 上述行业的展会、政策、版权保护及明确落地的新技术应用
 
 不能因为一条泛科技、泛AI、泛财经、泛消费或泛政策新闻“可能影响”“可以用于”“值得关注”目标行业，就把它判为直接相关。禁止从无关新闻中强行提炼IP、文旅或商业角度。
