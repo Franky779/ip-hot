@@ -1287,6 +1287,134 @@ body {
 
 /* ====== 信息源管理页面 ====== */
 
+.sources-page-heading {
+  display: grid;
+  grid-template-columns: minmax(280px, auto) minmax(520px, 1fr) auto;
+  align-items: center;
+  gap: 2rem;
+}
+
+.sources-header-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(76px, 1fr));
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.source-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: 0.75rem;
+  border-right: 1px solid var(--border-light);
+}
+
+.source-stat-item:last-child {
+  border-right: 0;
+}
+
+.source-stat-item strong {
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.source-stat-item span {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.source-stat-item.active strong {
+  color: #2d8a4e;
+}
+
+.source-stat-item.failed strong {
+  color: var(--accent);
+}
+
+.source-filter-panel {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.source-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.source-filter-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.source-filter-grid label > span {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.source-filter-grid input,
+.source-filter-grid select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 0.75rem;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.source-filter-grid input:focus,
+.source-filter-grid select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.source-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.source-filter-summary button {
+  padding: 0;
+  color: var(--accent);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.source-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4rem 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.source-empty-state strong {
+  color: var(--text);
+}
+
 .source-section {
   margin-bottom: 2.5rem;
 }
@@ -1398,6 +1526,45 @@ body {
   display: flex;
   gap: 0.375rem;
   margin-top: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .sources-page-heading {
+    grid-template-columns: 1fr auto;
+  }
+
+  .sources-header-stats {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .source-filter-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .sources-page-heading {
+    gap: 1rem;
+  }
+
+  .sources-header-stats {
+    grid-template-columns: repeat(5, minmax(64px, 1fr));
+    overflow-x: auto;
+  }
+
+  .source-stat-item {
+    min-height: 64px;
+    padding: 0.5rem;
+  }
+
+  .source-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .source-search-field {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ====== Loading 状态 ====== */

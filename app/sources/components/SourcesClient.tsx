@@ -14,11 +14,11 @@ interface Source {
   type: string
   description: string
   method: string
-  fetch_type: 'rss' | 'web'
-  enabled: boolean
-  last_test_status: 'untested' | 'success' | 'failed'
-  last_tested_at: string | null
-  last_test_message: string
+  fetch_type?: 'rss' | 'web'
+  enabled?: boolean
+  last_test_status?: 'untested' | 'success' | 'failed'
+  last_tested_at?: string | null
+  last_test_message?: string
   sort_order: number
 }
 
@@ -41,6 +41,12 @@ function groupBySection(sources: Source[]) {
     groups[s.section_id].items.push(s)
   }
   return groups
+}
+
+function getFetchType(source: Source): 'rss' | 'web' {
+  if (source.fetch_type) return source.fetch_type
+  if (source.type?.toLowerCase() === 'rss') return 'rss'
+  return /(?:feed|rss|atom|\.xml)(?:\/|$|\?)/i.test(source.url) ? 'rss' : 'web'
 }
 
 function generateMarkdown(sources: Source[]): string {
@@ -94,8 +100,34 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [editingSource, setEditingSource] = useState<Source | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [testingId, setTestingId] = useState<string | null>(null)
+  const [keyword, setKeyword] = useState('')
+  const [regionFilter, setRegionFilter] = useState('all')
+  const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
+  const [sectionFilter, setSectionFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
 
-  const grouped = groupBySection(sources)
+  const sectionOptions = Array.from(
+    new Map(sources.map((source) => [source.section_id, source.section_title])).entries()
+  )
+  const normalizedKeyword = keyword.trim().toLowerCase()
+  const filteredSources = sources.filter((source) => {
+    const matchesKeyword = !normalizedKeyword || [
+      source.name, source.url, source.type, source.description, source.method,
+    ].some((value) => value?.toLowerCase().includes(normalizedKeyword))
+    const matchesRegion = regionFilter === 'all' || source.region === regionFilter
+    const matchesFetchType = fetchTypeFilter === 'all' || getFetchType(source) === fetchTypeFilter
+    const matchesSection = sectionFilter === 'all' || source.section_id === sectionFilter
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'enabled' && source.enabled)
+      || (statusFilter === 'disabled' && !source.enabled)
+      || (statusFilter === 'success' && source.last_test_status === 'success')
+      || (statusFilter === 'failed' && source.last_test_status === 'failed')
+      || (statusFilter === 'untested' && (!source.last_test_status || source.last_test_status === 'untested'))
+    return matchesKeyword && matchesRegion && matchesFetchType && matchesSection && matchesStatus
+  })
+  const hasFilters = keyword !== '' || regionFilter !== 'all' || fetchTypeFilter !== 'all'
+    || sectionFilter !== 'all' || statusFilter !== 'all'
+  const grouped = groupBySection(filteredSources)
   const sectionIds = Object.keys(grouped)
 
   // 排序：国内在前，海外/日本在后；RSS 和 tools 在最后
@@ -182,6 +214,74 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   return (
     <>
       <section className="article-section">
+        <div className="source-filter-panel">
+          <div className="source-filter-grid">
+            <label className="source-search-field">
+              <span>关键词</span>
+              <input
+                type="search"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="搜索名称、网址或简介"
+              />
+            </label>
+            <label>
+              <span>来源地区</span>
+              <select value={regionFilter} onChange={(event) => setRegionFilter(event.target.value)}>
+                <option value="all">全部地区</option>
+                <option value="domestic">国内</option>
+                <option value="overseas">海外</option>
+                <option value="japan">日本</option>
+              </select>
+            </label>
+            <label>
+              <span>抓取类型</span>
+              <select value={fetchTypeFilter} onChange={(event) => setFetchTypeFilter(event.target.value)}>
+                <option value="all">全部类型</option>
+                <option value="rss">RSS</option>
+                <option value="web">普通网页</option>
+              </select>
+            </label>
+            <label>
+              <span>行业类型</span>
+              <select value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}>
+                <option value="all">全部行业</option>
+                {sectionOptions.map(([id, title]) => (
+                  <option key={id} value={id}>{title}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>运行状态</span>
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                <option value="all">全部状态</option>
+                <option value="enabled">自动抓取已启用</option>
+                <option value="disabled">自动抓取已停用</option>
+                <option value="success">最近测试成功</option>
+                <option value="failed">最近测试失败</option>
+                <option value="untested">尚未测试</option>
+              </select>
+            </label>
+          </div>
+          <div className="source-filter-summary">
+            <span>当前显示 <strong>{filteredSources.length}</strong> / {sources.length} 条</span>
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setKeyword('')
+                  setRegionFilter('all')
+                  setFetchTypeFilter('all')
+                  setSectionFilter('all')
+                  setStatusFilter('all')
+                }}
+              >
+                清除筛选
+              </button>
+            )}
+          </div>
+        </div>
+
         {loaded && isAdmin && (
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
             <button
@@ -227,7 +327,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                     </div>
                     <p className="source-method">
                       {item.enabled ? '🟢 自动抓取已启用' : '⚪ 自动抓取已停用'}
-                      {' · '}{item.fetch_type === 'rss' ? 'RSS' : '普通网页'}
+                      {' · '}{getFetchType(item) === 'rss' ? 'RSS' : '普通网页'}
                       {item.last_test_status === 'success' && ' · 最近测试成功'}
                       {item.last_test_status === 'failed' && ' · 最近测试失败'}
                     </p>
@@ -276,11 +376,21 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
             </div>
           )
         })}
+        {filteredSources.length === 0 && (
+          <div className="source-empty-state">
+            <strong>没有找到符合条件的信息源</strong>
+            <span>可以调整筛选条件，或点击“清除筛选”查看全部。</span>
+          </div>
+        )}
       </section>
 
       {showModal && (
         <SourceModal
-          source={editingSource}
+          source={editingSource ? {
+            ...editingSource,
+            fetch_type: getFetchType(editingSource),
+            enabled: editingSource.enabled ?? false,
+          } : null}
           onClose={() => setShowModal(false)}
           onSaved={handleRefresh}
         />
