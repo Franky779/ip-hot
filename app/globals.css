@@ -261,19 +261,19 @@ body {
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 2px;
   padding: 4px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 999px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 
 .category-tab {
-  padding: 0.4rem 1rem;
+  flex: 1 1 auto;
+  padding: 0.4rem 0.625rem;
+  text-align: center;
   border-radius: 999px;
   font-size: 0.875rem;
   color: var(--text-secondary);
