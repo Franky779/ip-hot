@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useRef } from 'react'
 import { useAdmin } from './AdminToggle'
 
 const ALL_CATEGORIES = [
@@ -31,9 +32,15 @@ export function CategoryTabs({
   const categories = loaded && !isAdmin
     ? ALL_CATEGORIES.filter((c) => c.value !== '待分类')
     : ALL_CATEGORIES
+  const tabsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const activeTab = tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+    activeTab?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+  }, [active, isAdmin])
 
   return (
-    <div className="category-tabs" role="tablist">
+    <div ref={tabsRef} className="category-tabs" role="tablist">
       {categories.map((c) => {
         const params = new URLSearchParams()
         if (c.value !== 'all') params.set('category', c.value)
