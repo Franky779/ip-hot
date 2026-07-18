@@ -31,6 +31,31 @@ type TestResult = {
   message: string
 }
 
+function buildChatGptRepairPrompt(source: Source, testResult?: TestResult): string {
+  return `请作为信息源抓取调试工程师，专门排查下面这个信息源，持续调试直到给出可执行的修复方案。
+
+项目：Franky779/ip-hot
+信息源名称：${source.name}
+网址：${source.url}
+来源地区：${REGION_LABELS[source.region] || source.region}
+行业分类：${source.section_title}
+网站定位：${source.type}
+抓取类型：${getFetchType(source) === 'rss' ? 'RSS' : '普通网页'}
+自动抓取状态：${source.enabled ? '启用' : '停用'}
+当前抓取配置：${source.method || '未配置'}
+最近测试状态：${source.last_test_status || '未测试'}
+最近测试错误：${testResult?.message || source.last_test_message || '暂无'}
+
+请按以下顺序处理：
+1. 实际访问并诊断网址、响应状态、重定向、反爬限制，以及RSS/XML或页面结构。
+2. 判断正确抓取类型，并给出可直接使用的RSS地址或网页选择器配置。
+3. 如果当前配置错误，明确列出需要修改的字段和新值。
+4. 给出在ip-hot项目中的最小代码或配置修改方案及验证步骤。
+5. 不要泛泛建议；每一步都围绕这个具体信息源，直到能够稳定抓取资讯。
+
+如果你无法直接访问网站，请明确告诉我下一步需要提供哪一段响应、页面源码或错误日志。`
+}
+
 const REGION_LABELS: Record<string, string> = {
   domestic: '国内',
   overseas: '海外',
@@ -106,6 +131,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [testingIds, setTestingIds] = useState<Set<string>>(new Set())
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
+  const [repairNoticeId, setRepairNoticeId] = useState<string | null>(null)
   const [keyword, setKeyword] = useState('')
   const [regionFilter, setRegionFilter] = useState('all')
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
@@ -226,6 +252,30 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         next.delete(id)
         return next
       })
+    }
+  }
+
+  const handleChatGptRepair = async (source: Source) => {
+    const prompt = buildChatGptRepairPrompt(source, testResults[source.id])
+    let copied = false
+    try {
+      await navigator.clipboard.writeText(prompt)
+      copied = true
+    } catch {}
+
+    const chatUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`
+    window.open(chatUrl, '_blank', 'noopener,noreferrer')
+    setRepairNoticeId(source.id)
+    window.setTimeout(() => setRepairNoticeId((current) => current === source.id ? null : current), 5000)
+
+    if (!copied) {
+      setTestResults((previous) => ({
+        ...previous,
+        [source.id]: {
+          status: 'failed',
+          message: '已打开 ChatGPT，但浏览器未允许复制诊断信息；如果没有自动填入，请重新点击并允许剪贴板权限。',
+        },
+      }))
     }
   }
 
@@ -393,12 +443,24 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                           编辑
                         </button>
                         <button
+                          className="article-action-btn source-repair-btn"
+                          onClick={() => handleChatGptRepair(item)}
+                          title="把该信息源的配置和错误交给 ChatGPT 调试"
+                        >
+                          ChatGPT 修复
+                        </button>
+                        <button
                           className="article-action-btn delete"
                           onClick={() => handleDelete(item.id)}
                           disabled={deletingId === item.id}
                         >
                           {deletingId === item.id ? '删除中...' : '删除'}
                         </button>
+                      </div>
+                    )}
+                    {repairNoticeId === item.id && (
+                      <div className="source-repair-notice">
+                        已打开 ChatGPT，并复制了该来源的诊断资料；如未自动填入，请在对话框粘贴。
                       </div>
                     )}
                     {testingIds.has(item.id) && (

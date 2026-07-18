@@ -1566,6 +1566,26 @@ body {
   color: var(--accent);
 }
 
+.source-repair-btn {
+  color: #fff !important;
+  border-color: #10a37f !important;
+  background: #10a37f !important;
+}
+
+.source-repair-btn:hover {
+  opacity: 0.88;
+}
+
+.source-repair-notice {
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  color: #18765f;
+  border-radius: 8px;
+  background: #e8f7f2;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 @media (max-width: 1100px) {
   .sources-page-heading {
     grid-template-columns: 1fr auto;
