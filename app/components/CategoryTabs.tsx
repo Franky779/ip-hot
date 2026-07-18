@@ -17,7 +17,6 @@ const ALL_CATEGORIES = [
   { value: '文旅及商品', label: '文旅及商品' },
   { value: '艺术/亚文化', label: '艺术/亚文化' },
   { value: '政策规则', label: '政策规则' },
-  { value: '版权保护', label: '版权保护' },
   { value: '待分类', label: '待分类' },
 ] as const
 
