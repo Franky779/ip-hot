@@ -12,6 +12,8 @@ interface Source {
   type: string
   description: string
   method: string
+  fetch_type: 'rss' | 'web'
+  enabled: boolean
   sort_order: number
 }
 
@@ -38,6 +40,8 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
     type: source?.type ?? '',
     description: source?.description ?? '',
     method: source?.method ?? '',
+    fetch_type: source?.fetch_type ?? 'web',
+    enabled: source?.enabled ?? false,
     sort_order: source?.sort_order ?? 0,
   })
   const [saving, setSaving] = useState(false)
@@ -153,6 +157,29 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
           onChange={(e) => setForm({ ...form, method: e.target.value })}
           placeholder="如：web-access CDP搜索"
         />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div>
+            <label>自动抓取类型</label>
+            <select
+              value={form.fetch_type}
+              onChange={(e) => setForm({ ...form, fetch_type: e.target.value as 'rss' | 'web' })}
+            >
+              <option value="rss">RSS（支持自动抓取）</option>
+              <option value="web">普通网页（仅入库）</option>
+            </select>
+          </div>
+          <div>
+            <label>运行状态</label>
+            <select
+              value={form.enabled ? 'enabled' : 'disabled'}
+              onChange={(e) => setForm({ ...form, enabled: e.target.value === 'enabled' })}
+            >
+              <option value="disabled">停用</option>
+              <option value="enabled">启用</option>
+            </select>
+          </div>
+        </div>
 
         <div className="admin-modal-btns">
           <button type="button" onClick={onClose}>取消</button>

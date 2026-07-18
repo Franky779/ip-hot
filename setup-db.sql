@@ -50,6 +50,11 @@ create table if not exists public.info_sources (
   type text not null,
   description text not null default '',
   method text not null default '',
+  fetch_type text not null default 'web',
+  enabled boolean not null default false,
+  last_test_status text not null default 'untested',
+  last_tested_at timestamptz,
+  last_test_message text not null default '',
   sort_order int default 0,
   created_at timestamptz default now()
 );

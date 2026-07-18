@@ -14,6 +14,23 @@ export const maxDuration = 60
 
 const parser = new Parser({ timeout: 15000 })
 
+type RuntimeSource = { name: string; url: string }
+
+async function loadActiveRssSources(supabase: ReturnType<typeof createServiceClient>): Promise<RuntimeSource[]> {
+  const { data, error } = await supabase
+    .from('info_sources')
+    .select('name, url')
+    .eq('enabled', true)
+    .eq('fetch_type', 'rss')
+    .order('sort_order', { ascending: true })
+
+  if (!error) return data ?? []
+
+  // 数据库迁移执行前保持现有任务可用，避免部署过程停止抓取。
+  console.warn('[Sources] 数据库运行字段尚不可用，暂用代码内 RSS 清单:', error.message)
+  return RSS_SOURCES.filter((source) => source.type === 'rss').map(({ name, url }) => ({ name, url }))
+}
+
 async function fetchFeedWithFallback(url: string): Promise<Parser.Output<{
   [key: string]: any
 }> | null> {
@@ -105,7 +122,9 @@ export async function GET(request: Request) {
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
-  for (const source of RSS_SOURCES) {
+  const activeSources = await loadActiveRssSources(supabase)
+
+  for (const source of activeSources) {
     const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
 
     try {

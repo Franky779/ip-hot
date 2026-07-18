@@ -14,6 +14,11 @@ interface Source {
   type: string
   description: string
   method: string
+  fetch_type: 'rss' | 'web'
+  enabled: boolean
+  last_test_status: 'untested' | 'success' | 'failed'
+  last_tested_at: string | null
+  last_test_message: string
   sort_order: number
 }
 
@@ -88,6 +93,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [showModal, setShowModal] = useState(false)
   const [editingSource, setEditingSource] = useState<Source | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [testingId, setTestingId] = useState<string | null>(null)
 
   const grouped = groupBySection(sources)
   const sectionIds = Object.keys(grouped)
@@ -128,6 +134,36 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     } else {
       alert('删除失败')
     }
+  }
+
+  const updateSource = async (id: string, changes: Partial<Source>) => {
+    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+    const res = await fetch('/api/admin/sources', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+      body: JSON.stringify({ id, ...changes }),
+    })
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}))
+      alert('保存失败: ' + (error.error || '未知错误'))
+      return false
+    }
+    await handleRefresh()
+    return true
+  }
+
+  const handleTest = async (id: string) => {
+    setTestingId(id)
+    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+    const res = await fetch('/api/admin/sources/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+      body: JSON.stringify({ id }),
+    })
+    const result = await res.json().catch(() => ({}))
+    setTestingId(null)
+    await handleRefresh()
+    alert(result.message || (res.ok ? '测试完成' : '测试失败'))
   }
 
   const handleExport = () => {
@@ -189,6 +225,12 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                       </a>
                       <span className="source-tag">{item.type}</span>
                     </div>
+                    <p className="source-method">
+                      {item.enabled ? '🟢 自动抓取已启用' : '⚪ 自动抓取已停用'}
+                      {' · '}{item.fetch_type === 'rss' ? 'RSS' : '普通网页'}
+                      {item.last_test_status === 'success' && ' · 最近测试成功'}
+                      {item.last_test_status === 'failed' && ' · 最近测试失败'}
+                    </p>
                     {item.description && (
                       <p className="source-desc">{item.description}</p>
                     )}
@@ -197,6 +239,19 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                     )}
                     {loaded && isAdmin && (
                       <div className="source-actions">
+                        <button
+                          className="article-action-btn edit"
+                          onClick={() => updateSource(item.id, { enabled: !item.enabled })}
+                        >
+                          {item.enabled ? '停用' : '启用'}
+                        </button>
+                        <button
+                          className="article-action-btn edit"
+                          onClick={() => handleTest(item.id)}
+                          disabled={testingId === item.id}
+                        >
+                          {testingId === item.id ? '测试中...' : '测试'}
+                        </button>
                         <button
                           className="article-action-btn edit"
                           onClick={() => {
