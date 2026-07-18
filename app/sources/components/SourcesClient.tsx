@@ -26,6 +26,11 @@ interface SourcesClientProps {
   initialSources: Source[]
 }
 
+type TestResult = {
+  status: 'success' | 'failed'
+  message: string
+}
+
 const REGION_LABELS: Record<string, string> = {
   domestic: '国内',
   overseas: '海外',
@@ -99,7 +104,8 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [showModal, setShowModal] = useState(false)
   const [editingSource, setEditingSource] = useState<Source | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [testingId, setTestingId] = useState<string | null>(null)
+  const [testingIds, setTestingIds] = useState<Set<string>>(new Set())
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
   const [keyword, setKeyword] = useState('')
   const [regionFilter, setRegionFilter] = useState('all')
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
@@ -185,17 +191,42 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   }
 
   const handleTest = async (id: string) => {
-    setTestingId(id)
-    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
-    const res = await fetch('/api/admin/sources/test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-      body: JSON.stringify({ id }),
+    if (testingIds.has(id)) return
+    setTestingIds((previous) => new Set(previous).add(id))
+    setTestResults((previous) => {
+      const next = { ...previous }
+      delete next[id]
+      return next
     })
-    const result = await res.json().catch(() => ({}))
-    setTestingId(null)
-    await handleRefresh()
-    alert(result.message || (res.ok ? '测试完成' : '测试失败'))
+
+    try {
+      const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+      const res = await fetch('/api/admin/sources/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ id }),
+      })
+      const result = await res.json().catch(() => ({}))
+      setTestResults((previous) => ({
+        ...previous,
+        [id]: {
+          status: res.ok && result.ok ? 'success' : 'failed',
+          message: result.message || result.error || (res.ok ? '测试完成' : '测试失败'),
+        },
+      }))
+      await handleRefresh()
+    } catch {
+      setTestResults((previous) => ({
+        ...previous,
+        [id]: { status: 'failed', message: '网络请求失败，请稍后重试。' },
+      }))
+    } finally {
+      setTestingIds((previous) => {
+        const next = new Set(previous)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   const handleExport = () => {
@@ -325,7 +356,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                       </a>
                       <span className="source-tag">{item.type}</span>
                     </div>
-                    <p className="source-method">
+                    <p className="source-method source-runtime-status">
                       {item.enabled ? '🟢 自动抓取已启用' : '⚪ 自动抓取已停用'}
                       {' · '}{getFetchType(item) === 'rss' ? 'RSS' : '普通网页'}
                       {item.last_test_status === 'success' && ' · 最近测试成功'}
@@ -335,7 +366,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                       <p className="source-desc">{item.description}</p>
                     )}
                     {item.method && (
-                      <p className="source-method">{item.method}</p>
+                      <p className="source-method source-config">{item.method}</p>
                     )}
                     {loaded && isAdmin && (
                       <div className="source-actions">
@@ -348,9 +379,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         <button
                           className="article-action-btn edit"
                           onClick={() => handleTest(item.id)}
-                          disabled={testingId === item.id}
+                          disabled={testingIds.has(item.id)}
                         >
-                          {testingId === item.id ? '测试中...' : '测试'}
+                          {testingIds.has(item.id) ? '测试中...' : '测试'}
                         </button>
                         <button
                           className="article-action-btn edit"
@@ -368,6 +399,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         >
                           {deletingId === item.id ? '删除中...' : '删除'}
                         </button>
+                      </div>
+                    )}
+                    {testingIds.has(item.id) && (
+                      <div className="source-test-result testing">正在连接并测试该信息源…</div>
+                    )}
+                    {!testingIds.has(item.id) && testResults[item.id] && (
+                      <div className={`source-test-result ${testResults[item.id].status}`}>
+                        {testResults[item.id].status === 'success' ? '测试成功：' : '测试失败：'}
+                        {testResults[item.id].message}
                       </div>
                     )}
                   </div>
