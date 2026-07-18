@@ -213,6 +213,31 @@ body {
   font-weight: 300;
 }
 
+.home-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.home-header-actions {
+  display: flex;
+  flex: 0 0 396px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.home-header-actions .search-box {
+  width: 100%;
+}
+
+.home-header-actions .search-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
 .page-toolbar {
   display: flex;
   align-items: center;
@@ -220,6 +245,14 @@ body {
   gap: 1rem;
   margin-top: 1.5rem;
   min-width: 0;
+}
+
+.home-category-toolbar {
+  display: block;
+}
+
+.home-category-toolbar .category-tabs {
+  width: 100%;
 }
 
 /* ====== 分类 tabs ====== */
@@ -1683,6 +1716,18 @@ body {
   .page-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+  .home-header-top {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .home-header-actions {
+    width: 100%;
+    flex-basis: auto;
+    align-items: stretch;
+  }
+  .home-header-actions .admin-toggle-btn {
+    align-self: flex-end;
   }
   .category-tabs {
     width: 100%;

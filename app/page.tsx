@@ -115,18 +115,20 @@ export default async function Home({
   return (
     <>
       <header className="page-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="home-header-top">
           <div>
             <h1 className="page-title font-serif">实时快讯</h1>
             <p className="page-sub">
               动漫 / IP / 潮玩 / 文创 / 文旅 / 博物馆 / 数字创意产业资讯聚合
             </p>
           </div>
-          <AdminToggle />
+          <div className="home-header-actions">
+            <AdminToggle />
+            <SearchBox defaultValue={q} activeCategory={category} />
+          </div>
         </div>
-        <div className="page-toolbar">
+        <div className="page-toolbar home-category-toolbar">
           <CategoryTabs active={category} query={q} />
-          <SearchBox defaultValue={q} activeCategory={category} />
         </div>
       </header>
 
