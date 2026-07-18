@@ -5,10 +5,12 @@ import { AdminToggle } from './components/AdminToggle'
 import { TimelineList } from './components/TimelineList'
 import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 import { AdminPendingArticles } from './components/AdminPendingArticles'
+import { paginateFilteredResults } from '@/lib/filtered-pagination'
 
 export const revalidate = 300
 const ARTICLES_PER_PAGE = 20
 const MAX_PAGE = 50
+const DATABASE_BATCH_SIZE = 100
 
 type Article = {
   id: string
@@ -40,38 +42,45 @@ function parsePage(value: string | undefined): number {
 async function getArticles(category: string, q: string, page: number): Promise<ArticleResult> {
   const supabase = getSupabase()
   const totalToShow = page * ARTICLES_PER_PAGE
-  let query = supabase
-    .from('articles')
-    .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
-    .not('title_cn', 'is', null)
-    .not('summary_cn', 'is', null)
-    .not('category', 'is', null)
-    .not('commentary', 'is', null)
-    .neq('commentary', '')
-    .neq('category', '待分类')
-    .gte('relevance_score', 7)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false, nullsFirst: false })
-    .range(0, totalToShow)
+  try {
+    const result = await paginateFilteredResults({
+      targetCount: totalToShow,
+      batchSize: DATABASE_BATCH_SIZE,
+      include: (article: Article) =>
+        !isClearlyIndirectTechTitle(article.title, article.category),
+      fetchRange: async (from, to) => {
+        let query = supabase
+          .from('articles')
+          .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+          .not('title_cn', 'is', null)
+          .not('summary_cn', 'is', null)
+          .not('category', 'is', null)
+          .not('commentary', 'is', null)
+          .neq('commentary', '')
+          .neq('category', '待分类')
+          .gte('relevance_score', 7)
+          .order('published_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false, nullsFirst: false })
+          .order('id', { ascending: false })
+          .range(from, to)
 
-  if (category && category !== 'all') {
-    query = query.eq('category', category)
-  }
-  if (q) {
-    query = query.or(`title.ilike.%${q}%,title_cn.ilike.%${q}%`)
-  }
+        if (category && category !== 'all') {
+          query = query.eq('category', category)
+        }
+        if (q) {
+          query = query.or(`title.ilike.%${q}%,title_cn.ilike.%${q}%`)
+        }
 
-  const { data, error } = await query
-  if (error) {
+        const { data, error } = await query
+        if (error) throw error
+        return (data ?? []) as Article[]
+      },
+    })
+
+    return { articles: result.items, hasMore: result.hasMore }
+  } catch (error) {
     console.error('Failed to fetch articles:', error)
     return { articles: [], hasMore: false }
-  }
-  const rows = ((data ?? []) as Article[]).filter(
-    (article) => !isClearlyIndirectTechTitle(article.title, article.category)
-  )
-  return {
-    articles: rows.slice(0, totalToShow),
-    hasMore: rows.length > totalToShow,
   }
 }
 
