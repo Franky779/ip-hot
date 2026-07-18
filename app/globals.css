@@ -556,6 +556,19 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.pending-total {
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.pending-load-status {
+  padding: 1.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
 .load-more-wrap {
   display: flex;
   justify-content: center;

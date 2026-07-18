@@ -76,7 +76,7 @@ export default function MonitorPage() {
 
   useEffect(() => {
     if (loaded) fetchData()
-    const t = setInterval(() => { if (loaded) fetchData() }, 30000)
+    const t = setInterval(() => { if (loaded) fetchData() }, 5000)
     return () => clearInterval(t)
   }, [loaded, fetchData])
 

@@ -4,6 +4,7 @@ import { SearchBox } from './components/SearchBox'
 import { AdminToggle } from './components/AdminToggle'
 import { TimelineList } from './components/TimelineList'
 import { isClearlyIndirectTechTitle } from '@/lib/relevance'
+import { AdminPendingArticles } from './components/AdminPendingArticles'
 
 export const revalidate = 300
 const ARTICLES_PER_PAGE = 20
@@ -108,7 +109,10 @@ export default async function Home({
   const category = params.category ?? 'all'
   const q = params.q ?? ''
   const page = parsePage(params.page)
-  const { articles, hasMore } = await getArticles(category, q, page)
+  const isPendingCategory = category === '待分类'
+  const { articles, hasMore } = isPendingCategory
+    ? { articles: [], hasMore: false }
+    : await getArticles(category, q, page)
   const dateGroups = groupByDate(articles)
   const dates = Object.keys(dateGroups)
 
@@ -133,7 +137,9 @@ export default async function Home({
       </header>
 
       <section className="article-section timeline-section">
-        {articles.length === 0 ? (
+        {isPendingCategory ? (
+          <AdminPendingArticles query={q} />
+        ) : articles.length === 0 ? (
           <p className="empty-state">
             {q
               ? `未找到匹配 "${q}" 的内容`
