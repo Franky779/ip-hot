@@ -262,12 +262,13 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   }
 
   const handleTestAll = async () => {
-    if (bulkAction || testingIds.size > 0 || sources.length === 0) return
+    const targets = [...filteredSources]
+    if (bulkAction || testingIds.size > 0 || targets.length === 0) return
     setBulkAction('test')
     setBulkNotice('')
-    setBulkProgress({ completed: 0, total: sources.length })
+    setBulkProgress({ completed: 0, total: targets.length })
 
-    const queue = [...sources]
+    const queue = [...targets]
     let completed = 0
     let succeeded = 0
     const runWorker = async () => {
@@ -277,16 +278,16 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         const result = await handleTest(source.id, false)
         if (result?.status === 'success') succeeded += 1
         completed += 1
-        setBulkProgress({ completed, total: sources.length })
+        setBulkProgress({ completed, total: targets.length })
       }
     }
 
     try {
       await Promise.all(
-        Array.from({ length: Math.min(5, sources.length) }, () => runWorker())
+        Array.from({ length: Math.min(5, targets.length) }, () => runWorker())
       )
       await handleRefresh()
-      setBulkNotice(`批量测试完成：${succeeded} 条成功，${sources.length - succeeded} 条异常。`)
+      setBulkNotice(`批量测试完成：${succeeded} 条成功，${targets.length - succeeded} 条异常。`)
     } finally {
       setBulkAction(null)
     }
@@ -487,11 +488,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               onClick={handleTestAll}
               disabled={bulkAction !== null || testingIds.size > 0}
               style={{ background: '#2563eb' }}
-              title="测试全部信息源"
+              title="测试当前筛选结果"
             >
               {bulkAction === 'test'
                 ? `测试中 ${bulkProgress.completed}/${bulkProgress.total}`
-                : '一键测试'}
+                : '一键测试当前筛选'}
             </button>
             <button
               className="search-btn"
