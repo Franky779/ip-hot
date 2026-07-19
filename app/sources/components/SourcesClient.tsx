@@ -142,7 +142,14 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [statusFilter, setStatusFilter] = useState('all')
 
   const sectionOptions = Array.from(
-    new Map(sources.map((source) => [source.section_id, source.section_title])).entries()
+    sources.reduce((options, source) => {
+      const current = options.get(source.section_id)
+      options.set(source.section_id, {
+        title: source.section_title,
+        count: (current?.count || 0) + 1,
+      })
+      return options
+    }, new Map<string, { title: string; count: number }>()).entries()
   )
   const normalizedKeyword = keyword.trim().toLowerCase()
   const filteredSources = sources.filter((source) => {
@@ -428,9 +435,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
             <label>
               <span>行业类型</span>
               <select value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}>
-                <option value="all">全部行业</option>
-                {sectionOptions.map(([id, title]) => (
-                  <option key={id} value={id}>{title}</option>
+                <option value="all">{sources.length} 条 · 全部行业</option>
+                {sectionOptions.map(([id, section]) => (
+                  <option key={id} value={id}>{section.count} 条 · {section.title}</option>
                 ))}
               </select>
             </label>
