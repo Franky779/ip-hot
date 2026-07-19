@@ -12,7 +12,7 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300
 
 const parser = new Parser({ timeout: 15000 })
 
@@ -153,7 +153,25 @@ export async function GET(request: Request) {
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
-  const activeSources = await loadActiveSources(supabase)
+  const allActiveSources = await loadActiveSources(supabase)
+  const batchSize = 24
+  const totalBatches = Math.max(1, Math.ceil(allActiveSources.length / batchSize))
+  const requestUrl = new URL(request.url)
+  const requestedBatchParam = requestUrl.searchParams.get('batch')
+  const requestedBatch = requestedBatchParam === null ? Number.NaN : Number(requestedBatchParam)
+  const scheduleHours = [4, 9, 14, 23]
+  const now = new Date()
+  const scheduleSlot = scheduleHours.indexOf(now.getUTCHours())
+  const fallbackSlot = Math.floor(now.getUTCHours() / 6)
+  const runNumber =
+    Math.floor(now.getTime() / 86_400_000) * scheduleHours.length +
+    (scheduleSlot >= 0 ? scheduleSlot : fallbackSlot)
+  const batchIndex =
+    Number.isInteger(requestedBatch) && requestedBatch >= 0
+      ? requestedBatch % totalBatches
+      : runNumber % totalBatches
+  const batchStart = batchIndex * batchSize
+  const activeSources = allActiveSources.slice(batchStart, batchStart + batchSize)
 
   for (const source of activeSources) {
     const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
@@ -345,6 +363,11 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
       elapsedMs: elapsed,
       fetch: {
+        batchIndex,
+        totalBatches,
+        batchSize,
+        totalActiveSources: allActiveSources.length,
+        processedSources: activeSources.length,
         totalFetched,
         totalBlocked,
         totalDead,
