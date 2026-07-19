@@ -132,6 +132,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [testingIds, setTestingIds] = useState<Set<string>>(new Set())
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
   const [repairNoticeId, setRepairNoticeId] = useState<string | null>(null)
+  const [bulkAction, setBulkAction] = useState<'test' | 'start' | null>(null)
+  const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 })
+  const [bulkNotice, setBulkNotice] = useState('')
   const [keyword, setKeyword] = useState('')
   const [regionFilter, setRegionFilter] = useState('all')
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
@@ -216,8 +219,8 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     return true
   }
 
-  const handleTest = async (id: string) => {
-    if (testingIds.has(id)) return
+  const handleTest = async (id: string, refresh = true): Promise<TestResult | null> => {
+    if (testingIds.has(id)) return null
     setTestingIds((previous) => new Set(previous).add(id))
     setTestResults((previous) => {
       const next = { ...previous }
@@ -233,25 +236,88 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         body: JSON.stringify({ id }),
       })
       const result = await res.json().catch(() => ({}))
-      setTestResults((previous) => ({
-        ...previous,
-        [id]: {
-          status: res.ok && result.ok ? 'success' : 'failed',
-          message: result.message || result.error || (res.ok ? '测试完成' : '测试失败'),
-        },
-      }))
-      await handleRefresh()
+      const testResult: TestResult = {
+        status: res.ok && result.ok ? 'success' : 'failed',
+        message: result.message || result.error || (res.ok ? '测试完成' : '测试失败'),
+      }
+      setTestResults((previous) => ({ ...previous, [id]: testResult }))
+      if (refresh) await handleRefresh()
+      return testResult
     } catch {
-      setTestResults((previous) => ({
-        ...previous,
-        [id]: { status: 'failed', message: '网络请求失败，请稍后重试。' },
-      }))
+      const testResult: TestResult = {
+        status: 'failed',
+        message: '网络请求失败，请稍后重试。',
+      }
+      setTestResults((previous) => ({ ...previous, [id]: testResult }))
+      return testResult
     } finally {
       setTestingIds((previous) => {
         const next = new Set(previous)
         next.delete(id)
         return next
       })
+    }
+  }
+
+  const handleTestAll = async () => {
+    if (bulkAction || testingIds.size > 0 || sources.length === 0) return
+    setBulkAction('test')
+    setBulkNotice('')
+    setBulkProgress({ completed: 0, total: sources.length })
+
+    const queue = [...sources]
+    let completed = 0
+    let succeeded = 0
+    const runWorker = async () => {
+      while (queue.length > 0) {
+        const source = queue.shift()
+        if (!source) return
+        const result = await handleTest(source.id, false)
+        if (result?.status === 'success') succeeded += 1
+        completed += 1
+        setBulkProgress({ completed, total: sources.length })
+      }
+    }
+
+    try {
+      await Promise.all(
+        Array.from({ length: Math.min(5, sources.length) }, () => runWorker())
+      )
+      await handleRefresh()
+      setBulkNotice(`批量测试完成：${succeeded} 条成功，${sources.length - succeeded} 条异常。`)
+    } finally {
+      setBulkAction(null)
+    }
+  }
+
+  const handleStartAll = async () => {
+    if (bulkAction) return
+    const ids = sources.filter((source) => !source.enabled).map((source) => source.id)
+    if (ids.length === 0) {
+      setBulkNotice('全部信息源均已启动。')
+      return
+    }
+
+    setBulkAction('start')
+    setBulkNotice('')
+    try {
+      const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+      const res = await fetch('/api/admin/sources', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ ids, enabled: true }),
+      })
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setBulkNotice(`一键启动失败：${result.error || '未知错误'}`)
+        return
+      }
+      setSources((previous) => previous.map((source) => ({ ...source, enabled: true })))
+      setBulkNotice(`已启动 ${ids.length} 条信息源。`)
+    } catch {
+      setBulkNotice('一键启动失败：网络请求失败，请稍后重试。')
+    } finally {
+      setBulkAction(null)
     }
   }
 
@@ -381,6 +447,29 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
             >
               导出 Markdown
             </button>
+            <button
+              className="search-btn"
+              onClick={handleTestAll}
+              disabled={bulkAction !== null || testingIds.size > 0}
+              style={{ background: '#2563eb' }}
+              title="测试全部信息源"
+            >
+              {bulkAction === 'test'
+                ? `测试中 ${bulkProgress.completed}/${bulkProgress.total}`
+                : '一键测试'}
+            </button>
+            <button
+              className="search-btn"
+              onClick={handleStartAll}
+              disabled={bulkAction !== null}
+              style={{ background: '#eab308', color: '#2d2200' }}
+              title="启动全部尚未启用的信息源"
+            >
+              {bulkAction === 'start' ? '启动中...' : '一键启动'}
+            </button>
+            {bulkNotice && (
+              <span className="source-bulk-notice" role="status">{bulkNotice}</span>
+            )}
           </div>
         )}
 
@@ -429,7 +518,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         <button
                           className="article-action-btn edit"
                           onClick={() => handleTest(item.id)}
-                          disabled={testingIds.has(item.id)}
+                          disabled={testingIds.has(item.id) || bulkAction === 'test'}
                         >
                           {testingIds.has(item.id) ? '测试中...' : '测试'}
                         </button>

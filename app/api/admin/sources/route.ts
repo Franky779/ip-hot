@@ -50,10 +50,13 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json()
-  const { id, ...changes } = body
+  const { id, ids, ...changes } = body
+  const targetIds = Array.isArray(ids)
+    ? ids.filter((value): value is string => typeof value === 'string' && value.length > 0)
+    : []
 
-  if (!id) {
-    return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+  if (!id && targetIds.length === 0) {
+    return NextResponse.json({ error: 'Missing id or ids' }, { status: 400 })
   }
 
   const allowedFields = [
@@ -69,10 +72,11 @@ export async function PATCH(request: Request) {
   }
 
   const supabase = createServiceClient()
-  const { error } = await supabase
+  let query = supabase
     .from('info_sources')
     .update(update)
-    .eq('id', id)
+  query = id ? query.eq('id', id) : query.in('id', targetIds)
+  const { error } = await query
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

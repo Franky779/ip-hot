@@ -1445,6 +1445,17 @@ body {
   cursor: pointer;
 }
 
+.source-bulk-notice {
+  align-self: center;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.search-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .source-empty-state {
   display: flex;
   flex-direction: column;
