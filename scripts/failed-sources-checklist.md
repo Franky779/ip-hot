@@ -57,11 +57,11 @@
 | 国家知识产权局 | https://www.cnipa.gov.cn/ |
 | 财政部 | https://www.mof.gov.cn/zhengwuxinxi/zhengcefabu/（已修复） |
 | 浙江省文旅厅 | https://www.mct.gov.cn/whzx/qgwhxxlb/zj/（官方转载栏目，已修复） |
-| 东莞市人民政府 | https://wglt.dg.gov.cn/（文旅局栏目，已修复） |
+| 东莞市人民政府 | https://wglt.dg.gov.cn/（本机可读、Vercel fetch failed，已转本地 CDP） |
 | 杭州西湖区政府 | https://www.hzxh.gov.cn/（WAF，本地 CDP） |
 | 新疆文旅厅 | https://wlt.xinjiang.gov.cn/ |
 | 北京市文旅局 | https://whlyj.beijing.gov.cn/ |
-| 天津市文旅局 | https://whly.tj.gov.cn/（已修复） |
+| 天津市文旅局 | https://whly.tj.gov.cn/（本机可读、Vercel 403，已转本地 CDP） |
 | 上海市文旅局 | https://whlyj.sh.gov.cn/ |
 | 重庆市文旅委 | https://wlt.cq.gov.cn/ |
 | 河北省文旅厅 | https://wlt.hebei.gov.cn/ |
@@ -93,12 +93,12 @@
 
 | 原错误类型 | 信息源 | 最终动作 | 状态 |
 |---|---|---|---|
-| 选择器无有效资讯 | 北青网、红星新闻、财政部 | 改具体栏目/文章路径选择器 | 三连测通过 |
-| 选择器无有效资讯 | 艺恩网、猫眼专业版 | 非持续资讯源，从生产库清退 | 待部署后同步 |
+| 选择器无有效资讯 | 北青网、红星新闻、财政部 | 改具体栏目/文章路径选择器；北青、红星因 Vercel 403/405 再转本地 CDP | 本地三连测通过，生产分流通过 |
+| 选择器无有效资讯 | 艺恩网、猫眼专业版 | 非持续资讯源，从生产库清退 | 已清退 |
 | RSS 15 秒超时 | 虎嗅 | 改第一方 JSON API | 三连测通过 |
-| 403/405/412/fetch failed | 国务院、北青、红星、浙江、东莞、天津、甘肃 | 换可访问官方栏目或文旅部官方省级栏目 | 三连测通过 |
+| 403/405/412/fetch failed | 国务院、北青、红星、浙江、东莞、天津、甘肃 | 换可访问官方栏目或文旅部官方省级栏目；云端仍拦截的转本地 CDP | 直连源三连测通过，受保护源分流通过 |
 | 需登录 | 知乎雷报 | 改界面新闻已认证“雷报”账号 API | 三连测通过 |
 | XML 损坏/Feed 不识别 | Licensing International、Polygon | 前者改官方新闻 HTML，后者改当前 RSS | 三连测通过 |
 | RSS 可访问但无条目 | ICOM、Museums Association | 改官方新闻 HTML | 三连测通过 |
 | 404 | IGN Anime | 更新当前栏目并分流本地 CDP | 已配置，待 CDP dry-run |
-| 空 URL | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 | 属于工具而非资讯发布方，从生产库清退 | 待部署后同步 |
+| 空 URL | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 | 属于工具而非资讯发布方，从生产库清退 | 已清退 |

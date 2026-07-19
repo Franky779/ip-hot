@@ -384,18 +384,18 @@ node scripts/fetch-cdp-local.mjs --source zjol --dry-run
 | 信息源 | 最终类型/入口 | 规则或适配器 | 3 次结果 |
 |---|---|---|---|
 | 虎嗅 | JSON `article-api.huxiu.com/web/channel/articleList` | `huxiu-api` | 10 / 10 / 10 |
-| 北青网 | `https://www.ynet.com` | `a[href*="ynet.com/20"]` | 10 / 10 / 10 |
-| 红星新闻 | `https://www.cdsb.com` | `a[href*="/micropub/Articles/"]` | 10 / 10 / 10 |
+| 北青网 | `https://www.ynet.com` | 本机 HTML 可读；Vercel 固定 403，转本地 CDP | 本地 10 / 10 / 10；生产分流通过 |
+| 红星新闻 | `https://www.cdsb.com` | 本机 HTML 可读；Vercel 固定 405，转本地 CDP | 本地 10 / 10 / 10；生产分流通过 |
 | 国务院政策文件库 | `.../zhengceku/bmwj/home.htm` | `a[href*="content_"]` | 5 / 5 / 5 |
 | 财政部 | `.../zhengwuxinxi/zhengcefabu/` | `a[href*="/202"][href*="t202"]` | 5 / 5 / 5 |
-| 东莞文旅局 | `https://wglt.dg.gov.cn/` | `a[href*="/content/post_"]` | 5 / 5 / 5 |
-| 天津文旅局 | `https://whly.tj.gov.cn/` | `a[href*="/202"][href*="t202"]` | 5 / 5 / 5 |
+| 东莞文旅局 | `https://wglt.dg.gov.cn/` | 本机 HTML 可读；Vercel `fetch failed`，转本地 CDP | 本地 5 / 5 / 5；生产分流通过 |
+| 天津文旅局 | `https://whly.tj.gov.cn/` | 本机 HTML 可读；Vercel 固定 403，转本地 CDP | 本地 5 / 5 / 5；生产分流通过 |
 | 浙江省文旅厅 | 文旅部浙江栏目 | 精确日期文章路径 | 5 / 5 / 5 |
 | 甘肃省文旅厅 | 文旅部甘肃栏目 | 精确日期文章路径 | 5 / 5 / 5 |
-| 知乎雷报 | 界面新闻账号 API | `jiemian-account` + `expectedSourceName=雷报` | 10 / 10 / 10 |
+| 知乎雷报 | 界面新闻账号 API | `jiemian-account`；以唯一 `accountId=2079` 限定账号 | 10 / 10 / 10 |
 | Licensing International | `licensinginternational.org/news/` | `.news-post-content a` | 10 / 10 / 10 |
 | ICOM | `icom.museum/en/news/` | `a.news-abstract` | 10 / 10 / 10 |
 | Museums Association | Museums Journal News | `.card-journal` | 10 / 10 / 10 |
 | Polygon | `https://www.polygon.com/feed/` | RSS | 10 / 10 / 10 |
 
-艺恩网、猫眼专业版以及四个阅读器/聚合工具不是可持续资讯源，验收动作是从生产 `info_sources` 删除并记录原因，不计作抓取成功。Anime News Network、IGN Anime、杭州西湖区政府属于本地 CDP 分流，必须保持在 Vercel 网页批次之外。
+艺恩网、猫眼专业版以及四个阅读器/聚合工具不是可持续资讯源，验收动作是从生产 `info_sources` 删除并记录原因，不计作抓取成功。Anime News Network、IGN Anime、北青网、红星新闻、东莞文旅局、天津文旅局、杭州西湖区政府属于本地 CDP 分流，必须保持在 Vercel 网页批次之外。

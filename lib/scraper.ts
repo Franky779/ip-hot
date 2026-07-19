@@ -212,7 +212,6 @@ async function scrapeJiemianAccount(
   const items = list
     .filter((entry) =>
       entry.object_type === 'article'
-      && entry.source_name === (config.expectedSourceName ?? sourceName)
       && Boolean(entry.title)
       && Boolean(entry.url)
     )

@@ -35,7 +35,6 @@ export type JiemianAccountConfig = {
   adapter: 'jiemian-account'
   apiUrl: string
   accountId: string
-  expectedSourceName?: string
   maxItems?: number
 }
 
@@ -387,7 +386,7 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'ynet', name: '北青网', url: 'https://www.ynet.com',
-    language: 'zh', priority: 'P2', type: 'web',
+    language: 'zh', priority: 'P2', type: 'web', needsLocalCdp: true,
     aliases: ['北青网(北京青年报)'],
     scrapeConfig: { itemSelector: 'a[href*="ynet.com/20"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.ynet.com', maxItems: 10 },
   },
@@ -418,7 +417,7 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'cdsb', name: '红星新闻', url: 'https://www.cdsb.com',
-    language: 'zh', priority: 'P2', type: 'web',
+    language: 'zh', priority: 'P2', type: 'web', needsLocalCdp: true,
     aliases: ['红星新闻(成都)'],
     scrapeConfig: { itemSelector: 'a[href*="/micropub/Articles/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.cdsb.com', maxItems: 10 },
   },
@@ -472,7 +471,7 @@ const WEB_SOURCES: NewsSource[] = [
   {
     id: 'zhihu-leibao', name: '知乎雷报', url: 'https://www.zhihu.com/people/wanshangkansha/posts',
     language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jiemian-account', apiUrl: 'https://papi.jiemian.com/page/api/officialAccount/accountArticles', accountId: '2079', expectedSourceName: '雷报', maxItems: 10 },
+    scrapeConfig: { adapter: 'jiemian-account', apiUrl: 'https://papi.jiemian.com/page/api/officialAccount/accountArticles', accountId: '2079', maxItems: 10 },
   },
 ]
 
@@ -491,11 +490,11 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'mof', name: '财政部', url: 'https://www.mof.gov.cn/zhengwuxinxi/zhengcefabu/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   // 省级文旅厅
   { id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/zj/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
-  { id: 'dg-gov', name: '东莞市人民政府', aliases: ['东莞市文化广电旅游体育局'], url: 'https://wglt.dg.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/content/post_"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://wglt.dg.gov.cn', maxItems: 5 } },
+  { id: 'dg-gov', name: '东莞市人民政府', aliases: ['东莞市文化广电旅游体育局'], url: 'https://wglt.dg.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/content/post_"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://wglt.dg.gov.cn', maxItems: 5 } },
   { id: 'hz-xh', name: '杭州西湖区政府', aliases: ['杭州市西湖区人民政府'], url: 'https://www.hzxh.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/art/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.hzxh.gov.cn', maxItems: 5 } },
   { id: 'xj-wlt', name: '新疆文旅厅', url: 'https://wlt.xinjiang.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.xinjiang.gov.cn', maxItems: 5 } },
   { id: 'bj-wlj', name: '北京市文旅局', url: 'https://whlyj.beijing.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://whlyj.beijing.gov.cn', maxItems: 5 } },
-  { id: 'tj-wl', name: '天津市文旅局', aliases: ['天津市文化和旅游局'], url: 'https://whly.tj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://whly.tj.gov.cn', maxItems: 5 } },
+  { id: 'tj-wl', name: '天津市文旅局', aliases: ['天津市文化和旅游局'], url: 'https://whly.tj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://whly.tj.gov.cn', maxItems: 5 } },
   { id: 'sh-wlj', name: '上海市文旅局', url: 'https://whlyj.sh.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://whlyj.sh.gov.cn', maxItems: 5 } },
   { id: 'cq-wl', name: '重庆市文旅委', url: 'https://wlt.cq.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.cq.gov.cn', maxItems: 5 } },
   { id: 'heb-wlt', name: '河北省文旅厅', url: 'https://wlt.hebei.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.hebei.gov.cn', maxItems: 5 } },
