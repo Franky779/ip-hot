@@ -132,7 +132,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [testingIds, setTestingIds] = useState<Set<string>>(new Set())
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
   const [repairNoticeId, setRepairNoticeId] = useState<string | null>(null)
-  const [bulkAction, setBulkAction] = useState<'test' | 'start' | null>(null)
+  const [bulkAction, setBulkAction] = useState<'test' | 'start' | 'stop' | null>(null)
   const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 })
   const [bulkNotice, setBulkNotice] = useState('')
   const [keyword, setKeyword] = useState('')
@@ -326,6 +326,40 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     }
   }
 
+  const handleStopAll = async () => {
+    if (bulkAction) return
+    const ids = sources.filter((source) => source.enabled).map((source) => source.id)
+    if (ids.length === 0) {
+      setBulkNotice('当前没有已启用的信息源。')
+      return
+    }
+
+    setBulkAction('stop')
+    setBulkNotice('')
+    try {
+      const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+      const res = await fetch('/api/admin/sources', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ ids, enabled: false }),
+      })
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setBulkNotice(`一键停用失败：${result.error || '未知错误'}`)
+        return
+      }
+      const stoppedIds = new Set(ids)
+      setSources((previous) => previous.map((source) =>
+        stoppedIds.has(source.id) ? { ...source, enabled: false } : source
+      ))
+      setBulkNotice(`已停用 ${ids.length} 条信息源。`)
+    } catch {
+      setBulkNotice('一键停用失败：网络请求失败，请稍后重试。')
+    } finally {
+      setBulkAction(null)
+    }
+  }
+
   const handleChatGptRepair = async (source: Source) => {
     const prompt = buildChatGptRepairPrompt(source, testResults[source.id])
     let copied = false
@@ -471,6 +505,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               title="启动全部测试成功且尚未启用的信息源"
             >
               {bulkAction === 'start' ? '启动中...' : '一键启动'}
+            </button>
+            <button
+              className="search-btn"
+              onClick={handleStopAll}
+              disabled={bulkAction !== null}
+              style={{ background: '#dc2626' }}
+              title="停用全部已启用的信息源"
+            >
+              {bulkAction === 'stop' ? '停用中...' : '一键停用'}
             </button>
             {bulkNotice && (
               <span className="source-bulk-notice" role="status">{bulkNotice}</span>
