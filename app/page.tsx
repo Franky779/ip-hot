@@ -49,22 +49,35 @@ async function getArticles(category: string, q: string, page: number): Promise<A
       include: (article: Article) =>
         category === '版权保护' || !isClearlyIndirectTechTitle(article.title, article.category),
       fetchRange: async (from, to) => {
+        if (category === '版权保护') {
+          let copyrightQuery = supabase
+            .from('articles')
+            .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+            .eq('category', category)
+            .order('published_at', { ascending: false, nullsFirst: false })
+            .order('created_at', { ascending: false, nullsFirst: false })
+            .order('id', { ascending: false })
+            .range(from, to)
+
+          if (q) {
+            copyrightQuery = copyrightQuery.or(`title.ilike.%${q}%,title_cn.ilike.%${q}%`)
+          }
+
+          const { data, error } = await copyrightQuery
+          if (error) throw error
+          return (data ?? []) as Article[]
+        }
+
         let query = supabase
           .from('articles')
           .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+          .not('title_cn', 'is', null)
+          .not('summary_cn', 'is', null)
           .not('category', 'is', null)
+          .not('commentary', 'is', null)
+          .neq('commentary', '')
           .neq('category', '待分类')
-
-        if (category !== '版权保护') {
-          query = query
-            .not('title_cn', 'is', null)
-            .not('summary_cn', 'is', null)
-            .not('commentary', 'is', null)
-            .neq('commentary', '')
-            .gte('relevance_score', 7)
-        }
-
-        query = query
+          .gte('relevance_score', 7)
           .order('published_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false, nullsFirst: false })
           .order('id', { ascending: false })
