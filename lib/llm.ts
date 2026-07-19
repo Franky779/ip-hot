@@ -113,7 +113,8 @@ async function callLLM(
   apiKey: string,
   model: string
 ): Promise<LlmResult> {
-  const res = await fetch(`${baseUrl}/v1/messages`, {
+  const normalizedUrl = baseUrl.replace(/\/v1(\/messages)?\/?$/, '') + '/v1/messages'
+  const res = await fetch(normalizedUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
