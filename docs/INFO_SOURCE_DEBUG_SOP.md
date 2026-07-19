@@ -172,6 +172,10 @@ automationEnabled: true
 4. 需要复测指定批次时，管理员可请求 `/api/cron/fetch-and-process?batch=N`；不指定时按 Vercel 定时触发时段自动轮转。
 5. 新增或减少启用源后无需手工重排；总批次数根据当前启用源数量自动计算。
 
+本地 CDP 源不进入 Vercel 普通网页批次。Windows 任务 `CDPLocalDaily` 必须指向当前工作区的
+`scripts/run-cdp-local.bat`，并由该启动器切换到项目根目录、加载 `.env.local` 后运行
+`scripts/fetch-cdp-local.mjs`。迁移工作区后必须同时检查任务路径和最近运行结果。
+
 ## 八、单源调试交付模板
 
 以后每个信息源的调试结果统一交付以下内容：
