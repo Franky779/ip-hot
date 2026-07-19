@@ -140,7 +140,15 @@ export async function GET(request: Request) {
     // 创建日志记录
     const { data: logData, error: logError } = await supabase
       .from('cron_logs')
-      .insert({ trigger_type: triggerType, status: 'running' })
+      .insert({
+        trigger_type: triggerType,
+        status: 'running',
+        fetch_total_fetched: 0,
+        fetch_total_inserted: 0,
+        llm_pending: 0,
+        llm_processed: 0,
+        llm_failed: 0,
+      })
       .select('id')
       .single()
 
@@ -150,6 +158,17 @@ export async function GET(request: Request) {
     }
 
     // ===== 第1步：抓取 RSS =====
+  const updateRunningLog = async (updates: Record<string, unknown>) => {
+    if (!logId) return
+    const { error } = await supabase
+      .from('cron_logs')
+      .update({ status: 'running', ...updates })
+      .eq('id', logId)
+    if (error) {
+      console.error('[CronLog] 更新运行进度失败:', error.message)
+    }
+  }
+
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
@@ -172,6 +191,18 @@ export async function GET(request: Request) {
       : runNumber % totalBatches
   const batchStart = batchIndex * batchSize
   const activeSources = allActiveSources.slice(batchStart, batchStart + batchSize)
+  const updateFetchProgress = async (currentSource: string) => {
+    await updateRunningLog({
+      fetch_total_fetched: fetchResults.reduce((sum, item) => sum + item.fetched, 0),
+      fetch_total_inserted: totalInserted,
+      details: {
+        stage: 'fetch',
+        currentSource,
+        sourcesCompleted: fetchResults.length,
+        totalSources: activeSources.length,
+      },
+    })
+  }
 
   for (const source of activeSources) {
     const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
@@ -189,6 +220,7 @@ export async function GET(request: Request) {
         if (!feed) {
           result.error = 'RSS fetch failed (including Scrapling fallback)'
           fetchResults.push(result)
+          await updateFetchProgress(source.name)
           continue
         }
         rawItems = feed.items
@@ -203,12 +235,14 @@ export async function GET(request: Request) {
         if (!source.scrapeConfig) {
           result.error = 'Web source is missing scrapeConfig'
           fetchResults.push(result)
+          await updateFetchProgress(source.name)
           continue
         }
         const scraped = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
         if (scraped.error) {
           result.error = scraped.error
           fetchResults.push(result)
+          await updateFetchProgress(source.name)
           continue
         }
         rawItems = scraped.items.map((item) => ({
@@ -263,6 +297,7 @@ export async function GET(request: Request) {
     }
 
     fetchResults.push(result)
+    await updateFetchProgress(source.name)
   }
 
   // ===== 第2步：对新文章跑 LLM =====
@@ -278,10 +313,24 @@ export async function GET(request: Request) {
 
   let processResults: ProcessResult[] = []
   let processedCount = 0
+  let llmCompletedCount = 0
+  let llmProgressUpdate = Promise.resolve()
+
+  await updateRunningLog({
+    fetch_total_fetched: fetchResults.reduce((sum, item) => sum + item.fetched, 0),
+    fetch_total_inserted: totalInserted,
+    llm_pending: pendingArticles?.length ?? 0,
+    details: {
+      stage: 'llm',
+      llmCompleted: 0,
+      llmTotal: pendingArticles?.length ?? 0,
+    },
+  })
 
   if (!pendingError && pendingArticles && pendingArticles.length > 0) {
     processResults = await Promise.all(
       pendingArticles.map(async (article): Promise<ProcessResult> => {
+        let resultOk = false
         try {
           const llmResult = await summarizeArticle(article.title, '')
 
@@ -298,6 +347,7 @@ export async function GET(request: Request) {
                 commentary: null,
               })
               .eq('id', article.id)
+            resultOk = !updateError
             return { id: article.id, ok: !updateError, error: updateError?.message }
           }
 
@@ -318,9 +368,26 @@ export async function GET(request: Request) {
             })
             .eq('id', article.id)
 
+          resultOk = !updateError
           return { id: article.id, ok: !updateError, error: updateError?.message }
         } catch (e) {
           return { id: article.id, ok: false, error: e instanceof Error ? e.message : String(e) }
+        } finally {
+          llmCompletedCount += 1
+          if (resultOk) processedCount += 1
+          const completed = llmCompletedCount
+          const processed = processedCount
+          llmProgressUpdate = llmProgressUpdate.then(() => updateRunningLog({
+            llm_pending: pendingArticles.length,
+            llm_processed: processed,
+            llm_failed: completed - processed,
+            details: {
+              stage: 'llm',
+              llmCompleted: completed,
+              llmTotal: pendingArticles.length,
+            },
+          }))
+          await llmProgressUpdate
         }
       })
     )
