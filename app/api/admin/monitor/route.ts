@@ -85,14 +85,6 @@ export async function GET(request: Request) {
       })
     )
 
-    // 7. 最近错误
-    const { data: recentErrors, error: e7 } = await supabase
-      .from('cron_logs')
-      .select('id, started_at, status, error_message')
-      .eq('status', 'error')
-      .order('started_at', { ascending: false })
-      .limit(5)
-
     // 8. 信源低分率统计（过去7天）
     const { data: sourceQualityRows, error: e8 } = await supabase
       .from('articles')
@@ -141,7 +133,7 @@ export async function GET(request: Request) {
     } catch { /* 表不存在时静默 */ }
 
     const errors = [
-      e1, e2, e3, e4, e7, e8, e9,
+      e1, e2, e3, e4, e8, e9,
       ...categoryResults.map((result) => result.error),
     ].filter(Boolean)
     if (errors.length > 0) {
@@ -209,12 +201,6 @@ export async function GET(request: Request) {
       queue: queueCount || 0,
       todayInserted: todayInserted || 0,
       categoryStats,
-      recentErrors: (recentErrors || []).map((e: any) => ({
-        id: e.id,
-        startedAt: e.started_at,
-        status: e.status,
-        errorMessage: e.error_message,
-      })),
       pipelineState,
       sourceQuality,
       reviewQueue: (reviewQueue || []).map((r: any) => ({

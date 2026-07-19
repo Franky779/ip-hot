@@ -19,12 +19,25 @@ type MonitorData = {
   queue: number
   todayInserted: number
   categoryStats: Array<{ category: string; count: number }>
-  recentErrors: Array<{ id: string; startedAt: string; status: string; errorMessage: string | null }>
   sourceQuality?: Array<{ name: string; total: number; low: number; rate: number }>
   reviewQueue?: Array<{
     id: string; titleCn: string; summaryCn: string; commentary: string
     relevanceScore: number; source: string; createdAt: string
   }>
+}
+
+type CronLog = {
+  id: string
+  started_at: string | null
+  ended_at: string | null
+  trigger_type: string | null
+  fetch_total_fetched: number | null
+  fetch_total_inserted: number | null
+  llm_processed: number | null
+  llm_pending: number | null
+  llm_failed: number | null
+  status: string
+  details?: { batch_total?: number } | null
 }
 
 function getPw() { if (typeof window === 'undefined') return null; return localStorage.getItem('ip-hot-admin-pw') }
@@ -42,17 +55,33 @@ function formatCountdown(ms: number): string {
   const s = totalSeconds % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
+function getTriggerLabel(triggerType: string | null) {
+  return triggerType === 'manual' ? '手动'
+    : triggerType === 'manual_llm' ? '手动LLM'
+      : triggerType === 'source_add' ? '添加信源'
+        : triggerType === 'source_delete' ? '删除信源'
+          : '定时'
+}
+function getLogLine(log: CronLog): string {
+  const started = log.started_at ? new Date(log.started_at).toLocaleString('zh-CN') : '-'
+  const duration = log.ended_at && log.started_at
+    ? `${Math.round((new Date(log.ended_at).getTime() - new Date(log.started_at).getTime()) / 1000)}s`
+    : '-'
+  const llmTotal = log.trigger_type === 'manual_llm'
+    ? log.details?.batch_total ?? ((log.llm_processed ?? 0) + (log.llm_failed ?? 0) || '-')
+    : log.llm_pending ?? 0
+  return `${started} | ${getTriggerLabel(log.trigger_type)} | 抓取 ${log.fetch_total_fetched ?? 0} | 入库 ${log.fetch_total_inserted ?? 0} | LLM ${log.llm_processed ?? 0}/${llmTotal} | ${duration} | ${log.status}`
+}
 
 export default function MonitorPage() {
-  const { isAdmin, loaded } = useAdmin()
+  const { loaded } = useAdmin()
   const [data, setData] = useState<MonitorData | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetching, setFetching] = useState(false)
   const [llming, setLlming] = useState(false)
   const [llmProgress, setLlmProgress] = useState<{ processed: number; remaining: number; rounds: number } | null>(null)
   const stopLlmRef = useRef(false)
-  const [showLogs, setShowLogs] = useState(false)
-  const [logs, setLogs] = useState<any[]>([])
+  const [logs, setLogs] = useState<CronLog[]>([])
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
 
@@ -74,11 +103,28 @@ export default function MonitorPage() {
     } catch {} finally { setLoading(false) }
   }, [])
 
+  const loadLogs = useCallback(async () => {
+    const pw = getPw() || ''
+    if (!pw) return
+    try {
+      const res = await fetch('/api/admin/cron-logs', { cache: 'no-store', headers: { 'x-admin-password': pw } })
+      if (res.ok) setLogs((await res.json()).logs ?? [])
+    } catch {}
+  }, [])
+
   useEffect(() => {
-    if (loaded) fetchData()
-    const t = setInterval(() => { if (loaded) fetchData() }, 5000)
+    if (loaded) {
+      fetchData()
+      loadLogs()
+    }
+    const t = setInterval(() => {
+      if (loaded) {
+        fetchData()
+        loadLogs()
+      }
+    }, 5000)
     return () => clearInterval(t)
-  }, [loaded, fetchData])
+  }, [loaded, fetchData, loadLogs])
 
   // 初始化自动处理状态
   useEffect(() => {
@@ -129,16 +175,6 @@ export default function MonitorPage() {
       fetchData()
     } catch (e) { alert('请求失败: ' + (e instanceof Error ? e.message : String(e))) } finally { setFetching(false) }
   }
-
-  const loadLogs = async () => {
-    const pw = getPw() || ''
-    try {
-      const res = await fetch('/api/admin/cron-logs', { headers: { 'x-admin-password': pw } })
-      if (res.ok) setLogs((await res.json()).logs ?? [])
-    } catch {}
-  }
-
-  const toggleLogs = () => { if (!showLogs) loadLogs(); setShowLogs(p => !p) }
 
   const handleTriggerLlm = async () => {
     if (!data?.queue || data.queue === 0) { alert('暂无待处理文章'); return }
@@ -386,23 +422,6 @@ export default function MonitorPage() {
                 </div>
               </div>
             </div>
-
-            {/* 日志面板 */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="monitor-action-btn" onClick={toggleLogs}>{showLogs ? '隐藏日志' : '查看日志'}</button>
-            </div>
-            {showLogs && (
-              <div className="cron-logs-panel">
-                <h4>任务日志（最近20条）</h4>
-                {logs.length === 0 ? <p className="cron-logs-empty">暂无日志</p> : (
-                  <table className="cron-logs-table"><thead><tr><th>时间</th><th>触发</th><th>抓取</th><th>入库</th><th>LLM处理</th><th>耗时</th><th>状态</th></tr></thead>
-                    <tbody>{logs.map((log: any) => (
-                      <tr key={log.id}><td>{log.started_at ? new Date(log.started_at).toLocaleString('zh-CN') : '-'}</td><td>{log.trigger_type === 'manual' ? '手动' : log.trigger_type === 'manual_llm' ? '手动LLM' : log.trigger_type === 'source_add' ? '添加信源' : log.trigger_type === 'source_delete' ? '删除信源' : '定时'}</td><td>{log.fetch_total_fetched ?? 0}</td><td>{log.fetch_total_inserted ?? 0}</td><td>{log.trigger_type === 'manual_llm' ? `${log.llm_processed ?? 0} / ${log.details?.batch_total != null ? log.details.batch_total : ((log.llm_processed ?? 0) + (log.llm_failed ?? 0) || '-')}` : `${log.llm_processed ?? 0} / ${log.llm_pending ?? 0}`}</td><td>{log.ended_at && log.started_at ? Math.round((new Date(log.ended_at).getTime() - new Date(log.started_at).getTime()) / 1000) + 's' : '-'}</td><td><span className={`cron-log-status ${log.status}`}>{log.status === 'success' ? '✅ 成功' : log.status === 'error' ? '❌ 失败' : '⏳ 运行中'}</span></td></tr>
-                    ))}</tbody></table>
-                )}
-              </div>
-            )}
-
             {/* 分类资讯数量统计 */}
             <div>
               <h2 className="monitor-section-title">分类资讯数量统计</h2>
@@ -416,6 +435,14 @@ export default function MonitorPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* 实时日志 */}
+            <div>
+              <h2 className="monitor-section-title">实时任务日志</h2>
+              <pre className="cron-logs-code" aria-live="polite">
+                {logs.length === 0 ? '暂无日志' : logs.slice(0, 12).map(getLogLine).join('\n')}
+              </pre>
             </div>
 
             {/* 信源质量（7天低分率） */}
@@ -449,7 +476,7 @@ export default function MonitorPage() {
               <div>
                 <h2 className="monitor-section-title" style={{ color: '#f59e0b' }}>待人工复核 · {data.reviewQueue.length}</h2>
                 <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                  LLM 拿不准分类但觉得还有点价值（评分4-6），你来决定留不留
+                  评分 4-6 且仍为待分类的边界资讯。系统会先按约束条件自动处理；这里只保留少量需要人工裁决的异常项。
                 </p>
                 {/* 批量操作工具栏 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
@@ -489,13 +516,10 @@ export default function MonitorPage() {
                     </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="review-queue-grid">
                   {data.reviewQueue.map(r => (
-                    <div key={r.id} style={{
-                      background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                      borderRadius: 8, padding: '0.75rem 1rem',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.375rem' }}>
+                    <div key={r.id} className="review-queue-card">
+                      <div className="review-queue-main">
                         <input
                           type="checkbox"
                           checked={selectedReviews.has(r.id)}
@@ -505,30 +529,23 @@ export default function MonitorPage() {
                             else next.delete(r.id)
                             setSelectedReviews(next)
                           }}
-                          style={{ marginTop: 2 }}
                         />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 600, lineHeight: 1.4 }}>{r.titleCn}</div>
-                            <span style={{
-                              fontSize: '0.75rem', padding: '0.125rem 0.375rem', borderRadius: 4,
-                              background: 'rgba(245,158,11,0.12)', color: '#f59e0b',
-                              fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-                            }}>
-                              评分 {r.relevanceScore}
-                            </span>
+                        <div className="review-queue-body">
+                          <div className="review-queue-head">
+                            <div className="review-queue-title">{r.titleCn}</div>
+                            <span className="review-score">评分 {r.relevanceScore}</span>
                           </div>
-                          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.5 }}>{r.summaryCn}</div>
+                          <div className="review-queue-summary">{r.summaryCn}</div>
                           {r.commentary && (
-                            <div style={{ fontSize: '0.75rem', color: '#c97b3b', marginTop: '0.25rem' }}>
+                            <div className="review-queue-commentary">
                               推荐理由：{r.commentary}
                             </div>
                           )}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.375rem', paddingLeft: '1.25rem' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.source} · {formatTime(r.createdAt)}</span>
-                        <div style={{ display: 'flex', gap: '0.375rem' }}>
+                      <div className="review-queue-footer">
+                        <span>{r.source} · {formatTime(r.createdAt)}</span>
+                        <div className="review-actions">
                           <button
                             className="monitor-action-btn"
                             style={{ fontSize: '0.6875rem', color: '#e94560', borderColor: '#e94560' }}
@@ -553,19 +570,6 @@ export default function MonitorPage() {
               </div>
             )}
 
-            {/* 最近错误 */}
-            {data.recentErrors.length > 0 && (
-              <div><h2 className="monitor-section-title" style={{ color: '#e94560' }}>最近错误</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {data.recentErrors.map(e => (
-                    <div key={e.id} style={{ background: 'rgba(233,69,96,0.06)', border: '1px solid rgba(233,69,96,0.2)', borderRadius: 8, padding: '0.75rem 1rem' }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{formatTime(e.startedAt)}</div>
-                      <div style={{ fontSize: '0.875rem', color: '#e94560' }}>{e.errorMessage || '未知错误'}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </section>
