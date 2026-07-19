@@ -102,3 +102,5 @@
 | RSS 可访问但无条目 | ICOM、Museums Association | 改官方新闻 HTML | 三连测通过 |
 | 404 | IGN Anime | 美国旧栏目仍为 404，改 IGN SEA 官方 Anime 栏目并分流本地 CDP | CDP 10/10/10，通过 |
 | 空 URL | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 | 属于工具而非资讯发布方，从生产库清退 | 已清退 |
+
+生产验收快照（2026-07-19）：本批 19 条目标记录中 18 条为 `success`；Anime News Network 因本地 CDP 实抓仍停在安全挑战页而保持 `failed + enabled=false`。艺恩网、猫眼专业版、四个工具卡片及三条失效重复 RSS 的生产残留数为 0。本轮修复没有把原本停用的记录改为启用。
