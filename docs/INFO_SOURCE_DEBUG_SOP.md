@@ -158,7 +158,21 @@ npm run test:source -- sanwenyu-web
 automationEnabled: true
 ```
 
-## 七、单源调试交付模板
+## 七、批量启用与定时轮转
+
+批量处理“自动抓取已停用”信息源时，必须遵守：
+
+1. 逐条在生产运行环境测试，只有取得至少 1 条有效资讯的源才写入 `enabled=true`。
+2. 失败源保持停用，并把 HTTP 状态、超时、CDP、登录或选择器错误写入 `last_test_message`。
+3. 定时任务不得一次串行抓取全部启用源。`fetch-and-process` 每次按稳定排序轮转 24 条，并在响应中返回：
+   - `batchIndex`
+   - `totalBatches`
+   - `totalActiveSources`
+   - `processedSources`
+4. 需要复测指定批次时，管理员可请求 `/api/cron/fetch-and-process?batch=N`；不指定时按 Vercel 定时触发时段自动轮转。
+5. 新增或减少启用源后无需手工重排；总批次数根据当前启用源数量自动计算。
+
+## 八、单源调试交付模板
 
 以后每个信息源的调试结果统一交付以下内容：
 
