@@ -7,6 +7,7 @@
 import http from 'http';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import { spawn } from 'child_process';
 
 // 加载 .env.local（独立脚本不自动读取）
 function loadEnvFile(filePath) {
@@ -32,7 +33,9 @@ function loadEnvFile(filePath) {
 loadEnvFile(resolve(process.cwd(), '.env.local'));
 
 const CDP_HOST = '127.0.0.1';
-const CDP_PORT = 3456;
+const CDP_PORT = Number(process.env.CDP_PORT || 9223);
+const CHROME_PATH = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const CHROME_PROFILE = resolve(process.env.LOCALAPPDATA || process.cwd(), 'ip-hot-cdp-profile');
 const SUPABASE_URL = 'https://rbjygwpoxuutmxmkzkqz.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || '';
 
@@ -50,19 +53,123 @@ const LLM_BACKUP_MODEL = process.env.LLM_BACKUP_MODEL || 'deepseek-chat';
 function log(msg) { console.log(`[${new Date().toISOString().slice(0,19)}] ${msg}`); }
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function cdpApi(path, method = 'GET', body = null) {
+function httpRequest(path, method = 'GET') {
   return new Promise((resolve, reject) => {
-    const options = { hostname: CDP_HOST, port: CDP_PORT, path, method, headers: body ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {} };
+    const options = { hostname: CDP_HOST, port: CDP_PORT, path, method };
     const req = http.request(options, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve(data));
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 400) {
+          reject(new Error(`CDP HTTP ${res.statusCode}: ${data.slice(0, 200)}`));
+          return;
+        }
+        resolve(data);
+      });
     });
     req.on('error', reject);
     req.setTimeout(30000, () => { req.destroy(); reject(new Error('timeout')); });
-    if (body) req.write(body);
     req.end();
   });
+}
+
+let nextCdpRequestId = 1;
+
+async function evaluateTarget(targetId, expression) {
+  const targets = JSON.parse(await httpRequest('/json/list'));
+  const target = targets.find((item) => item.id === targetId);
+  if (!target?.webSocketDebuggerUrl) throw new Error(`CDP target 不存在: ${targetId}`);
+
+  return new Promise((resolve, reject) => {
+    const requestId = nextCdpRequestId++;
+    const socket = new WebSocket(target.webSocketDebuggerUrl);
+    const timer = setTimeout(() => {
+      socket.close();
+      reject(new Error('CDP eval timeout'));
+    }, 30000);
+
+    socket.addEventListener('open', () => {
+      socket.send(JSON.stringify({
+        id: requestId,
+        method: 'Runtime.evaluate',
+        params: { expression, returnByValue: true, awaitPromise: true },
+      }));
+    });
+    socket.addEventListener('message', async (event) => {
+      const raw = typeof event.data === 'string' ? event.data : await event.data.text();
+      const message = JSON.parse(raw);
+      if (message.id !== requestId) return;
+      clearTimeout(timer);
+      socket.close();
+      if (message.error) {
+        reject(new Error(message.error.message || 'CDP eval failed'));
+        return;
+      }
+      resolve(message.result?.result?.value);
+    });
+    socket.addEventListener('error', () => {
+      clearTimeout(timer);
+      reject(new Error('CDP WebSocket 连接失败'));
+    });
+  });
+}
+
+async function cdpApi(path, method = 'GET', body = null) {
+  if (path === '/json/version') return httpRequest(path);
+
+  const url = new URL(path, 'http://localhost');
+  if (url.pathname === '/new') {
+    const targetUrl = url.searchParams.get('url') || 'about:blank';
+    return httpRequest(`/json/new?${encodeURIComponent(targetUrl)}`, 'PUT');
+  }
+  if (url.pathname === '/eval') {
+    const value = await evaluateTarget(url.searchParams.get('target') || '', body || '');
+    return JSON.stringify({ value });
+  }
+  if (url.pathname === '/scroll') {
+    const targetId = url.searchParams.get('target') || '';
+    const expression = url.searchParams.get('direction') === 'bottom'
+      ? 'window.scrollTo(0, document.body.scrollHeight)'
+      : `window.scrollTo(0, ${Number(url.searchParams.get('y')) || 0})`;
+    await evaluateTarget(targetId, expression);
+    return 'ok';
+  }
+  if (url.pathname === '/close') {
+    return httpRequest(`/json/close/${url.searchParams.get('target') || ''}`);
+  }
+  throw new Error(`不支持的 CDP 操作: ${method} ${path}`);
+}
+
+async function ensureCdp() {
+  try {
+    await cdpApi('/json/version');
+    return;
+  } catch {}
+
+  if (!existsSync(CHROME_PATH)) throw new Error(`未找到 Chrome: ${CHROME_PATH}`);
+  const chrome = spawn(CHROME_PATH, [
+    `--remote-debugging-port=${CDP_PORT}`,
+    '--remote-allow-origins=*',
+    `--user-data-dir=${CHROME_PROFILE}`,
+    '--headless=new',
+    '--disable-gpu',
+    '--no-first-run',
+    '--disable-default-apps',
+    'about:blank',
+  ], { detached: true, stdio: 'ignore', windowsHide: true });
+  chrome.unref();
+
+  let lastError;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await sleep(500);
+    try {
+      await cdpApi('/json/version');
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(`Chrome CDP 启动失败: ${lastError?.message || 'unknown error'}`);
 }
 
 // ============ LLM 处理 ============
@@ -185,9 +292,11 @@ async function fetchAndExtract(sources) {
   const results = [];
   for (const src of sources) {
     log(`抓取: ${src.name}`);
+    let targetId = '';
     try {
-      const newTab = await cdpApi(`/new?url=${src.url}`);
-      const targetId = (newTab.match(/[0-9A-F]{32}/) || [''])[0];
+      const newTab = await cdpApi(`/new?url=${encodeURIComponent(src.url)}`);
+      targetId = JSON.parse(newTab).id;
+      if (!targetId) throw new Error('CDP 未返回 targetId');
       await sleep(src.loadWait || 10000);
 
       // 滚动触发加载
@@ -221,6 +330,7 @@ async function fetchAndExtract(sources) {
       results.push({ source: src.name, articles });
     } catch (e) {
       log(`  失败: ${e.message}`);
+      if (targetId) await cdpApi(`/close?target=${targetId}`).catch(() => {});
       results.push({ source: src.name, articles: [], error: e.message });
     }
     await sleep(3000 + Math.random() * 4000);
@@ -390,6 +500,14 @@ let SOURCES = [
     loadWait: 15000,
   },
   {
+    id: 'zjol',
+    name: '浙江日报/潮新闻',
+    url: 'https://www.zjol.com.cn/',
+    selector: '.newslist a[href]',
+    maxItems: 10,
+    loadWait: 12000,
+  },
+  {
     name: '新闻晨报',
     url: 'https://www.shxwcb.com',
     selector: 'a[href*="/detail/"]',
@@ -409,23 +527,43 @@ const requestedIndex = Number(process.argv[2]);
 if (Number.isInteger(requestedIndex) && requestedIndex >= 0 && requestedIndex < SOURCES.length) {
   SOURCES = [SOURCES[requestedIndex]];
 }
+const sourceOptionIndex = process.argv.indexOf('--source');
+const requestedSource = sourceOptionIndex >= 0 ? process.argv[sourceOptionIndex + 1] : '';
+if (requestedSource) {
+  SOURCES = SOURCES.filter((source) => source.id === requestedSource || source.name.includes(requestedSource));
+  if (SOURCES.length === 0) {
+    console.error(`未找到本地 CDP 信息源: ${requestedSource}`);
+    process.exit(1);
+  }
+}
+const dryRun = process.argv.includes('--dry-run');
 
 // ============ 主流程 ============
 async function main() {
   const startTime = Date.now();
   log('========== CDP本地源抓取开始 ==========');
 
-  // 1. 检查CDP
+  // 1. 检查并按需启动CDP
   try {
-    await cdpApi('/json/version');
+    await ensureCdp();
     log('CDP OK');
   } catch (e) {
-    log('CDP不可用，跳过');
-    process.exit(0);
+    log(`CDP不可用: ${e.message}`);
+    process.exit(1);
   }
 
   // 2. 抓取
   const results = await fetchAndExtract(SOURCES);
+  if (dryRun) {
+    let failed = false;
+    for (const result of results) {
+      log(`验证结果 ${result.source}: ${result.articles.length} 条`);
+      const source = SOURCES.find((item) => item.name === result.source);
+      if (result.error || result.articles.length < (source?.maxItems || 10)) failed = true;
+    }
+    if (failed) process.exitCode = 1;
+    return;
+  }
 
   // 3. LLM处理（翻译/分类/评分）→ 入库
   let totalInserted = 0;

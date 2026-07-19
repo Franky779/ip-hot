@@ -215,9 +215,9 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: { itemSelector: 'a[href*="/details/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.ccdy.cn', maxItems: 10 },
   },
   {
-    id: 'ctnews', name: '中国旅游报', url: 'http://www.ctnews.com.cn',
+    id: 'ctnews', name: '中国旅游报', url: 'https://www.ctnews.com.cn/',
     language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: '.news-list li, ul li, article', titleSelector: 'h3 a, h2 a, a', linkSelector: 'a', linkPrefix: 'http://www.ctnews.com.cn', maxItems: 10 },
+    scrapeConfig: { itemSelector: 'a[href*="/content/20"][href*="content_"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.ctnews.com.cn', maxItems: 10 },
   },
   {
     id: 'cflac', name: '中国艺术报', url: 'http://www.cflac.org.cn',
@@ -385,9 +385,9 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: { itemSelector: 'a[href*="/detail/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.shxwcb.com', maxItems: 10 },
   },
   {
-    id: 'zjol', name: '浙江日报/潮新闻', url: 'http://www.zjol.com.cn',
-    language: 'zh', priority: 'P2', type: 'web',
-    scrapeConfig: { itemSelector: '.news-list li, ul li', titleSelector: 'h3 a, a', linkSelector: 'a', linkPrefix: 'http://www.zjol.com.cn', maxItems: 10 },
+    id: 'zjol', name: '浙江日报/潮新闻', url: 'https://www.zjol.com.cn/',
+    language: 'zh', priority: 'P2', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: '.newslist a[href]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.zjol.com.cn', maxItems: 10 },
   },
   {
     id: 'hubeidaily', name: '湖北日报', url: 'http://www.hubeidaily.net',

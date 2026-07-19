@@ -274,3 +274,72 @@ automationEnabled: true
 3. Vercel 部署成功后，在管理页保持停用状态先点“测试”；只有 `last_test_status=success` 才启用。
 4. 启用后手动运行一次抓取任务，确认 `fetched>0`、`dead=0`；再运行一次确认 URL 去重。
 5. 任一步失败，立即回退数据库 `enabled=false`，保留诊断状态和错误信息，不回退到已经确认 410/403 的旧地址。
+## 十、`选择器未提取到有效资讯` 专项纠错 SOP
+
+此错误不得直接靠扩大选择器处理。必须先判定“页面没有文章链接”还是“抓取器拿到的根本不是新闻页面”。后续遇到相同报错，一律按以下流程执行。
+
+### A. 固定诊断顺序
+
+1. 保持信息源停用，记录测试时间、HTTP 状态、最终 URL、响应大小、`rawCount`、有效条数和报错原文。
+2. 用与生产相同的 `User-Agent`、`Accept` 和请求方式抓取页面，检查 HTML 内是否存在 `a[href]`。禁止仅凭浏览器人工看到页面就判断静态抓取可用。
+3. 若响应是验证脚本、挑战页、空壳 HTML，或页面没有文章链接：归类为 **反爬/JavaScript 页面**；停止调 CSS 选择器，设置 `needsLocalCdp: true`，并改走本地 CDP。
+4. 若 HTML 有文章链接：先写出 URL 路径特征，再选择最小、稳定的文章选择器。禁止以 `ul li`、`article`、`a[href]` 等全站规则作为最终配置。
+5. 用 `npm run test:source -- <source_id>` 连续验证 3 次。静态 HTML 源必须每次取得 `maxItems` 条标题、URL 非空且本批 URL 唯一。
+6. 本地 CDP 脚本会按需启动隐藏的 Chrome（专用 9223 调试端口和独立用户目录）。使用 `node scripts/fetch-cdp-local.mjs --source <id> --dry-run` 验证 3 次；确认每次至少取得 10 条有效标题链接后，才允许进入定时任务。
+7. 静态 HTML 源在后台“测试”成功后启用。CDP 源的后台测试只确认分流配置，真实抓取必须通过第 6 步；CDP 源由 `CDPLocalDaily` 任务执行，不再加入 Vercel 普通网页批次。
+
+### B. 本次已跑通配置
+
+#### 中国旅游报：静态 HTML
+
+```ts
+{
+  id: 'ctnews',
+  url: 'https://www.ctnews.com.cn/',
+  type: 'web',
+  needsLocalCdp: false,
+  scrapeConfig: {
+    itemSelector: 'a[href*="/content/20"][href*="content_"]',
+    titleSelector: '',
+    linkSelector: '',
+    linkPrefix: 'https://www.ctnews.com.cn',
+    maxItems: 10,
+  },
+}
+```
+
+证据：站点服务器响应为完整 HTML；该规则命中 106 个候选文章链接，并稳定提取前 10 条有效资讯。旧规则从宽泛 `li` 容器中优先取到导航链接，导致最终有效条数为 0。
+
+验收命令：
+
+```bash
+npm run test:source -- ctnews
+```
+
+#### 浙江日报/潮新闻：本地 CDP
+
+```ts
+{
+  id: 'zjol',
+  url: 'https://www.zjol.com.cn/',
+  type: 'web',
+  needsLocalCdp: true,
+  scrapeConfig: {
+    itemSelector: '.newslist a[href]',
+    titleSelector: '',
+    linkSelector: '',
+    linkPrefix: 'https://www.zjol.com.cn',
+    maxItems: 10,
+  },
+}
+```
+
+证据：Vercel 同类请求返回 JavaScript 反爬校验页（约 8KB、0 个链接），因此不属于选择器问题；Chrome 渲染后 `.newslist a[href]` 命中 22 条正文列表链接，前 10 条均有标题和文章 URL。
+
+本地验收命令：
+
+```bash
+node scripts/fetch-cdp-local.mjs --source zjol --dry-run
+```
+
+通过后由 Windows 任务 `CDPLocalDaily` 运行 `scripts/run-cdp-local.bat`。脚本会自动启动隐藏的 Chrome 9223 调试实例，不依赖人工打开浏览器或额外的 3456 代理服务。后台“测试”按钮只确认该源已正确分流到本地 CDP，不代表页面抓取验收；页面验收以连续 3 次 dry-run 为准。
