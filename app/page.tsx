@@ -1,4 +1,4 @@
-import { getSupabase } from '@/lib/supabase'
+import { createServiceClient, getSupabase } from '@/lib/supabase'
 import { CategoryTabs } from './components/CategoryTabs'
 import { SearchBox } from './components/SearchBox'
 import { AdminToggle } from './components/AdminToggle'
@@ -40,7 +40,7 @@ function parsePage(value: string | undefined): number {
 }
 
 async function getArticles(category: string, q: string, page: number): Promise<ArticleResult> {
-  const supabase = getSupabase()
+  const supabase = category === '版权保护' ? createServiceClient() : getSupabase()
   const totalToShow = page * ARTICLES_PER_PAGE
   try {
     const result = await paginateFilteredResults({
