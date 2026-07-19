@@ -47,7 +47,7 @@ async function getArticles(category: string, q: string, page: number): Promise<A
       targetCount: totalToShow,
       batchSize: DATABASE_BATCH_SIZE,
       include: (article: Article) =>
-        !isClearlyIndirectTechTitle(article.title, article.category),
+        category === '版权保护' || !isClearlyIndirectTechTitle(article.title, article.category),
       fetchRange: async (from, to) => {
         let query = supabase
           .from('articles')
@@ -58,7 +58,12 @@ async function getArticles(category: string, q: string, page: number): Promise<A
           .not('commentary', 'is', null)
           .neq('commentary', '')
           .neq('category', '待分类')
-          .gte('relevance_score', 7)
+
+        if (category !== '版权保护') {
+          query = query.gte('relevance_score', 7)
+        }
+
+        query = query
           .order('published_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false, nullsFirst: false })
           .order('id', { ascending: false })
