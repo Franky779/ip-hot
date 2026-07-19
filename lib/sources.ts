@@ -1,10 +1,24 @@
-export type ScrapeConfig = {
+export type HtmlScrapeConfig = {
+  adapter?: 'html'
   itemSelector: string
   titleSelector: string
   linkSelector: string
   linkPrefix?: string
   maxItems?: number
 }
+
+export type BilibiliTimelineConfig = {
+  adapter: 'bilibili-guochuang-timeline'
+  apiUrl: string
+  maxItems?: number
+}
+
+export type AutoNewsConfig = {
+  adapter: 'auto-news-links'
+  maxItems?: number
+}
+
+export type ScrapeConfig = HtmlScrapeConfig | BilibiliTimelineConfig | AutoNewsConfig
 
 export type NewsSource = {
   id: string
@@ -23,6 +37,8 @@ export type NewsSource = {
   loginRequired?: boolean
   /** 是否只能走本地CDP抓取（Vercel服务器IP被拦） */
   needsLocalCdp?: boolean
+  /** 已完成重复抓取验收，可在 enabled=true 时进入服务端定时任务 */
+  automationEnabled?: boolean
 }
 
 // ============================================================
@@ -70,13 +86,22 @@ const WEB_SOURCES: NewsSource[] = [
   // --- 动漫/ACG ---
   {
     id: 'sanwenyu-web', name: '三文娱', url: 'https://www.163.com/dy/media/T1460009632064.html',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: 'a[href*="/article/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.163.com', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', automationEnabled: true,
+    scrapeConfig: { itemSelector: '.list_box .js-item', titleSelector: 'a.title[href*="/dy/article/"]', linkSelector: 'a.title[href*="/dy/article/"]', linkPrefix: 'https://www.163.com', maxItems: 10 },
   },
   {
     id: 'gamersky-acg', name: '游民星空动漫', url: 'https://www.gamersky.com/news/',
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.Mid2L_con li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.gamersky.com', maxItems: 10 },
+  },
+  {
+    id: 'bilibili-guochuang-api', name: '哔哩哔哩(B站)国创区', url: 'https://www.bilibili.com/v/anime/guochuang',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: {
+      adapter: 'bilibili-guochuang-timeline',
+      apiUrl: 'https://api.bilibili.com/pgc/web/timeline?types=4&before=7&after=0',
+      maxItems: 10,
+    },
   },
   // --- 潮玩/玩具 ---
   {
@@ -121,7 +146,7 @@ const WEB_SOURCES: NewsSource[] = [
   },
   // --- 海外IP授权/潮玩 ---
   {
-    id: 'artnews', name: 'ArtNews', url: 'https://www.artnews.com',
+    id: 'artnews', name: 'ArtNews', url: 'https://www.artnews.com/feed',
     language: 'en', priority: 'P0', type: 'rss', isRss: true,
   },
   {
@@ -445,6 +470,39 @@ const GOV_SOURCES: NewsSource[] = [
 // 合并导出
 // ============================================================
 export const ALL_SOURCES = [...RSS_SOURCES, ...WEB_SOURCES, ...GOV_SOURCES]
+
+function normalizeSourceUrl(value: string): string {
+  try {
+    const url = new URL(value)
+    return `${url.hostname.replace(/^www\./, '')}${url.pathname.replace(/\/+$/, '')}`.toLowerCase()
+  } catch {
+    return value.trim().replace(/\/+$/, '').toLowerCase()
+  }
+}
+
+function normalizeSourceName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[（(][^）)]*[）)]/g, '')
+    .replace(/官网|官方|资讯|新闻|频道|文化频道/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+}
+
+export function findSourceConfiguration(url: string, name = ''): NewsSource | undefined {
+  const normalizedUrl = normalizeSourceUrl(url)
+  const exact = ALL_SOURCES.find((source) => normalizeSourceUrl(source.url) === normalizedUrl)
+  if (exact) return exact
+
+  const normalizedName = normalizeSourceName(name)
+  if (!normalizedName) return undefined
+
+  return ALL_SOURCES.find((source) => {
+    const candidateName = normalizeSourceName(source.name)
+    return candidateName === normalizedName
+      || (candidateName.length >= 4 && normalizedName.includes(candidateName))
+      || (normalizedName.length >= 4 && candidateName.includes(normalizedName))
+  })
+}
 
 // 非政府源（每天抓取）
 export const NON_GOV_SOURCES = [...RSS_SOURCES, ...WEB_SOURCES].filter((s) => !s.loginRequired && !s.needsLocalCdp)

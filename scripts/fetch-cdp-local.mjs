@@ -267,7 +267,7 @@ async function insertSupabase(articles, source) {
 
 // ============ 源配置 ============
 // selector 命中后直接提取 href and textContent
-const SOURCES = [
+let SOURCES = [
   {
     name: '微博热搜',
     url: 'https://s.weibo.com/top/summary',
@@ -397,6 +397,11 @@ const SOURCES = [
     loadWait: 15000,
   },
 ];
+
+const requestedIndex = Number(process.argv[2]);
+if (Number.isInteger(requestedIndex) && requestedIndex >= 0 && requestedIndex < SOURCES.length) {
+  SOURCES = [SOURCES[requestedIndex]];
+}
 
 // ============ 主流程 ============
 async function main() {

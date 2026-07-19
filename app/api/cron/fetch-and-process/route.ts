@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
-import { RSS_SOURCES, NEW_SOURCE_NAMES } from '@/lib/sources'
+import { findSourceConfiguration, RSS_SOURCES, NEW_SOURCE_NAMES, type ScrapeConfig } from '@/lib/sources'
+import { scrapeNewsList } from '@/lib/scraper'
+import { parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
@@ -14,21 +16,50 @@ export const maxDuration = 60
 
 const parser = new Parser({ timeout: 15000 })
 
-type RuntimeSource = { name: string; url: string }
+type RuntimeSource = {
+  name: string
+  url: string
+  fetchType: 'rss' | 'web'
+  scrapeConfig?: ScrapeConfig
+}
 
-async function loadActiveRssSources(supabase: ReturnType<typeof createServiceClient>): Promise<RuntimeSource[]> {
+async function loadActiveSources(supabase: ReturnType<typeof createServiceClient>): Promise<RuntimeSource[]> {
   const { data, error } = await supabase
     .from('info_sources')
-    .select('name, url')
+    .select('name, url, fetch_type')
     .eq('enabled', true)
-    .eq('fetch_type', 'rss')
     .order('sort_order', { ascending: true })
 
-  if (!error) return data ?? []
+  if (!error) {
+    return (data ?? []).flatMap((source): RuntimeSource[] => {
+      const configuredSource = findSourceConfiguration(source.url, source.name)
+      if (configuredSource?.loginRequired || configuredSource?.needsLocalCdp) {
+        return []
+      }
+      const fetchType =
+        configuredSource?.type === 'rss' || configuredSource?.isRss
+          ? 'rss'
+          : source.fetch_type === 'rss'
+            ? 'rss'
+            : 'web'
+      return [{
+        name: source.name,
+        url: configuredSource?.url || source.url,
+        fetchType,
+        scrapeConfig: configuredSource?.scrapeConfig || (
+          fetchType === 'web' ? { adapter: 'auto-news-links', maxItems: 10 } : undefined
+        ),
+      }]
+    })
+  }
 
   // 数据库迁移执行前保持现有任务可用，避免部署过程停止抓取。
   console.warn('[Sources] 数据库运行字段尚不可用，暂用代码内 RSS 清单:', error.message)
-  return RSS_SOURCES.filter((source) => source.type === 'rss').map(({ name, url }) => ({ name, url }))
+  return RSS_SOURCES.filter((source) => source.type === 'rss').map(({ name, url }) => ({
+    name,
+    url,
+    fetchType: 'rss',
+  }))
 }
 
 async function fetchFeedWithFallback(url: string): Promise<Parser.Output<{
@@ -36,15 +67,15 @@ async function fetchFeedWithFallback(url: string): Promise<Parser.Output<{
 }> | null> {
   // 1. 先用普通 fetch 尝试
   try {
-    const feed = await parser.parseURL(url)
+    const feed = await parseFeedUrl(url)
     return feed
   } catch {
     // 2. 失败后用 Scrapling fallback（反检测 Chromium）
     const tmpFile = join(tmpdir(), `rss-${Date.now()}.xml`)
     const pythonExe = process.env.SCRAPLING_PYTHON || 'D:\\claudecode\\.venv-scrapling\\Scripts\\python.exe'
-    const scriptPath = 'D:\\claudecode\\临时文件夹\\github网页\\ip-hot\\scripts\\fetch-rss-scrapling.py'
+    const scriptPath = join(process.cwd(), 'scripts', 'fetch-rss-scrapling.py')
     try {
-      execSync(`"${pythonExe}" "${scriptPath}" "${url}" "${tmpFile}"`, {
+      execFileSync(pythonExe, [scriptPath, url, tmpFile], {
         timeout: 35000,
         stdio: ['ignore', 'pipe', 'pipe'],
       })
@@ -122,26 +153,53 @@ export async function GET(request: Request) {
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
-  const activeSources = await loadActiveRssSources(supabase)
+  const activeSources = await loadActiveSources(supabase)
 
   for (const source of activeSources) {
     const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
 
     try {
-      const feed = await fetchFeedWithFallback(source.url)
-      if (!feed) {
-        result.error = 'RSS fetch failed (including Scrapling fallback)'
-        fetchResults.push(result)
-        continue
-      }
-      const rawItems = feed.items
-        .map((item) => ({
+      let rawItems: Array<{
+        source: string
+        url: string
+        title: string
+        published_at: string | null
+      }>
+
+      if (source.fetchType === 'rss') {
+        const feed = await fetchFeedWithFallback(source.url)
+        if (!feed) {
+          result.error = 'RSS fetch failed (including Scrapling fallback)'
+          fetchResults.push(result)
+          continue
+        }
+        rawItems = feed.items
+          .map((item) => ({
+            source: source.name,
+            url: item.link ?? '',
+            title: item.title ?? '',
+            published_at: item.isoDate ?? null,
+          }))
+          .filter((item) => item.url.length > 0 && item.title.length > 0)
+      } else {
+        if (!source.scrapeConfig) {
+          result.error = 'Web source is missing scrapeConfig'
+          fetchResults.push(result)
+          continue
+        }
+        const scraped = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
+        if (scraped.error) {
+          result.error = scraped.error
+          fetchResults.push(result)
+          continue
+        }
+        rawItems = scraped.items.map((item) => ({
           source: source.name,
-          url: item.link ?? '',
-          title: item.title ?? '',
-          published_at: item.isoDate ?? null,
+          url: item.url,
+          title: item.title,
+          published_at: item.publishedAt,
         }))
-        .filter((x) => x.url.length > 0 && x.title.length > 0)
+      }
 
       const items = rawItems.filter((x) => !isNoise(x.title))
       result.fetched = items.length

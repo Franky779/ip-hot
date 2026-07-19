@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
+import { findSourceConfiguration } from '@/lib/sources'
+import { scrapeNewsList } from '@/lib/scraper'
+import { parseFeedUrl } from '@/lib/rss'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
-
-const parser = new Parser({ timeout: 15000 })
 
 export async function POST(request: Request) {
   const password = request.headers.get('x-admin-password')
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const supabase = createServiceClient()
   const { data: source, error } = await supabase
     .from('info_sources')
-    .select('id, url, fetch_type')
+    .select('id, name, url, fetch_type')
     .eq('id', id)
     .single()
 
@@ -30,18 +30,35 @@ export async function POST(request: Request) {
   let status = 'failed'
   let message = ''
   let itemCount = 0
+  const configuredSource = findSourceConfiguration(source.url, source.name)
+  const effectiveUrl = configuredSource?.url || source.url
+  const effectiveFetchType =
+    configuredSource?.type === 'rss' || configuredSource?.isRss ? 'rss' : source.fetch_type
 
-  if (source.fetch_type !== 'rss') {
-    message = '普通网页需要单独配置抓取规则，目前只能自动测试 RSS。'
-  } else {
+  if (effectiveFetchType === 'rss') {
     try {
-      const feed = await parser.parseURL(source.url)
+      const feed = await parseFeedUrl(effectiveUrl)
       itemCount = feed.items.filter((item) => item.title && item.link).length
       status = itemCount > 0 ? 'success' : 'failed'
-      message = itemCount > 0 ? `读取成功，共发现 ${itemCount} 条资讯。` : 'RSS 可访问，但没有发现有效资讯。'
+      message = itemCount > 0
+        ? `读取成功，共发现 ${itemCount} 条资讯。`
+        : 'RSS 可访问，但没有发现有效资讯。'
     } catch (err) {
       message = err instanceof Error ? err.message : String(err)
     }
+  } else if (configuredSource?.loginRequired) {
+    message = '该信息源需要登录，不能在 Vercel 无登录环境自动抓取。'
+  } else if (configuredSource?.needsLocalCdp) {
+    message = '该信息源需要本地 CDP 浏览器抓取，不能由 Vercel 普通网页任务直接运行。'
+  } else {
+    const scrapeConfig = configuredSource?.scrapeConfig || {
+      adapter: 'auto-news-links' as const,
+      maxItems: 10,
+    }
+    const result = await scrapeNewsList(source.name, effectiveUrl, scrapeConfig)
+    itemCount = result.items.length
+    status = itemCount > 0 ? 'success' : 'failed'
+    message = result.error || `读取成功，共发现 ${itemCount} 条资讯。`
   }
 
   await supabase

@@ -7,10 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:source": "node --experimental-strip-types scripts/test-source.mjs",
+    "configure:kidscreen": "node scripts/configure-kidscreen-source.mjs",
+    "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs",
     "deploy": "vercel --prod --yes"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
+    "cheerio": "^1.1.2",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
