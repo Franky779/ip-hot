@@ -72,6 +72,15 @@ export async function GET(request: Request) {
       .gte('created_at', todayStart)
       .lte('created_at', todayEnd)
 
+    // 5. 后台 LLM 守护任务最近一次心跳
+    const { data: llmWorkerRaw, error: e5 } = await supabase
+      .from('cron_logs')
+      .select('status, started_at, ended_at, llm_processed, llm_failed, llm_pending, error_message')
+      .eq('trigger_type', 'cron_llm')
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
     // 5. 分类统计 — 对每个分类执行数据库精确计数，避免 Supabase 默认1000行上限截断。
     const categoryResults = await Promise.all(
       MONITOR_CATEGORIES.map(async (category) => {
@@ -133,7 +142,7 @@ export async function GET(request: Request) {
     } catch { /* 表不存在时静默 */ }
 
     const errors = [
-      e1, e2, e3, e4, e8, e9,
+      e1, e2, e3, e4, e5, e8, e9,
       ...categoryResults.map((result) => result.error),
     ].filter(Boolean)
     if (errors.length > 0) {
@@ -141,6 +150,19 @@ export async function GET(request: Request) {
     }
 
     const categoryStats = categoryResults.map(({ category, count }) => ({ category, count }))
+    const llmWorkerAge = llmWorkerRaw?.started_at
+      ? Date.now() - new Date(llmWorkerRaw.started_at).getTime()
+      : Number.POSITIVE_INFINITY
+    const llmWorker = {
+      active: llmWorkerAge <= 10 * 60 * 1000,
+      intervalMinutes: 3,
+      lastRunAt: llmWorkerRaw?.started_at || null,
+      lastStatus: llmWorkerRaw?.status || null,
+      processed: llmWorkerRaw?.llm_processed ?? 0,
+      failed: llmWorkerRaw?.llm_failed ?? 0,
+      remaining: llmWorkerRaw?.llm_pending ?? queueCount ?? 0,
+      errorMessage: llmWorkerRaw?.error_message || null,
+    }
 
     const todayTask = todayTaskRaw
       ? {
@@ -197,6 +219,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       todayTask,
+      llmWorker,
       history,
       queue: queueCount || 0,
       todayInserted: todayInserted || 0,

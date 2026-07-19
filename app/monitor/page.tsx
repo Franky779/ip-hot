@@ -18,6 +18,10 @@ type MonitorData = {
   }>
   queue: number
   todayInserted: number
+  llmWorker: {
+    active: boolean; intervalMinutes: number; lastRunAt: string | null; lastStatus: string | null
+    processed: number; failed: number; remaining: number; errorMessage: string | null
+  }
   categoryStats: Array<{ category: string; count: number }>
   sourceQuality?: Array<{ name: string; total: number; low: number; rate: number }>
   reviewQueue?: Array<{
@@ -47,14 +51,6 @@ function formatTime(iso: string | null): string {
 }
 function getStatusColor(s: string) { return s === 'success' ? '#2e9d5a' : s === 'running' ? '#3b82f6' : s === 'error' ? '#e94560' : '#888' }
 function getStatusLabel(s: string) { return s === 'success' ? '成功' : s === 'running' ? '运行中' : s === 'error' ? '失败' : s }
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return '00:00:00'
-  const totalSeconds = Math.ceil(ms / 1000)
-  const h = Math.floor(totalSeconds / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  const s = totalSeconds % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
 function getTriggerLabel(triggerType: string | null) {
   return triggerType === 'manual' ? '手动'
     : triggerType === 'manual_llm' ? '手动LLM'
@@ -84,13 +80,6 @@ export default function MonitorPage() {
   const [logs, setLogs] = useState<CronLog[]>([])
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
-
-  // 自动处理 LLM 配置
-  const AUTO_LLM_KEY = 'ip-hot-auto-llm-enabled'
-  const AUTO_LLM_NEXT_KEY = 'ip-hot-auto-llm-next-at'
-  const AUTO_INTERVAL_MS = 3 * 60 * 60 * 1000 // 3小时
-  const [autoLlmEnabled, setAutoLlmEnabled] = useState(false)
-  const [autoLlmRemaining, setAutoLlmRemaining] = useState<number | null>(null)
 
   const fetchData = useCallback(async () => {
     const pw = getPw(); if (!pw) return
@@ -125,44 +114,6 @@ export default function MonitorPage() {
     }, 5000)
     return () => clearInterval(t)
   }, [loaded, fetchData, loadLogs])
-
-  // 初始化自动处理状态
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const enabled = localStorage.getItem(AUTO_LLM_KEY) === '1'
-    setAutoLlmEnabled(enabled)
-    const nextAt = parseInt(localStorage.getItem(AUTO_LLM_NEXT_KEY) || '0', 10)
-    if (enabled && nextAt > 0) {
-      setAutoLlmRemaining(Math.max(0, nextAt - Date.now()))
-    }
-  }, [])
-
-  // 自动处理倒计时
-  useEffect(() => {
-    if (!autoLlmEnabled) {
-      setAutoLlmRemaining(null)
-      return
-    }
-
-    const tick = () => {
-      const nextAt = parseInt(localStorage.getItem(AUTO_LLM_NEXT_KEY) || '0', 10)
-      const remaining = nextAt > 0 ? nextAt - Date.now() : AUTO_INTERVAL_MS
-      setAutoLlmRemaining(Math.max(0, remaining))
-
-      if (remaining <= 0 && !llming && data && data.queue > 0) {
-        handleTriggerLlm()
-      } else if (remaining <= 0) {
-        // 队列为空或正在处理，直接安排下一次
-        const next = Date.now() + AUTO_INTERVAL_MS
-        localStorage.setItem(AUTO_LLM_NEXT_KEY, String(next))
-        setAutoLlmRemaining(AUTO_INTERVAL_MS)
-      }
-    }
-
-    tick()
-    const interval = setInterval(tick, 1000)
-    return () => clearInterval(interval)
-  }, [autoLlmEnabled, llming, data?.queue])
 
   const handleManualFetch = async () => {
     if (!confirm('确定手动触发一次资讯抓取？')) return
@@ -247,11 +198,6 @@ export default function MonitorPage() {
       setLlming(false)
       setLlmProgress(null)
       fetchData()
-      if (autoLlmEnabled) {
-        const next = Date.now() + AUTO_INTERVAL_MS
-        localStorage.setItem(AUTO_LLM_NEXT_KEY, String(next))
-        setAutoLlmRemaining(AUTO_INTERVAL_MS)
-      }
     }
   }
 
@@ -259,21 +205,6 @@ export default function MonitorPage() {
     stopLlmRef.current = true
     setLlming(false)
     setLlmProgress(null)
-  }
-
-  const toggleAutoLlm = () => {
-    const nextEnabled = !autoLlmEnabled
-    setAutoLlmEnabled(nextEnabled)
-    if (typeof window === 'undefined') return
-    localStorage.setItem(AUTO_LLM_KEY, nextEnabled ? '1' : '0')
-    if (nextEnabled) {
-      const next = Date.now() + AUTO_INTERVAL_MS
-      localStorage.setItem(AUTO_LLM_NEXT_KEY, String(next))
-      setAutoLlmRemaining(AUTO_INTERVAL_MS)
-    } else {
-      localStorage.removeItem(AUTO_LLM_NEXT_KEY)
-      setAutoLlmRemaining(null)
-    }
   }
 
   // 待复核：删除
@@ -401,22 +332,20 @@ export default function MonitorPage() {
                   ) : (
                     <>
                       <button className="monitor-action-btn" onClick={handleTriggerLlm}>手动处理LLM</button>
-                      <button
+                      <span
                         className="monitor-action-btn"
-                        onClick={toggleAutoLlm}
                         style={{
-                          borderColor: autoLlmEnabled ? '#2e9d5a' : 'var(--border)',
-                          color: autoLlmEnabled ? '#2e9d5a' : 'var(--text-muted)',
+                          borderColor: data.llmWorker.active ? '#2e9d5a' : '#f59e0b',
+                          color: data.llmWorker.active ? '#2e9d5a' : '#f59e0b',
                         }}
-                        title="每3小时自动触发一次LLM处理"
+                        title="后台守护任务运行，不依赖当前浏览器页面"
                       >
-                        {autoLlmEnabled ? '自动处理 ON' : '自动处理 OFF'}
-                      </button>
-                      {autoLlmEnabled && autoLlmRemaining !== null && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                          下次 {formatCountdown(autoLlmRemaining)}
-                        </span>
-                      )}
+                        {data.llmWorker.active ? '后台自动 ON' : '后台等待心跳'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        每 {data.llmWorker.intervalMinutes} 分钟检查
+                        {data.llmWorker.lastRunAt ? ` · 最近 ${formatTime(data.llmWorker.lastRunAt)}` : ' · 尚未运行'}
+                      </span>
                     </>
                   )}
                 </div>

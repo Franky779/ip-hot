@@ -12,36 +12,103 @@ type ProcessResult = {
   error?: string
 }
 
+const BATCH_SIZE = 8
+const RECENT_BATCH_SIZE = 6
+const LOCK_MINUTES = 2
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
-  if (!process.env.CRON_SECRET || authHeader !== expectedAuth) {
+  const acceptedSecrets = [process.env.CRON_SECRET, process.env.LLM_WORKER_SECRET].filter(Boolean)
+  if (acceptedSecrets.length === 0 || !acceptedSecrets.some((secret) => authHeader === `Bearer ${secret}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const supabase = createServiceClient()
 
-  // Vercel Hobby plan 函数超时 10 秒，LLM 每次调用 2-5 秒
-  // 并行处理 3 条，总时间约 3-7 秒，在限制内
-  const BATCH_SIZE = 8
+  // 防止本地守护任务、手动处理和未来 Supabase Cron 同时领取同一批文章。
+  const lockCutoff = new Date(Date.now() - LOCK_MINUTES * 60 * 1000).toISOString()
+  const { data: runningTask } = await supabase
+    .from('cron_logs')
+    .select('id, trigger_type, started_at')
+    .in('trigger_type', ['cron_llm', 'manual_llm'])
+    .eq('status', 'running')
+    .gte('started_at', lockCutoff)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  const { data: articles, error: fetchError } = await supabase
-    .from('articles')
-    .select('id, title, url, source, published_at')
-    .is('title_cn', null)
-    .order('published_at', { ascending: false })
-    .limit(BATCH_SIZE)
-
-  if (fetchError) {
-    return NextResponse.json(
-      { error: `Fetch failed: ${fetchError.message}` },
-      { status: 500 }
-    )
+  if (runningTask) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: 'another_llm_worker_is_running',
+      runningTask,
+    })
   }
+
+  const { data: logRecord, error: logError } = await supabase
+    .from('cron_logs')
+    .insert({
+      trigger_type: 'cron_llm',
+      status: 'running',
+      llm_pending: 0,
+      details: { action: 'background_llm', batch_total: 0 },
+    })
+    .select('id')
+    .single()
+
+  if (logError || !logRecord) {
+    return NextResponse.json({ error: logError?.message || 'Failed to create worker log' }, { status: 500 })
+  }
+
+  const logId = logRecord.id
+
+  // 6 条最新资讯保证时效，2 条最旧资讯持续消化历史积压。
+  const [recentResult, oldestResult] = await Promise.all([
+    supabase
+      .from('articles')
+      .select('id, title, url, source, published_at, created_at')
+      .is('title_cn', null)
+      .order('created_at', { ascending: false })
+      .limit(RECENT_BATCH_SIZE),
+    supabase
+      .from('articles')
+      .select('id, title, url, source, published_at, created_at')
+      .is('title_cn', null)
+      .order('created_at', { ascending: true })
+      .limit(BATCH_SIZE - RECENT_BATCH_SIZE),
+  ])
+
+  const fetchError = recentResult.error || oldestResult.error
+  if (fetchError) {
+    await supabase.from('cron_logs').update({
+      status: 'error',
+      ended_at: new Date().toISOString(),
+      error_message: `Fetch failed: ${fetchError.message}`,
+    }).eq('id', logId)
+    return NextResponse.json({ error: `Fetch failed: ${fetchError.message}` }, { status: 500 })
+  }
+
+  const articles = Array.from(
+    new Map([...(recentResult.data || []), ...(oldestResult.data || [])].map((article) => [article.id, article])).values()
+  )
 
   if (!articles || articles.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0, message: 'No pending articles' })
+    await supabase.from('cron_logs').update({
+      status: 'success',
+      ended_at: new Date().toISOString(),
+      llm_pending: 0,
+      llm_processed: 0,
+      llm_failed: 0,
+      details: { action: 'background_llm', batch_total: 0 },
+    }).eq('id', logId)
+    return NextResponse.json({ ok: true, processed: 0, remaining: 0, message: 'No pending articles' })
   }
+
+  await supabase.from('cron_logs').update({
+    llm_pending: articles.length,
+    details: { action: 'background_llm', batch_total: articles.length },
+  }).eq('id', logId)
 
   // 并行调用 LLM + 并行更新数据库
   const results: ProcessResult[] = await Promise.all(
@@ -91,13 +158,35 @@ export async function GET(request: Request) {
   )
 
   const okCount = results.filter((r) => r.ok).length
+  const failedCount = articles.length - okCount
+  const firstError = results.find((result) => result.error)?.error || null
+  const { count: remaining } = await supabase
+    .from('articles')
+    .select('*', { count: 'exact', head: true })
+    .is('title_cn', null)
+
+  await supabase.from('cron_logs').update({
+    status: failedCount === 0 ? 'success' : 'error',
+    ended_at: new Date().toISOString(),
+    llm_pending: remaining ?? 0,
+    llm_processed: okCount,
+    llm_failed: failedCount,
+    error_message: firstError,
+    details: {
+      action: 'background_llm',
+      batch_total: articles.length,
+      recent_slots: RECENT_BATCH_SIZE,
+      backlog_slots: BATCH_SIZE - RECENT_BATCH_SIZE,
+    },
+  }).eq('id', logId)
 
   return NextResponse.json({
-    ok: okCount === articles.length,
+    ok: failedCount === 0,
     timestamp: new Date().toISOString(),
     total: articles.length,
     processed: okCount,
-    failed: articles.length - okCount,
+    failed: failedCount,
+    remaining: remaining ?? 0,
     results,
   })
 }
