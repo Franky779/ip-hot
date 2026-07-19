@@ -10,7 +10,9 @@ const MAX_BATCH_SIZE = 8
 type Article = {
   id: string
   title: string
+  title_cn: string | null
   summary_cn: string | null
+  category: string | null
 }
 
 type ProcessResult = {
@@ -26,6 +28,40 @@ function isFallbackResult(result: Awaited<ReturnType<typeof summarizeArticle>>) 
     result.summary_cn === '' &&
     result.commentary === '待人工编辑'
   )
+}
+
+export async function GET(request: Request) {
+  const password = request.headers.get('x-admin-password')
+  if (!password || password !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const url = new URL(request.url)
+  if (url.searchParams.get('mode') !== 'unprocessed') {
+    return NextResponse.json({ error: 'Unsupported mode' }, { status: 400 })
+  }
+
+  const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10) || 1)
+  const pageSize = 500
+  const offset = (page - 1) * pageSize
+  const supabase = createServiceClient()
+  const { data, count, error } = await supabase
+    .from('articles')
+    .select('id', { count: 'exact' })
+    .is('title_cn', null)
+    .order('created_at', { ascending: true })
+    .range(offset, offset + pageSize - 1)
+
+  if (error) {
+    return NextResponse.json({ error: 'Failed to load articles' }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    articles: data ?? [],
+    total: count ?? 0,
+    page,
+    hasMore: offset + (data?.length ?? 0) < (count ?? 0),
+  })
 }
 
 export async function POST(request: Request) {
@@ -58,15 +94,16 @@ export async function POST(request: Request) {
   const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('articles')
-    .select('id, title, summary_cn')
+    .select('id, title, title_cn, summary_cn, category')
     .in('id', ids)
-    .eq('category', '待分类')
 
   if (error) {
     return NextResponse.json({ error: 'Failed to load articles' }, { status: 500 })
   }
 
-  const articles = (data ?? []) as Article[]
+  const articles = ((data ?? []) as Article[]).filter(
+    (article) => article.title_cn === null || article.category === '待分类'
+  )
   const foundIds = new Set(articles.map((article) => article.id))
   const skippedResults: ProcessResult[] = ids
     .filter((id) => !foundIds.has(id))
@@ -81,17 +118,20 @@ export async function POST(request: Request) {
         }
 
         if (shouldIgnoreArticle(result.relevance_score, result.commentary)) {
-          const { error: deleteError } = await supabase
+          let deleteQuery = supabase
             .from('articles')
             .delete()
             .eq('id', article.id)
-            .eq('category', '待分类')
+          deleteQuery = article.title_cn === null
+            ? deleteQuery.is('title_cn', null)
+            : deleteQuery.eq('category', '待分类')
+          const { error: deleteError } = await deleteQuery
 
           if (deleteError) throw deleteError
           return { id: article.id, status: 'deleted' }
         }
 
-        const { error: updateError } = await supabase
+        let updateQuery = supabase
           .from('articles')
           .update({
             title_cn: result.title_cn,
@@ -102,7 +142,10 @@ export async function POST(request: Request) {
             commentary: result.commentary,
           })
           .eq('id', article.id)
-          .eq('category', '待分类')
+        updateQuery = article.title_cn === null
+          ? updateQuery.is('title_cn', null)
+          : updateQuery.eq('category', '待分类')
+        const { error: updateError } = await updateQuery
 
         if (updateError) throw updateError
 
