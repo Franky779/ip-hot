@@ -188,3 +188,89 @@ automationEnabled: true
 6. 后台测试结果。
 7. 定时任务结果与去重结果。
 8. 是否已启用；未启用时写明唯一阻塞项。
+
+## 九、HTTP 410 / 403 分类纠错 SOP
+
+以后出现相同状态码时，按本节分流，不把“换 User-Agent 后偶尔成功”当作跑通。
+
+### A. HTTP 410：原入口永久下线
+
+410 表示原资源已被服务器明确移除。处理顺序：
+
+1. 分别请求 HTTP、HTTPS，并记录最终 URL、状态码、响应体和重定向；两者均为 410 时停止重试旧入口。
+2. 在同一站点查找仍在运行的新闻首页、站内搜索、RSS/Atom 和页面调用的 JSON 接口。
+3. 优先级为：第一方 RSS/Atom → 第一方 JSON 接口 → 同站静态 HTML → 已认证转载账号；410 不进入 CDP/Scrapling 重试。
+4. 新端点必须能识别来源、返回标题、文章 URL 和发布时间；文章 URL 至少抽查一条为 HTTP 200。
+5. 在 `lib/sources.ts` 写入新 URL 和适配器配置，保留与数据库旧名称相同的 `name`，让 `findSourceConfiguration()` 自动替换旧 URL。
+6. 运行 `npm run test:source -- <source_id> 3`，三次均达到 `maxItems` 才允许部署和启用。
+
+#### 17173动漫已跑通样例
+
+- 旧地址：`http://acg.17173.com/`，HTTP/HTTPS 均为 410。
+- 新列表页：`https://search.17173.com/?keyword=%E5%8A%A8%E6%BC%AB`。
+- 第一方接口：`https://search.17173.com/api/search/queryNews`。
+- 必需参数：`keyword=动漫&pageNo=1&pageSize=10&orderBy=2`。
+- 必需请求头：搜索页 `Referer`、浏览器 `User-Agent`、`Accept: application/json`。
+
+```json
+{
+  "source_id": "17173-acg",
+  "name": "17173动漫",
+  "url": "https://search.17173.com/?keyword=%E5%8A%A8%E6%BC%AB",
+  "is_rss": false,
+  "needs_local_cdp": false,
+  "needs_scrapling": false,
+  "login_required": false,
+  "scrape_config": {
+    "adapter": "17173-search",
+    "apiUrl": "https://search.17173.com/api/search/queryNews",
+    "keyword": "动漫",
+    "maxItems": 10
+  }
+}
+```
+
+### B. HTTP 403：区分站点防护和登录限制
+
+处理顺序：
+
+1. 用普通 GET、浏览器请求头和真实浏览器分别复测，记录响应大小、验证码/登录提示、Cookie 要求和地区限制。
+2. 查看页面脚本和网络接口，查找该作者的公开 API、RSS、已认证账号页或同平台官方转载页。
+3. 只接受能够校验作者身份的替代端点；搜索结果页必须能精确锁定来源，否则不能自动启用。
+4. 找到公开且稳定的替代端点时，改为服务端 JSON/RSS/HTML 抓取，`login_required=false`、`needs_local_cdp=false`。
+5. 没有公开替代端点且确实需要 Cookie 时，才设置 `login_required=true`、`needs_local_cdp=true`，交给本地 CDP；Vercel 不运行登录源。
+6. 禁止通过高频重试、代理轮换或伪造 Cookie 绕过 403。三次连续测试和生产测试全部通过后才能启用。
+
+#### 雷报已跑通样例
+
+- 旧地址：`https://www.zhihu.com/people/wanshangkansha/posts`，匿名服务端请求为 HTTP 403。
+- 已认证替代主页：`https://www.jiemian.com/account/2079.html`，HTTP 200，账号名称为“雷报”。
+- 公开接口：`https://papi.jiemian.com/page/api/officialAccount/accountArticles`。
+- 接口参数：`id=2079&page=1&callback=ipHotCallback`。
+- 身份校验：只接收 `object_type=article` 且 `source_name=雷报` 的条目。
+
+```json
+{
+  "source_id": "leibao-jiemian",
+  "name": "雷报",
+  "url": "https://www.jiemian.com/account/2079.html",
+  "is_rss": false,
+  "needs_local_cdp": false,
+  "needs_scrapling": false,
+  "login_required": false,
+  "scrape_config": {
+    "adapter": "jiemian-account",
+    "apiUrl": "https://papi.jiemian.com/page/api/officialAccount/accountArticles",
+    "accountId": "2079",
+    "maxItems": 10
+  }
+}
+```
+
+### C. 统一验收与回退
+
+1. 本地连续 3 次：每次条目数达到 `maxItems`，标题/URL 非空，本批 URL 无重复。
+2. 抽查首条文章：HTTP 200，标题和来源一致，发布时间可解析。
+3. Vercel 部署成功后，在管理页保持停用状态先点“测试”；只有 `last_test_status=success` 才启用。
+4. 启用后手动运行一次抓取任务，确认 `fetched>0`、`dead=0`；再运行一次确认 URL 去重。
+5. 任一步失败，立即回退数据库 `enabled=false`，保留诊断状态和错误信息，不回退到已经确认 410/403 的旧地址。

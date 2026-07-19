@@ -80,6 +80,162 @@ type BilibiliTimelineResponse = {
   result?: Array<{ episodes?: BilibiliTimelineEpisode[] }>
 }
 
+type News17173SearchItem = {
+  title?: string
+  pageUrl?: string
+  publishTime?: string
+}
+
+type News17173SearchResponse = {
+  result?: string
+  data?: {
+    listData?: News17173SearchItem[]
+  }
+}
+
+type JiemianAccountItem = {
+  object_type?: string
+  title?: string
+  url?: string
+  publish_time?: string
+  source_name?: string
+}
+
+type JiemianAccountResponse = {
+  code?: number
+  data?: {
+    list?: JiemianAccountItem[]
+  }
+}
+
+async function scrapeJiemianAccount(
+  sourceName: string,
+  sourceUrl: string,
+  config: Extract<ScrapeConfig, { adapter: 'jiemian-account' }>,
+  signal: AbortSignal
+): Promise<ScrapeResult> {
+  const maxItems = config.maxItems ?? 10
+  const apiUrl = new URL(config.apiUrl)
+  apiUrl.searchParams.set('id', config.accountId)
+  apiUrl.searchParams.set('page', '1')
+  apiUrl.searchParams.set('callback', 'ipHotCallback')
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+      accept: 'application/javascript, application/json, text/javascript',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      referer: sourceUrl,
+    },
+    redirect: 'follow',
+    signal,
+  })
+
+  if (!response.ok) {
+    return { items: [], rawCount: 0, error: `${sourceName}: API HTTP ${response.status}` }
+  }
+
+  const jsonp = await response.text()
+  const json = jsonp.match(/^ipHotCallback\(([\s\S]*)\);?\s*$/)?.[1]
+  if (!json) {
+    return { items: [], rawCount: 0, error: `${sourceName}: API JSONP 响应无效` }
+  }
+
+  const payload = JSON.parse(json) as JiemianAccountResponse
+  const list = payload.data?.list
+  if (payload.code !== 0 || !Array.isArray(list)) {
+    return { items: [], rawCount: 0, error: `${sourceName}: API 响应结构无效` }
+  }
+
+  const items = list
+    .filter((entry) =>
+      entry.object_type === 'article'
+      && entry.source_name === sourceName
+      && Boolean(entry.title)
+      && Boolean(entry.url)
+    )
+    .slice(0, maxItems)
+    .map((entry) => ({
+      title: entry.title!.trim(),
+      url: entry.url!,
+      publishedAt: entry.publish_time
+        ? new Date(Number(entry.publish_time) * 1000).toISOString()
+        : null,
+    }))
+
+  return {
+    items,
+    rawCount: list.length,
+    error: items.length === 0 ? `${sourceName}: API 未返回该账号的有效资讯` : undefined,
+  }
+}
+
+async function scrape17173Search(
+  sourceName: string,
+  sourceUrl: string,
+  config: Extract<ScrapeConfig, { adapter: '17173-search' }>,
+  signal: AbortSignal
+): Promise<ScrapeResult> {
+  const maxItems = config.maxItems ?? 10
+  const apiUrl = new URL(config.apiUrl)
+  apiUrl.searchParams.set('keyword', config.keyword)
+  apiUrl.searchParams.set('pageNo', '1')
+  apiUrl.searchParams.set('pageSize', String(maxItems))
+  apiUrl.searchParams.set('orderBy', '2')
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+      accept: 'application/json',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      referer: sourceUrl,
+    },
+    redirect: 'follow',
+    signal,
+  })
+
+  if (!response.ok) {
+    return { items: [], rawCount: 0, error: `${sourceName}: API HTTP ${response.status}` }
+  }
+
+  const payload = (await response.json()) as News17173SearchResponse
+  const list = payload.data?.listData
+  if (payload.result !== 'success' || !Array.isArray(list)) {
+    return { items: [], rawCount: 0, error: `${sourceName}: API 响应结构无效` }
+  }
+
+  const items: ScrapedNewsItem[] = []
+  const seen = new Set<string>()
+  for (const entry of list) {
+    if (items.length >= maxItems || !entry.title || !entry.pageUrl) continue
+
+    const title = cheerio.load(entry.title).text().replace(/\s+/g, ' ').trim()
+    let url: URL
+    try {
+      url = new URL(entry.pageUrl)
+    } catch {
+      continue
+    }
+    if (url.protocol === 'http:') url.protocol = 'https:'
+    const normalizedUrl = url.toString()
+    if (!title || seen.has(normalizedUrl)) continue
+    seen.add(normalizedUrl)
+
+    const publishedAt = entry.publishTime
+      ? new Date(`${entry.publishTime.replace(' ', 'T')}+08:00`).toISOString()
+      : null
+    items.push({ title, url: normalizedUrl, publishedAt })
+  }
+
+  return {
+    items,
+    rawCount: list.length,
+    error: items.length === 0 ? `${sourceName}: API 未返回有效资讯` : undefined,
+  }
+}
+
 async function scrapeBilibiliTimeline(
   sourceName: string,
   sourceUrl: string,
@@ -158,6 +314,12 @@ export async function scrapeNewsList(
   try {
     if (config.adapter === 'bilibili-guochuang-timeline') {
       return await scrapeBilibiliTimeline(sourceName, sourceUrl, config, controller.signal)
+    }
+    if (config.adapter === '17173-search') {
+      return await scrape17173Search(sourceName, sourceUrl, config, controller.signal)
+    }
+    if (config.adapter === 'jiemian-account') {
+      return await scrapeJiemianAccount(sourceName, sourceUrl, config, controller.signal)
     }
 
     const response = await fetch(sourceUrl, {

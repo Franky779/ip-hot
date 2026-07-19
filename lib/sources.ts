@@ -18,7 +18,26 @@ export type AutoNewsConfig = {
   maxItems?: number
 }
 
-export type ScrapeConfig = HtmlScrapeConfig | BilibiliTimelineConfig | AutoNewsConfig
+export type News17173SearchConfig = {
+  adapter: '17173-search'
+  apiUrl: string
+  keyword: string
+  maxItems?: number
+}
+
+export type JiemianAccountConfig = {
+  adapter: 'jiemian-account'
+  apiUrl: string
+  accountId: string
+  maxItems?: number
+}
+
+export type ScrapeConfig =
+  | HtmlScrapeConfig
+  | BilibiliTimelineConfig
+  | AutoNewsConfig
+  | News17173SearchConfig
+  | JiemianAccountConfig
 
 export type NewsSource = {
   id: string
@@ -100,6 +119,27 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: {
       adapter: 'bilibili-guochuang-timeline',
       apiUrl: 'https://api.bilibili.com/pgc/web/timeline?types=4&before=7&after=0',
+      maxItems: 10,
+    },
+  },
+  {
+    id: '17173-acg', name: '17173动漫',
+    url: 'https://search.17173.com/?keyword=%E5%8A%A8%E6%BC%AB',
+    language: 'zh', priority: 'P1', type: 'web', automationEnabled: true,
+    scrapeConfig: {
+      adapter: '17173-search',
+      apiUrl: 'https://search.17173.com/api/search/queryNews',
+      keyword: '动漫',
+      maxItems: 10,
+    },
+  },
+  {
+    id: 'leibao-jiemian', name: '雷报', url: 'https://www.jiemian.com/account/2079.html',
+    language: 'zh', priority: 'P1', type: 'web', automationEnabled: true,
+    scrapeConfig: {
+      adapter: 'jiemian-account',
+      apiUrl: 'https://papi.jiemian.com/page/api/officialAccount/accountArticles',
+      accountId: '2079',
       maxItems: 10,
     },
   },
