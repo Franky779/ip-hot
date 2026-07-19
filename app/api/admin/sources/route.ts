@@ -75,7 +75,14 @@ export async function PATCH(request: Request) {
   let query = supabase
     .from('info_sources')
     .update(update)
-  query = id ? query.eq('id', id) : query.in('id', targetIds)
+  if (id) {
+    query = query.eq('id', id)
+  } else {
+    query = query.in('id', targetIds)
+    if (changes.enabled === true) {
+      query = query.eq('last_test_status', 'success')
+    }
+  }
   const { error } = await query
 
   if (error) {

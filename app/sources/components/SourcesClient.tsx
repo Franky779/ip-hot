@@ -292,9 +292,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
 
   const handleStartAll = async () => {
     if (bulkAction) return
-    const ids = sources.filter((source) => !source.enabled).map((source) => source.id)
+    const ids = sources
+      .filter((source) => !source.enabled && source.last_test_status === 'success')
+      .map((source) => source.id)
     if (ids.length === 0) {
-      setBulkNotice('全部信息源均已启动。')
+      setBulkNotice('没有测试成功且待启动的信息源。')
       return
     }
 
@@ -312,8 +314,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         setBulkNotice(`一键启动失败：${result.error || '未知错误'}`)
         return
       }
-      setSources((previous) => previous.map((source) => ({ ...source, enabled: true })))
-      setBulkNotice(`已启动 ${ids.length} 条信息源。`)
+      const startedIds = new Set(ids)
+      setSources((previous) => previous.map((source) =>
+        startedIds.has(source.id) ? { ...source, enabled: true } : source
+      ))
+      setBulkNotice(`已启动 ${ids.length} 条测试成功的信息源。`)
     } catch {
       setBulkNotice('一键启动失败：网络请求失败，请稍后重试。')
     } finally {
@@ -463,7 +468,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               onClick={handleStartAll}
               disabled={bulkAction !== null}
               style={{ background: '#eab308', color: '#2d2200' }}
-              title="启动全部尚未启用的信息源"
+              title="启动全部测试成功且尚未启用的信息源"
             >
               {bulkAction === 'start' ? '启动中...' : '一键启动'}
             </button>

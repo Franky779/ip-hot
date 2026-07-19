@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       last_test_status: status,
       last_tested_at: new Date().toISOString(),
       last_test_message: message.slice(0, 500),
+      ...(status === 'failed' ? { enabled: false } : {}),
     })
     .eq('id', id)
 
