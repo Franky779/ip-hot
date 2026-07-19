@@ -449,22 +449,15 @@ export default function MonitorPage() {
             {data.sourceQuality && data.sourceQuality.length > 0 && (
               <div>
                 <h2 className="monitor-section-title">信源质量（7天低分率）</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div className="source-quality-grid">
                   {data.sourceQuality.map(s => (
-                    <div key={s.name} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '0.5rem 0.75rem', borderRadius: 6,
-                      background: s.rate >= 50 ? 'rgba(233,69,96,0.06)' : 'var(--bg-secondary)',
-                      border: s.rate >= 50 ? '1px solid rgba(233,69,96,0.2)' : '1px solid var(--border)',
-                    }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{s.name}</span>
-                      <span style={{
-                        fontSize: '0.8125rem',
-                        color: s.rate >= 50 ? '#e94560' : s.rate >= 30 ? '#f59e0b' : '#2e9d5a',
-                        fontVariantNumeric: 'tabular-nums',
-                      }}>
-                        {s.low}/{s.total} · {s.rate}%
-                      </span>
+                    <div
+                      key={s.name}
+                      className={`source-quality-card ${s.rate >= 50 ? 'is-poor' : s.rate >= 30 ? 'is-warning' : ''}`}
+                    >
+                      <span className="source-quality-name">{s.name}</span>
+                      <strong className="source-quality-rate">{s.rate}%</strong>
+                      <span className="source-quality-detail">低分 {s.low} / 共 {s.total} 条</span>
                     </div>
                   ))}
                 </div>

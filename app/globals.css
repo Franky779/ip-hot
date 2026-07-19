@@ -1341,6 +1341,62 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.source-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.625rem;
+}
+
+.source-quality-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.75rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.source-quality-card.is-warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.source-quality-card.is-poor {
+  border-color: rgba(233, 69, 96, 0.35);
+  background: rgba(233, 69, 96, 0.06);
+}
+
+.source-quality-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-quality-rate {
+  color: #2e9d5a;
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.source-quality-card.is-warning .source-quality-rate {
+  color: #f59e0b;
+}
+
+.source-quality-card.is-poor .source-quality-rate {
+  color: #e94560;
+}
+
+.source-quality-detail {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 .review-queue-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
