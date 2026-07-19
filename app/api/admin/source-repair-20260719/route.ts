@@ -23,7 +23,7 @@ const updates = [
   ['79f5e7c2-caa9-4f65-ba72-f5b4cb27c65e', 'https://whly.tj.gov.cn/', 'web', '天津市文化和旅游局官方列表'],
   ['150f959d-bd63-4252-9118-4f240a26aaad', 'https://www.mct.gov.cn/whzx/qgwhxxlb/gs/', 'web', '文化和旅游部甘肃官方栏目'],
   ['4a202749-9553-454b-aab0-0974ca2aa4c4', 'https://www.jiemian.com/account/2079.html', 'web', '界面新闻已认证雷报账号 JSON API'],
-  ['63fc7d5e-9d04-49fe-84e4-22d10f595c86', 'https://www.ign.com/entertainment/anime', 'web', '当前 Anime 栏目：本地 CDP 抓取'],
+  ['63fc7d5e-9d04-49fe-84e4-22d10f595c86', 'https://sea.ign.com/anime', 'web', 'IGN SEA Anime 当前栏目：本地 CDP 抓取'],
   ['f10b300c-1b83-4733-b17d-5fef4ae02c56', 'https://www.animenewsnetwork.com/', 'web', '官网拦截：本地 CDP 抓取'],
   ['ee46aee0-f403-47fe-9b94-d6e06910b658', 'https://www.polygon.com/feed/', 'rss', '官方 RSS: /feed/'],
   ['c7068f2c-9455-410b-b3ad-5a75020ad003', 'https://licensinginternational.org/news/', 'web', '官方 News HTML 列表'],
@@ -81,7 +81,9 @@ export async function POST(request: Request) {
 
   const counts: number[] = []
   const errors: string[] = []
-  if (configured.needsLocalCdp) {
+  if (configured.localCdpDisabledReason) {
+    errors.push(configured.localCdpDisabledReason)
+  } else if (configured.needsLocalCdp) {
     counts.push(0)
   } else {
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -102,8 +104,10 @@ export async function POST(request: Request) {
   }
 
   const expected = configured.type === 'rss' ? 1 : configured.scrapeConfig?.maxItems ?? 1
-  const passed = configured.needsLocalCdp || (counts.length === 3 && counts.every((count) => count >= expected) && errors.length === 0)
-  const message = configured.needsLocalCdp
+  const passed = !configured.localCdpDisabledReason && (configured.needsLocalCdp || (counts.length === 3 && counts.every((count) => count >= expected) && errors.length === 0))
+  const message = configured.localCdpDisabledReason
+    ? configured.localCdpDisabledReason
+    : configured.needsLocalCdp
     ? '已正确分流到本地 CDP；Vercel 不执行受保护页面抓取。'
     : passed
       ? `生产连续 3 次测试成功：${counts.join('/')}`

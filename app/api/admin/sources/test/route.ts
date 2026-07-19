@@ -49,6 +49,8 @@ export async function POST(request: Request) {
     }
   } else if (configuredSource?.loginRequired) {
     message = '该信息源需要登录，不能在 Vercel 无登录环境自动抓取。'
+  } else if (configuredSource?.localCdpDisabledReason) {
+    message = configuredSource.localCdpDisabledReason
   } else if (configuredSource?.needsLocalCdp) {
     status = 'success'
     message = '已配置由本地 CDP 定时任务抓取；Vercel 不执行静态页面测试。'

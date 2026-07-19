@@ -356,7 +356,7 @@ node scripts/fetch-cdp-local.mjs --source zjol --dry-run
 | `login_required` | 原平台作者页匿名不可抓 | 只在能验证作者身份时换已认证公开账号/API；否则保留登录源停用 | 知乎雷报改界面新闻“雷报”账号 API |
 | XML 解析错误、`Feed not recognized` | 数据库仍按 RSS 测试，但代码配置已改网页；或 RSS 地址已迁移 | 配置匹配后必须以代码配置的 `type` 覆盖数据库旧 `fetch_type`；再换最新地址 | Licensing International 改网页；Polygon 改 `/feed/` |
 | `RSS 可访问，但没有有效资讯` | URL 是空壳/全站 feed，不是新闻 feed | 改抓官方新闻列表 HTML | ICOM、Museums Association |
-| HTTP `404/410` | 路径已下线 | 找当前官方栏目或第一方 API；不能继续重试旧 URL | IGN Anime 分流当前栏目本地 CDP；17173 见第九节 |
+| HTTP `404/410` | 路径已下线 | 找当前官方栏目或第一方 API；不能继续重试旧 URL | IGN 美国旧栏目 404，改 `sea.ign.com/anime` 并分流本地 CDP；17173 见第九节 |
 | `Failed to parse URL from` | URL 为空，记录本身是阅读器/工具而非资讯发布方 | 从 `info_sources` 清退，不能补一个工具首页伪装成资讯 | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 |
 
 ### A. 类型覆盖回归规则
@@ -376,6 +376,8 @@ node scripts/fetch-cdp-local.mjs --source zjol --dry-run
 3. 同一政府机构的上级政府官方栏目或官方转载页。
 4. 本地 CDP（必须真实 dry-run，Vercel 后台只确认分流）。
 5. 没有上述路径时保持停用，不使用搜索引擎结果或非官方镜像冒充来源。
+
+本地 CDP 的节点处理顺序必须是“提取标题/URL → 过滤空标题和空 URL → 截取 `maxItems`”。如果先截取前 N 个 DOM 节点再过滤，图片链接或空锚点会造成假性的 0/1 条；天津文旅局的 CDP 初测即由此从 1 条修正为稳定 5 条。
 
 本次浙江、甘肃省厅根站分别返回 403/412，最终使用文化和旅游部的浙江、甘肃官方省级栏目；杭州西湖区官网仍受 WAF 限制，保留官方 URL并设置 `needsLocalCdp: true`，不进入 Vercel 普通网页批次。
 
@@ -397,5 +399,7 @@ node scripts/fetch-cdp-local.mjs --source zjol --dry-run
 | ICOM | `icom.museum/en/news/` | `a.news-abstract` | 10 / 10 / 10 |
 | Museums Association | Museums Journal News | `.card-journal` | 10 / 10 / 10 |
 | Polygon | `https://www.polygon.com/feed/` | RSS | 10 / 10 / 10 |
+| IGN Anime | `https://sea.ign.com/anime` | 本地 CDP，`h3 a[href*="/anime/"]` | 10 / 10 / 10 |
+| Anime News Network | 官网 HTML/RSS 均为安全挑战页 | 本地 CDP 仍为“请稍候…”；不得标成功 | 0（保持停用） |
 
-艺恩网、猫眼专业版以及四个阅读器/聚合工具不是可持续资讯源，验收动作是从生产 `info_sources` 删除并记录原因，不计作抓取成功。Anime News Network、IGN Anime、北青网、红星新闻、东莞文旅局、天津文旅局、杭州西湖区政府属于本地 CDP 分流，必须保持在 Vercel 网页批次之外。
+艺恩网、猫眼专业版以及四个阅读器/聚合工具不是可持续资讯源，验收动作是从生产 `info_sources` 删除并记录原因，不计作抓取成功。IGN Anime、北青网、红星新闻、东莞文旅局、天津文旅局、杭州西湖区政府属于已通过实抓的本地 CDP 分流，必须保持在 Vercel 网页批次之外。Anime News Network 虽已识别为本地 CDP 类型，但真实浏览器仍无法越过站方安全挑战，必须保持失败和停用，不能用“已分流”冒充抓取成功。

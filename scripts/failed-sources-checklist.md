@@ -4,7 +4,7 @@
 
 | 名称 | URL | 失败原因 | 优先级 | 修复建议 |
 |------|-----|----------|--------|----------|
-| Anime News Network | https://www.animenewsnetwork.com/ | RSS 格式损坏/服务器拦截 | P0 | 已改为本地 CDP 分流 |
+| Anime News Network | https://www.animenewsnetwork.com/ | HTML/RSS 均为安全挑战；本地 CDP 实抓 0 条 | P0 | 保持停用，不标成功 |
 | Crunchyroll News | https://feeds.feedburner.com/crunchyroll/animenews | 超时 | P0 | 重试/CDP |
 | Animation World Network | https://www.awn.com/news.xml | 403 | P0 | CDP/Scrapling |
 | Deadline | https://deadline.com/feed | 超时 | P0 | 重试/CDP |
@@ -100,5 +100,5 @@
 | 需登录 | 知乎雷报 | 改界面新闻已认证“雷报”账号 API | 三连测通过 |
 | XML 损坏/Feed 不识别 | Licensing International、Polygon | 前者改官方新闻 HTML，后者改当前 RSS | 三连测通过 |
 | RSS 可访问但无条目 | ICOM、Museums Association | 改官方新闻 HTML | 三连测通过 |
-| 404 | IGN Anime | 更新当前栏目并分流本地 CDP | 已配置，待 CDP dry-run |
+| 404 | IGN Anime | 美国旧栏目仍为 404，改 IGN SEA 官方 Anime 栏目并分流本地 CDP | CDP 10/10/10，通过 |
 | 空 URL | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 | 属于工具而非资讯发布方，从生产库清退 | 已清退 |

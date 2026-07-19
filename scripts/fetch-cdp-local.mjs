@@ -311,7 +311,7 @@ async function fetchAndExtract(sources) {
       }
 
       const selectorStr = JSON.stringify(src.selector);
-      const jsCode = `JSON.stringify(Array.from(document.querySelectorAll(${selectorStr})).slice(0,${src.maxItems || 15}).map(el => { const a = el.tagName === 'A' ? el : el.querySelector('a'); return { title: (el.textContent || a?.textContent || '').trim().slice(0,100), url: (el.href || a?.href || '') }; }))`;
+      const jsCode = `JSON.stringify(Array.from(document.querySelectorAll(${selectorStr})).map(el => { const a = el.tagName === 'A' ? el : el.querySelector('a'); return { title: (el.textContent || a?.textContent || '').trim().slice(0,100), url: (el.href || a?.href || '') }; }).filter(item => item.title.length > 2 && item.url).slice(0,${src.maxItems || 15}))`;
       log(`  targetId=${targetId}`);
       log(`  eval JS: ${jsCode.slice(0, 120)}...`);
       const extracted = await cdpApi(`/eval?target=${targetId}`, 'POST', jsCode);
@@ -520,6 +520,55 @@ let SOURCES = [
     selector: 'a[href*="content_"]',
     maxItems: 10,
     loadWait: 15000,
+  },
+  {
+    id: 'ynet',
+    name: '北青网',
+    url: 'https://www.ynet.com',
+    selector: 'a[href*="ynet.com/20"]',
+    maxItems: 10,
+    loadWait: 15000,
+  },
+  {
+    id: 'cdsb',
+    name: '红星新闻',
+    url: 'https://www.cdsb.com',
+    selector: 'a[href*="/micropub/Articles/"]',
+    maxItems: 10,
+    loadWait: 15000,
+  },
+  {
+    id: 'dg-gov',
+    name: '东莞市文化广电旅游体育局',
+    url: 'https://wglt.dg.gov.cn/',
+    selector: 'a[href*="/content/post_"]',
+    maxItems: 5,
+    loadWait: 15000,
+  },
+  {
+    id: 'tj-wl',
+    name: '天津市文化和旅游局',
+    url: 'https://whly.tj.gov.cn/',
+    selector: 'a[href*="/202"][href*="t202"]',
+    maxItems: 5,
+    loadWait: 15000,
+  },
+  {
+    id: 'hz-xh',
+    name: '杭州市西湖区人民政府',
+    url: 'https://www.hzxh.gov.cn/',
+    selector: 'a[href*="/art/"]',
+    maxItems: 5,
+    loadWait: 15000,
+  },
+  {
+    id: 'ign-anime',
+    name: 'IGN Anime',
+    url: 'https://sea.ign.com/anime',
+    selector: 'h3 a[href*="/anime/"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
   },
 ];
 

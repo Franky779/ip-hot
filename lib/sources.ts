@@ -64,6 +64,8 @@ export type NewsSource = {
   loginRequired?: boolean
   /** 是否只能走本地CDP抓取（Vercel服务器IP被拦） */
   needsLocalCdp?: boolean
+  /** 本地 CDP 实抓仍不可用；测试必须保持失败和停用 */
+  localCdpDisabledReason?: string
   /** 已完成重复抓取验收，可在 enabled=true 时进入服务端定时任务 */
   automationEnabled?: boolean
 }
@@ -73,8 +75,8 @@ export type NewsSource = {
 // ============================================================
 export const RSS_SOURCES: NewsSource[] = [
   // 海外动漫/ACG
-  { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
-  { id: 'ign-anime', name: 'IGN Anime', url: 'https://www.ign.com/entertainment/anime', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/articles/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.ign.com', maxItems: 10 } },
+  { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, localCdpDisabledReason: '本地 CDP 实抓仍停在安全挑战页，未提取到资讯；保持停用。', scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
+  { id: 'ign-anime', name: 'IGN Anime', url: 'https://sea.ign.com/anime', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, scrapeConfig: { itemSelector: 'h3 a[href*="/anime/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://sea.ign.com', maxItems: 10 } },
   { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.crunchyroll.com', maxItems: 10 } },
   { id: 'cartoonbrew', name: 'Cartoon Brew', url: 'https://www.cartoonbrew.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/rss.xml', language: 'en', priority: 'P0', type: 'rss', isRss: true },
