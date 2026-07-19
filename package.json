@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:source": "node --experimental-strip-types scripts/test-source.mjs",
+    "test:quality": "node --experimental-strip-types --test lib/source-quality.test.ts",
     "configure:kidscreen": "node scripts/configure-kidscreen-source.mjs",
     "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs",
     "deploy": "vercel --prod --yes"

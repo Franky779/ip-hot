@@ -111,7 +111,7 @@ export async function POST(request: Request) {
 
   const { data: pending, error } = await supabase
     .from('articles')
-    .select('id, title')
+    .select('id, title, url, source')
     .is('title_cn', null)
     .order('published_at', { ascending: false })
     .limit(BATCH_SIZE)
@@ -174,7 +174,16 @@ export async function POST(request: Request) {
             throw new Error(`删除并标记无关文章均失败: ${deleteError.message}; ${markError.message}`)
           }
         }
-        return { status: 'irrelevant' }
+        return {
+          status: 'scored' as const,
+          discarded: true,
+          source: article.source,
+          title: article.title,
+          url: article.url,
+          score: result.relevance_score,
+          selected: false,
+          commentary: result.commentary,
+        }
       }
       const { error: upErr } = await supabase
         .from('articles')
@@ -188,7 +197,16 @@ export async function POST(request: Request) {
         })
         .eq('id', article.id)
       if (upErr) throw new Error(upErr.message)
-      return { status: 'ok' }
+      return {
+        status: 'scored' as const,
+        discarded: false,
+        source: article.source,
+        title: article.title,
+        url: article.url,
+        score: result.relevance_score,
+        selected: result.is_selected,
+        commentary: result.commentary,
+      }
     })
   )
 
@@ -204,7 +222,7 @@ export async function POST(request: Request) {
   for (const r of results) {
     if (r.status === 'fulfilled') {
       const v = r.value
-      if (v.status === 'irrelevant') { irrelevantDeleted++; continue }
+      if (v.discarded) { irrelevantDeleted++; continue }
       processed++
     } else {
       const msg = (r.reason instanceof Error ? r.reason.message : String(r.reason)).slice(0, 200)
@@ -234,6 +252,17 @@ export async function POST(request: Request) {
         batch_irrelevant_deleted: irrelevantDeleted,
         first_error: firstError,
         action: 'manual_llm',
+        qualityResults: results.map((result, index) => result.status === 'fulfilled'
+          ? result.value
+          : {
+              status: 'failed',
+              source: pending[index].source,
+              title: pending[index].title,
+              url: pending[index].url,
+              score: null,
+              selected: false,
+              commentary: '',
+            }),
       },
     }).eq('id', logId)
 
@@ -252,6 +281,17 @@ export async function POST(request: Request) {
         batch_failed: failed,
         first_error: firstError,
         action: 'manual_llm',
+        qualityResults: results.map((result, index) => result.status === 'fulfilled'
+          ? result.value
+          : {
+              status: 'failed',
+              source: pending[index].source,
+              title: pending[index].title,
+              url: pending[index].url,
+              score: null,
+              selected: false,
+              commentary: '',
+            }),
       },
     }).eq('id', logId)
     return NextResponse.json({ error: msg }, { status: 500 })

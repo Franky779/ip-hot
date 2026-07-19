@@ -8,7 +8,14 @@ export const maxDuration = 300
 
 type ProcessResult = {
   id: string
+  source: string
+  title: string
+  url: string
   ok: boolean
+  score: number | null
+  selected: boolean
+  commentary: string
+  status: 'scored' | 'failed' | 'unscored'
   error?: string
 }
 
@@ -130,7 +137,11 @@ export async function GET(request: Request) {
             })
             .eq('id', article.id)
 
-          return { id: article.id, ok: !updateError, error: updateError?.message }
+          return {
+            id: article.id, source: article.source, title: article.title, url: article.url,
+            ok: !updateError, score: null, selected: false, commentary: '',
+            status: updateError ? 'failed' : 'unscored', error: updateError?.message,
+          }
         }
 
         // 新增信源的文章强制归类为"待分类"，等人工审核
@@ -150,9 +161,21 @@ export async function GET(request: Request) {
           })
           .eq('id', article.id)
 
-        return { id: article.id, ok: !updateError, error: updateError?.message }
+        return {
+          id: article.id, source: article.source, title: article.title, url: article.url,
+          ok: !updateError,
+          score: updateError ? null : llmResult.relevance_score,
+          selected: updateError ? false : finalIsSelected,
+          commentary: updateError ? '' : llmResult.commentary,
+          status: updateError ? 'failed' : 'scored',
+          error: updateError?.message,
+        }
       } catch (e) {
-        return { id: article.id, ok: false, error: e instanceof Error ? e.message : String(e) }
+        return {
+          id: article.id, source: article.source, title: article.title, url: article.url,
+          ok: false, score: null, selected: false, commentary: '', status: 'failed',
+          error: e instanceof Error ? e.message : String(e),
+        }
       }
     })
   )
@@ -177,6 +200,7 @@ export async function GET(request: Request) {
       batch_total: articles.length,
       recent_slots: RECENT_BATCH_SIZE,
       backlog_slots: BATCH_SIZE - RECENT_BATCH_SIZE,
+      qualityResults: results,
     },
   }).eq('id', logId)
 

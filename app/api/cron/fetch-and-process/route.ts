@@ -17,20 +17,36 @@ export const maxDuration = 300
 const parser = new Parser({ timeout: 15000 })
 
 type RuntimeSource = {
+  id: string
   name: string
   url: string
   fetchType: 'rss' | 'web'
   scrapeConfig?: ScrapeConfig
+  qualityMode: 'normal' | 'observe' | 'reduced' | 'paused'
 }
 
 async function loadActiveSources(supabase: ReturnType<typeof createServiceClient>): Promise<RuntimeSource[]> {
   const { data, error } = await supabase
     .from('info_sources')
-    .select('name, url, fetch_type')
+    .select('id, name, url, fetch_type')
     .eq('enabled', true)
     .order('sort_order', { ascending: true })
 
   if (!error) {
+    const { data: actionRows } = await supabase
+      .from('cron_logs')
+      .select('details')
+      .eq('trigger_type', 'source_quality_action')
+      .order('started_at', { ascending: false })
+      .limit(500)
+    const qualityModes = new Map<string, RuntimeSource['qualityMode']>()
+    for (const row of actionRows ?? []) {
+      const details = row.details as { sourceId?: unknown; mode?: unknown } | null
+      if (typeof details?.sourceId !== 'string' || qualityModes.has(details.sourceId)) continue
+      if (details.mode === 'normal' || details.mode === 'observe' || details.mode === 'reduced' || details.mode === 'paused') {
+        qualityModes.set(details.sourceId, details.mode)
+      }
+    }
     return (data ?? []).flatMap((source): RuntimeSource[] => {
       const configuredSource = findSourceConfiguration(source.url, source.name)
       if (configuredSource?.loginRequired || configuredSource?.needsLocalCdp) {
@@ -40,9 +56,11 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
         ? configuredSource.type === 'rss' || configuredSource.isRss ? 'rss' : 'web'
         : source.fetch_type === 'rss' ? 'rss' : 'web'
       return [{
+        id: source.id,
         name: source.name,
         url: configuredSource?.url || source.url,
         fetchType,
+        qualityMode: qualityModes.get(source.id) ?? 'normal',
         scrapeConfig: configuredSource?.scrapeConfig || (
           fetchType === 'web' ? { adapter: 'auto-news-links', maxItems: 10 } : undefined
         ),
@@ -53,9 +71,11 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
   // 数据库迁移执行前保持现有任务可用，避免部署过程停止抓取。
   console.warn('[Sources] 数据库运行字段尚不可用，暂用代码内 RSS 清单:', error.message)
   return RSS_SOURCES.filter((source) => source.type === 'rss').map(({ name, url }) => ({
+    id: name,
     name,
     url,
     fetchType: 'rss',
+    qualityMode: 'normal',
   }))
 }
 
@@ -103,16 +123,25 @@ function isNoise(title: string): boolean {
 type FetchResult = {
   source: string
   ok: boolean
+  discovered: number
   fetched: number
   blocked: number
   dead: number
+  duplicates: number
   inserted: number
   error?: string
 }
 
 type ProcessResult = {
   id: string
+  source: string
+  title: string
+  url: string
   ok: boolean
+  score: number | null
+  selected: boolean
+  commentary: string
+  status: 'scored' | 'failed' | 'unscored'
   error?: string
 }
 
@@ -171,7 +200,6 @@ export async function GET(request: Request) {
 
   const allActiveSources = await loadActiveSources(supabase)
   const batchSize = 24
-  const totalBatches = Math.max(1, Math.ceil(allActiveSources.length / batchSize))
   const requestUrl = new URL(request.url)
   const requestedBatchParam = requestUrl.searchParams.get('batch')
   const requestedBatch = requestedBatchParam === null ? Number.NaN : Number(requestedBatchParam)
@@ -182,12 +210,16 @@ export async function GET(request: Request) {
   const runNumber =
     Math.floor(now.getTime() / 86_400_000) * scheduleHours.length +
     (scheduleSlot >= 0 ? scheduleSlot : fallbackSlot)
+  const eligibleSources = allActiveSources.filter((source) =>
+    source.qualityMode !== 'reduced' || runNumber % 2 === 0
+  )
+  const totalBatches = Math.max(1, Math.ceil(eligibleSources.length / batchSize))
   const batchIndex =
     Number.isInteger(requestedBatch) && requestedBatch >= 0
       ? requestedBatch % totalBatches
       : runNumber % totalBatches
   const batchStart = batchIndex * batchSize
-  const activeSources = allActiveSources.slice(batchStart, batchStart + batchSize)
+  const activeSources = eligibleSources.slice(batchStart, batchStart + batchSize)
   const updateFetchProgress = async (currentSource: string) => {
     await updateRunningLog({
       fetch_total_fetched: fetchResults.reduce((sum, item) => sum + item.fetched, 0),
@@ -202,7 +234,7 @@ export async function GET(request: Request) {
   }
 
   for (const source of activeSources) {
-    const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
+    const result: FetchResult = { source: source.name, ok: false, discovered: 0, fetched: 0, blocked: 0, dead: 0, duplicates: 0, inserted: 0 }
 
     try {
       let rawItems: Array<{
@@ -251,6 +283,7 @@ export async function GET(request: Request) {
       }
 
       const items = rawItems.filter((x) => !isNoise(x.title))
+      result.discovered = rawItems.length
       result.fetched = items.length
       result.blocked = rawItems.length - items.length
 
@@ -284,6 +317,7 @@ export async function GET(request: Request) {
         } else {
           result.ok = true
           result.inserted = data?.length ?? 0
+          result.duplicates = Math.max(0, validItems.length - result.inserted)
           totalInserted += result.inserted
         }
       } else {
@@ -345,7 +379,11 @@ export async function GET(request: Request) {
               })
               .eq('id', article.id)
             resultOk = !updateError
-            return { id: article.id, ok: !updateError, error: updateError?.message }
+            return {
+              id: article.id, source: article.source, title: article.title, url: article.url,
+              ok: !updateError, score: null, selected: false, commentary: '',
+              status: updateError ? 'failed' : 'unscored', error: updateError?.message,
+            }
           }
 
           // 新增信源的文章强制归类为"待分类"，等人工审核
@@ -366,9 +404,21 @@ export async function GET(request: Request) {
             .eq('id', article.id)
 
           resultOk = !updateError
-          return { id: article.id, ok: !updateError, error: updateError?.message }
+          return {
+            id: article.id, source: article.source, title: article.title, url: article.url,
+            ok: !updateError,
+            score: updateError ? null : llmResult.relevance_score,
+            selected: updateError ? false : finalIsSelected,
+            commentary: updateError ? '' : llmResult.commentary,
+            status: updateError ? 'failed' : 'scored',
+            error: updateError?.message,
+          }
         } catch (e) {
-          return { id: article.id, ok: false, error: e instanceof Error ? e.message : String(e) }
+          return {
+            id: article.id, source: article.source, title: article.title, url: article.url,
+            ok: false, score: null, selected: false, commentary: '', status: 'failed',
+            error: e instanceof Error ? e.message : String(e),
+          }
         } finally {
           llmCompletedCount += 1
           if (resultOk) processedCount += 1
@@ -417,7 +467,7 @@ export async function GET(request: Request) {
         llm_failed: (pendingArticles?.length ?? 0) - processedCount,
         status,
         error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
-        details: { fetchResults, processResults, elapsedMs: elapsed },
+        details: { fetchResults, qualityResults: processResults, elapsedMs: elapsed },
       })
       .eq('id', logId)
   }
@@ -431,6 +481,7 @@ export async function GET(request: Request) {
         totalBatches,
         batchSize,
         totalActiveSources: allActiveSources.length,
+        eligibleSources: eligibleSources.length,
         processedSources: activeSources.length,
         totalFetched,
         totalBlocked,

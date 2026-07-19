@@ -121,6 +121,28 @@ async function supabaseDelete(ids) {
   return data?.length || ids.length;
 }
 
+async function persistQualityAudit(qualityResults) {
+  if (!SUPABASE_KEY || !qualityResults.length) return;
+  const now = new Date().toISOString();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cron_logs`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json', Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      trigger_type: 'local_pipeline_quality',
+      status: qualityResults.some(r => r.status === 'failed') ? 'error' : 'success',
+      started_at: now,
+      ended_at: now,
+      llm_processed: qualityResults.filter(r => r.status === 'scored').length,
+      llm_failed: qualityResults.filter(r => r.status === 'failed').length,
+      details: { qualityResults },
+    }),
+  });
+  if (!res.ok) throw new Error(`Quality audit failed: ${res.status}`);
+}
+
 // ── Update pipeline_state DB table ──
 async function updateDbState(fields) {
   if (!SUPABASE_KEY) return;
@@ -293,22 +315,23 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function llmProcessBatch(state) {
   if (!LLM_BASE_URL || !LLM_API_KEY) {
     console.log('  LLM 未配置，跳过');
-    return { success: 0, selected: 0, failed: 0 };
+    return { success: 0, selected: 0, failed: 0, qualityResults: [] };
   }
 
   // 取未处理的文章
   const BATCH = 20;
   const unprocessed = await supabaseQuery(
-    `/rest/v1/articles?select=id,title&title_cn=is.null&limit=${BATCH}&order=created_at.desc`
+    `/rest/v1/articles?select=id,title,url,source&title_cn=is.null&limit=${BATCH}&order=created_at.desc`
   );
 
   if (!unprocessed?.length) {
     console.log('  无待处理文章');
-    return { success: 0, selected: 0, failed: 0 };
+    return { success: 0, selected: 0, failed: 0, qualityResults: [] };
   }
 
   console.log(`  LLM处理 ${unprocessed.length} 条...`);
   let success = 0, selected = 0, failed = 0;
+  const qualityResults = [];
 
   for (const row of unprocessed) {
     try {
@@ -316,8 +339,17 @@ async function llmProcessBatch(state) {
       await supabasePatch(row.id, r);
       success++;
       if (r.is_selected) selected++;
+      qualityResults.push({
+        source: row.source, title: row.title, url: row.url,
+        score: r.relevance_score, selected: r.is_selected,
+        commentary: r.commentary, status: 'scored',
+      });
     } catch (e) {
       failed++;
+      qualityResults.push({
+        source: row.source, title: row.title, url: row.url,
+        score: null, selected: false, commentary: '', status: 'failed',
+      });
       console.log(`    LLM失败: ${(e.message || '').slice(0, 60)}`);
     }
     await sleep(500); // API rate limit
@@ -326,7 +358,7 @@ async function llmProcessBatch(state) {
   state.total_llm_processed += success;
   state.total_llm_selected += selected;
   state.total_llm_failed += failed;
-  return { success, selected, failed };
+  return { success, selected, failed, qualityResults };
 }
 
 // ── 5 之后：删除低分文章 + 无关推荐理由（统一标准） ──
@@ -367,42 +399,6 @@ async function deleteLowScore(state) {
   return total;
 }
 
-// ── 5 之后延伸：信源质量告警 ──
-async function checkSourceQuality() {
-  if (!SUPABASE_KEY) return;
-  try {
-    // 查过去7天各信源的低分率
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const data = await supabaseQuery(
-      `/rest/v1/articles?select=source,relevance_score&created_at=gte.${encodeURIComponent(sevenDaysAgo)}&source=not.is.null&relevance_score=not.is.null`
-    );
-    if (!data?.length) return;
-
-    const map = new Map();
-    for (const row of data) {
-      const s = row.source;
-      const existing = map.get(s) || { total: 0, low: 0 };
-      existing.total += 1;
-      if (row.relevance_score <= 3) existing.low += 1;
-      map.set(s, existing);
-    }
-
-    const badSources = [];
-    for (const [name, stats] of map.entries()) {
-      if (stats.total >= 5 && (stats.low / stats.total) >= 0.5) {
-        badSources.push(`${name}: ${stats.low}/${stats.total} (${Math.round((stats.low / stats.total) * 100)}%)`);
-      }
-    }
-
-    if (badSources.length > 0) {
-      feishu(`【IP-HOT 信源告警】过去7天以下信源低分率过高：\n${badSources.join('\n')}\n\n建议：考虑降低权重或停用`);
-      console.log(`  信源告警: ${badSources.length} 个`);
-    }
-  } catch (e) {
-    console.log(`  信源质量检查失败: ${(e.message || '').slice(0, 60)}`);
-  }
-}
-
 // ── 主循环：跑一个组 ──
 async function runGroup(state) {
   const completed = new Set(state.completed);
@@ -436,10 +432,14 @@ async function runGroup(state) {
   await updateDbState({ stage: 'llm', current_source: names[0] });
   const llmStats = await llmProcessBatch(state);
 
-  // Step 5 延伸: 删除 0-3 分 + 信源质量检查
+  // 删除前先持久化评分审计，避免低分样本被清理后统计失真。
   await updateDbState({ stage: 'cleanup' });
+  try {
+    await persistQualityAudit(llmStats.qualityResults);
+  } catch (e) {
+    console.log(`  信源审计保存失败: ${(e.message || '').slice(0, 60)}`);
+  }
   await deleteLowScore(state);
-  await checkSourceQuality();
 
   // 记录
   state.last_group_stats = {
@@ -481,6 +481,11 @@ async function llmOnlyLoop() {
       total_low_score_deleted: 0,
     };
     const llmStats = await llmProcessBatch(state);
+    try {
+      await persistQualityAudit(llmStats.qualityResults);
+    } catch (e) {
+      console.log(`  信源审计保存失败: ${(e.message || '').slice(0, 60)}`);
+    }
     await deleteLowScore(state);
     total += llmStats.success;
 

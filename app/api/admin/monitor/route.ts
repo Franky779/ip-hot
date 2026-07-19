@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import {
+  aggregateSourceQuality,
+  type LegacyQualityRow,
+  type SourceInfo,
+  type SourceQualityAction,
+  type SourceQualityLog,
+} from '@/lib/source-quality'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +49,9 @@ export async function GET(request: Request) {
     const supabase = createServiceClient()
     const { start: todayStart, end: todayEnd } = getBeijingTodayRange()
     const sevenDaysAgo = getBeijing7DaysAgo()
+    const requestedQualityDays = Number(new URL(request.url).searchParams.get('qualityDays'))
+    const qualityDays = requestedQualityDays === 30 ? 30 : 7
+    const qualityHistoryStart = new Date(Date.now() - qualityDays * 2 * 24 * 60 * 60 * 1000).toISOString()
 
     // 1. 今日任务（最新一条 cron_logs）
     const { data: todayTaskRaw, error: e1 } = await supabase
@@ -94,13 +104,45 @@ export async function GET(request: Request) {
       })
     )
 
-    // 8. 信源低分率统计（过去7天）
-    const { data: sourceQualityRows, error: e8 } = await supabase
-      .from('articles')
-      .select('source, relevance_score')
-      .gte('created_at', sevenDaysAgo)
-      .not('source', 'is', null)
-      .not('relevance_score', 'is', null)
+    // 8. 信源命中效率：优先使用 cron_logs 中删除前持久化的漏斗和评分审计。
+    const [qualityLogsResult, qualityActionsResult, sourceInfoResult] = await Promise.all([
+      supabase
+        .from('cron_logs')
+        .select('started_at, details')
+        .gte('started_at', qualityHistoryStart)
+        .not('details', 'is', null)
+        .order('started_at', { ascending: false })
+        .limit(1000),
+      supabase
+        .from('cron_logs')
+        .select('details')
+        .eq('trigger_type', 'source_quality_action')
+        .order('started_at', { ascending: false })
+        .limit(500),
+      supabase
+        .from('info_sources')
+        .select('id, name, enabled, last_test_status'),
+    ])
+
+    // 兼容部署前的旧数据。旧记录来自 articles，可能因低分删除而偏乐观，前端会明确标注。
+    const legacyQualityRows: LegacyQualityRow[] = []
+    let legacyQualityError: { message: string } | null = null
+    for (let from = 0; from < 5000; from += 1000) {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('source, relevance_score, is_selected, title, title_cn, url, commentary, created_at')
+        .gte('created_at', qualityHistoryStart)
+        .not('source', 'is', null)
+        .not('relevance_score', 'is', null)
+        .order('created_at', { ascending: false })
+        .range(from, from + 999)
+      if (error) {
+        legacyQualityError = error
+        break
+      }
+      legacyQualityRows.push(...((data ?? []) as LegacyQualityRow[]))
+      if ((data?.length ?? 0) < 1000) break
+    }
 
     // 9. 待人工复核队列（待分类 + 评分4-6，LLM拿不准的）
     const { data: reviewQueue, error: e9 } = await supabase
@@ -142,7 +184,8 @@ export async function GET(request: Request) {
     } catch { /* 表不存在时静默 */ }
 
     const errors = [
-      e1, e2, e3, e4, e5, e8, e9,
+      e1, e2, e3, e4, e5, e9,
+      qualityLogsResult.error, qualityActionsResult.error, sourceInfoResult.error, legacyQualityError,
       ...categoryResults.map((result) => result.error),
     ].filter(Boolean)
     if (errors.length > 0) {
@@ -197,25 +240,17 @@ export async function GET(request: Request) {
           : null,
     }))
 
-    // 组装信源低分率（过去7天）
-    const sourceQualityMap = new Map<string, { total: number; low: number }>()
-    if (sourceQualityRows) {
-      for (const row of sourceQualityRows as any[]) {
-        const s = row.source
-        const existing = sourceQualityMap.get(s) || { total: 0, low: 0 }
-        existing.total += 1
-        if (row.relevance_score <= 3) existing.low += 1
-        sourceQualityMap.set(s, existing)
-      }
-    }
-    const sourceQuality = Array.from(sourceQualityMap.entries())
-      .map(([name, data]) => ({
-        name,
-        total: data.total,
-        low: data.low,
-        rate: data.total > 0 ? Math.round((data.low / data.total) * 100) : 0,
-      }))
-      .sort((a, b) => b.rate - a.rate)
+    const sourceQuality = aggregateSourceQuality({
+      logs: (qualityLogsResult.data ?? []) as SourceQualityLog[],
+      legacyRows: legacyQualityRows,
+      sources: (sourceInfoResult.data ?? []) as SourceInfo[],
+      actions: (qualityActionsResult.data ?? []).flatMap((row) =>
+        row.details && typeof row.details === 'object'
+          ? [row.details as SourceQualityAction]
+          : [],
+      ),
+      periodDays: qualityDays,
+    })
 
     return NextResponse.json({
       todayTask,
@@ -226,6 +261,7 @@ export async function GET(request: Request) {
       categoryStats,
       pipelineState,
       sourceQuality,
+      sourceQualityWindowDays: qualityDays,
       reviewQueue: (reviewQueue || []).map((r: any) => ({
         id: r.id,
         titleCn: r.title_cn,

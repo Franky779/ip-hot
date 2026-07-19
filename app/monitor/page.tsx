@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useAdmin } from '../components/AdminToggle'
+import SourceQualityPanel, { type SourceQualityItem } from './SourceQualityPanel'
 
 type MonitorData = {
   todayTask: {
@@ -23,7 +24,8 @@ type MonitorData = {
     processed: number; failed: number; remaining: number; errorMessage: string | null
   }
   categoryStats: Array<{ category: string; count: number }>
-  sourceQuality?: Array<{ name: string; total: number; low: number; rate: number }>
+  sourceQualityWindowDays?: number
+  sourceQuality?: SourceQualityItem[]
   reviewQueue?: Array<{
     id: string; titleCn: string; summaryCn: string; commentary: string
     relevanceScore: number; source: string; createdAt: string
@@ -80,17 +82,18 @@ export default function MonitorPage() {
   const [logs, setLogs] = useState<CronLog[]>([])
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
+  const [qualityDays, setQualityDays] = useState<7 | 30>(7)
 
   const fetchData = useCallback(async () => {
     const pw = getPw(); if (!pw) return
     try {
-      const res = await fetch('/api/admin/monitor', {
+      const res = await fetch(`/api/admin/monitor?qualityDays=${qualityDays}`, {
         cache: 'no-store',
         headers: { 'x-admin-password': pw },
       })
       if (res.ok) setData(await res.json())
     } catch {} finally { setLoading(false) }
-  }, [])
+  }, [qualityDays])
 
   const loadLogs = useCallback(async () => {
     const pw = getPw() || ''
@@ -374,24 +377,12 @@ export default function MonitorPage() {
               </pre>
             </div>
 
-            {/* 信源质量（7天低分率） */}
-            {data.sourceQuality && data.sourceQuality.length > 0 && (
-              <div>
-                <h2 className="monitor-section-title">信源质量（7天低分率）</h2>
-                <div className="source-quality-grid">
-                  {data.sourceQuality.map(s => (
-                    <div
-                      key={s.name}
-                      className={`source-quality-card ${s.rate >= 50 ? 'is-poor' : s.rate >= 30 ? 'is-warning' : ''}`}
-                    >
-                      <span className="source-quality-name">{s.name}</span>
-                      <strong className="source-quality-rate">{s.rate}%</strong>
-                      <span className="source-quality-detail">低分 {s.low} / 共 {s.total} 条</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <SourceQualityPanel
+              items={data.sourceQuality ?? []}
+              days={qualityDays}
+              onDaysChange={setQualityDays}
+              onRefresh={fetchData}
+            />
 
             {/* 待人工复核队列 */}
             {data.reviewQueue && data.reviewQueue.length > 0 && (
