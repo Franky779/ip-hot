@@ -32,8 +32,9 @@ export async function POST(request: Request) {
   let itemCount = 0
   const configuredSource = findSourceConfiguration(source.url, source.name)
   const effectiveUrl = configuredSource?.url || source.url
-  const effectiveFetchType =
-    configuredSource?.type === 'rss' || configuredSource?.isRss ? 'rss' : source.fetch_type
+  const effectiveFetchType = configuredSource
+    ? configuredSource.type === 'rss' || configuredSource.isRss ? 'rss' : 'web'
+    : source.fetch_type
 
   if (effectiveFetchType === 'rss') {
     try {

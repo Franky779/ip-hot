@@ -343,3 +343,59 @@ node scripts/fetch-cdp-local.mjs --source zjol --dry-run
 ```
 
 通过后由 Windows 任务 `CDPLocalDaily` 运行 `scripts/run-cdp-local.bat`。脚本会自动启动隐藏的 Chrome 9223 调试实例，不依赖人工打开浏览器或额外的 3456 代理服务。后台“测试”按钮只确认该源已正确分流到本地 CDP，不代表页面抓取验收；页面验收以连续 3 次 dry-run 为准。
+
+## 十一、生产测试失败类型总表（2026-07-19）
+
+以后先按错误原文归类，再执行对应动作。不得只改错误提示或把失败状态写成成功。
+
+| 失败类型 | 判定要点 | 标准修复动作 | 本次样例 |
+|---|---|---|---|
+| `选择器未提取到有效资讯` | 响应为完整 HTML，但旧规则命中导航；或站点已不再提供资讯 | 前者改成文章路径精确选择器；后者清退错误数据 | 北青网、红星新闻、财政部已改；艺恩、猫眼清退 |
+| `RSS 请求超时` | RSS 入口失效，但官网或第一方接口仍有数据 | 优先换第一方 JSON/HTML，禁止无限增加 RSS 超时 | 虎嗅改第一方文章接口 |
+| HTTP `403/405/412`、`fetch failed` | 旧入口被 WAF、方法限制、TLS 或机房 IP 拦截 | 找同机构可访问栏目；省厅站被拦时可用文旅部官方省级转载栏目；仍需浏览器则分流本地 CDP | 国务院、北青、红星、浙江、东莞、天津、甘肃 |
+| `login_required` | 原平台作者页匿名不可抓 | 只在能验证作者身份时换已认证公开账号/API；否则保留登录源停用 | 知乎雷报改界面新闻“雷报”账号 API |
+| XML 解析错误、`Feed not recognized` | 数据库仍按 RSS 测试，但代码配置已改网页；或 RSS 地址已迁移 | 配置匹配后必须以代码配置的 `type` 覆盖数据库旧 `fetch_type`；再换最新地址 | Licensing International 改网页；Polygon 改 `/feed/` |
+| `RSS 可访问，但没有有效资讯` | URL 是空壳/全站 feed，不是新闻 feed | 改抓官方新闻列表 HTML | ICOM、Museums Association |
+| HTTP `404/410` | 路径已下线 | 找当前官方栏目或第一方 API；不能继续重试旧 URL | IGN Anime 分流当前栏目本地 CDP；17173 见第九节 |
+| `Failed to parse URL from` | URL 为空，记录本身是阅读器/工具而非资讯发布方 | 从 `info_sources` 清退，不能补一个工具首页伪装成资讯 | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 |
+
+### A. 类型覆盖回归规则
+
+`info_sources.fetch_type` 是历史数据，`lib/sources.ts` 是已验证的运行配置。只要 `findSourceConfiguration()` 命中：
+
+- 配置 `type: 'rss'` 时按 RSS 测试和抓取；
+- 配置 `type: 'web'` 或 `type: 'gov'` 时按网页/适配器测试和抓取；
+- 不得再让数据库旧 `fetch_type=rss` 把已修成网页的源送进 XML 解析器。
+
+名称存在“全称/简称/地区后缀”时，在配置中写 `aliases`，例如 `北青网(北京青年报)`、`红星新闻(成都)`、`国务院政策文件库`。不要在数据库复制第二套抓取规则。
+
+### B. HTTP 防护站点的替代顺序
+
+1. 同域具体栏目页（根首页被拦时尤其要测试栏目页）。
+2. 第一方 JSON 接口。
+3. 同一政府机构的上级政府官方栏目或官方转载页。
+4. 本地 CDP（必须真实 dry-run，Vercel 后台只确认分流）。
+5. 没有上述路径时保持停用，不使用搜索引擎结果或非官方镜像冒充来源。
+
+本次浙江、甘肃省厅根站分别返回 403/412，最终使用文化和旅游部的浙江、甘肃官方省级栏目；杭州西湖区官网仍受 WAF 限制，保留官方 URL并设置 `needsLocalCdp: true`，不进入 Vercel 普通网页批次。
+
+### C. 本次稳定配置与三连测记录
+
+| 信息源 | 最终类型/入口 | 规则或适配器 | 3 次结果 |
+|---|---|---|---|
+| 虎嗅 | JSON `article-api.huxiu.com/web/channel/articleList` | `huxiu-api` | 10 / 10 / 10 |
+| 北青网 | `https://www.ynet.com` | `a[href*="ynet.com/20"]` | 10 / 10 / 10 |
+| 红星新闻 | `https://www.cdsb.com` | `a[href*="/micropub/Articles/"]` | 10 / 10 / 10 |
+| 国务院政策文件库 | `.../zhengceku/bmwj/home.htm` | `a[href*="content_"]` | 5 / 5 / 5 |
+| 财政部 | `.../zhengwuxinxi/zhengcefabu/` | `a[href*="/202"][href*="t202"]` | 5 / 5 / 5 |
+| 东莞文旅局 | `https://wglt.dg.gov.cn/` | `a[href*="/content/post_"]` | 5 / 5 / 5 |
+| 天津文旅局 | `https://whly.tj.gov.cn/` | `a[href*="/202"][href*="t202"]` | 5 / 5 / 5 |
+| 浙江省文旅厅 | 文旅部浙江栏目 | 精确日期文章路径 | 5 / 5 / 5 |
+| 甘肃省文旅厅 | 文旅部甘肃栏目 | 精确日期文章路径 | 5 / 5 / 5 |
+| 知乎雷报 | 界面新闻账号 API | `jiemian-account` + `expectedSourceName=雷报` | 10 / 10 / 10 |
+| Licensing International | `licensinginternational.org/news/` | `.news-post-content a` | 10 / 10 / 10 |
+| ICOM | `icom.museum/en/news/` | `a.news-abstract` | 10 / 10 / 10 |
+| Museums Association | Museums Journal News | `.card-journal` | 10 / 10 / 10 |
+| Polygon | `https://www.polygon.com/feed/` | RSS | 10 / 10 / 10 |
+
+艺恩网、猫眼专业版以及四个阅读器/聚合工具不是可持续资讯源，验收动作是从生产 `info_sources` 删除并记录原因，不计作抓取成功。Anime News Network、IGN Anime、杭州西湖区政府属于本地 CDP 分流，必须保持在 Vercel 网页批次之外。

@@ -13,7 +13,7 @@ export type ScrapeResult = {
   error?: string
 }
 
-const REQUEST_TIMEOUT_MS = 15_000
+const REQUEST_TIMEOUT_MS = 25_000
 const NAVIGATION_TITLES = new Set([
   '首页', '首 页', '主页', '新闻', '资讯', '焦点', '头条', '股票', '简体',
   '网络游戏', '文旅要闻', '用户登录', 'home', 'news', 'more', 'read more',
@@ -42,7 +42,7 @@ function isLikelyArticle(title: string, url: URL, sourceUrl: string): boolean {
   }
 
   const hasArticleWord =
-    /(?:^|[/_-])(?:article|articles|detail|details|content|newsdetail|story|stories|post|posts|brief)(?:[/_.?=-]|$)/i.test(pathAndQuery)
+    /(?:^|[/_-])(?:article|articles|detail|details|content|news|newsdetail|story|stories|post|posts|brief)(?:[/_.?=-]|$)/i.test(pathAndQuery)
   const hasLongId = /\d{5,}/.test(pathAndQuery)
   const hasDatePath = /(?:19|20)\d{2}[/_-]\d{1,2}(?:[/_-]\d{1,2})?/.test(pathAndQuery)
   const hasDescriptiveSlug =
@@ -108,6 +108,67 @@ type JiemianAccountResponse = {
   }
 }
 
+type HuxiuArticleItem = {
+  title?: string
+  url?: string
+  dateline?: string
+}
+
+type HuxiuArticleResponse = {
+  success?: boolean
+  data?: {
+    datalist?: HuxiuArticleItem[]
+  }
+}
+
+async function scrapeHuxiuApi(
+  sourceName: string,
+  sourceUrl: string,
+  config: Extract<ScrapeConfig, { adapter: 'huxiu-api' }>,
+  signal: AbortSignal
+): Promise<ScrapeResult> {
+  const response = await fetch(config.apiUrl, {
+    method: 'POST',
+    headers: {
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+      accept: 'application/json, text/plain, */*',
+      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'content-type': 'application/x-www-form-urlencoded',
+      origin: 'https://www.huxiu.com',
+      referer: sourceUrl,
+    },
+    body: new URLSearchParams({ platform: 'www' }),
+    redirect: 'follow',
+    signal,
+  })
+
+  if (!response.ok) {
+    return { items: [], rawCount: 0, error: `${sourceName}: HTTP ${response.status}` }
+  }
+
+  const payload = await response.json() as HuxiuArticleResponse
+  const list = payload.data?.datalist
+  if (!payload.success || !Array.isArray(list)) {
+    return { items: [], rawCount: 0, error: `${sourceName}: API 响应结构无效` }
+  }
+
+  const items = list
+    .filter((entry) => entry.title && entry.url && /^https:\/\/www\.huxiu\.com\/article\/\d+\.html$/.test(entry.url))
+    .slice(0, config.maxItems ?? 10)
+    .map((entry) => ({
+      title: entry.title!.replace(/\s+/g, ' ').trim(),
+      url: entry.url!,
+      publishedAt: entry.dateline ? new Date(Number(entry.dateline) * 1000).toISOString() : null,
+    }))
+
+  return {
+    items,
+    rawCount: list.length,
+    error: items.length === 0 ? `${sourceName}: API 没有返回有效资讯` : undefined,
+  }
+}
+
 async function scrapeJiemianAccount(
   sourceName: string,
   sourceUrl: string,
@@ -151,7 +212,7 @@ async function scrapeJiemianAccount(
   const items = list
     .filter((entry) =>
       entry.object_type === 'article'
-      && entry.source_name === sourceName
+      && entry.source_name === (config.expectedSourceName ?? sourceName)
       && Boolean(entry.title)
       && Boolean(entry.url)
     )
@@ -320,6 +381,9 @@ export async function scrapeNewsList(
     }
     if (config.adapter === 'jiemian-account') {
       return await scrapeJiemianAccount(sourceName, sourceUrl, config, controller.signal)
+    }
+    if (config.adapter === 'huxiu-api') {
+      return await scrapeHuxiuApi(sourceName, sourceUrl, config, controller.signal)
     }
 
     const response = await fetch(sourceUrl, {

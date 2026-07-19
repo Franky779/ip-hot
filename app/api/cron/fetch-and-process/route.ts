@@ -36,12 +36,9 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
       if (configuredSource?.loginRequired || configuredSource?.needsLocalCdp) {
         return []
       }
-      const fetchType =
-        configuredSource?.type === 'rss' || configuredSource?.isRss
-          ? 'rss'
-          : source.fetch_type === 'rss'
-            ? 'rss'
-            : 'web'
+      const fetchType = configuredSource
+        ? configuredSource.type === 'rss' || configuredSource.isRss ? 'rss' : 'web'
+        : source.fetch_type === 'rss' ? 'rss' : 'web'
       return [{
         name: source.name,
         url: configuredSource?.url || source.url,

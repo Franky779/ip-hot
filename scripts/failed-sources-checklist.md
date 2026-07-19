@@ -4,17 +4,17 @@
 
 | 名称 | URL | 失败原因 | 优先级 | 修复建议 |
 |------|-----|----------|--------|----------|
-| Anime News Network | https://www.animenewsnetwork.com/all/rss.xml | 403 | P0 | CDP/Scrapling |
+| Anime News Network | https://www.animenewsnetwork.com/ | RSS 格式损坏/服务器拦截 | P0 | 已改为本地 CDP 分流 |
 | Crunchyroll News | https://feeds.feedburner.com/crunchyroll/animenews | 超时 | P0 | 重试/CDP |
 | Animation World Network | https://www.awn.com/news.xml | 403 | P0 | CDP/Scrapling |
 | Deadline | https://deadline.com/feed | 超时 | P0 | 重试/CDP |
-| Polygon | https://www.polygon.com/rss/index.xml | 断连 | P0 | 重试/CDP |
+| Polygon | https://www.polygon.com/feed/ | 旧 RSS 地址失效 | P0 | 已修复，RSS 三次各 10 条 |
 | Kotaku | https://kotaku.com/rss | 403 | P0 | CDP/Scrapling |
 | The Art Newspaper | https://www.theartnewspaper.com/rss.xml | 超时 | P0 | 重试/CDP |
 | Anime Anime | https://animeanime.jp/rss20.xml | 404 | P0 | 地址可能失效 |
 | Famitsu | https://www.famitsu.com/rss/news.rdf | 404 | P0 | 地址可能失效 |
 | 36氪 | https://36kr.com/feed | XML解析错误 | P1 | 手动检查RSS格式 |
-| 虎嗅 | https://www.huxiu.com/rss/0.xml | 超时 | P1 | 重试 |
+| 虎嗅 | https://article-api.huxiu.com/web/channel/articleList | 旧 RSS 超时 | P1 | 已改第一方 JSON API，三次各 10 条 |
 
 ## 二、CDP失败源（2个）
 
@@ -41,7 +41,7 @@
 
 | 名称 | URL | 说明 |
 |------|-----|------|
-| 知乎雷报 | https://www.zhihu.com/people/wanshangkansha/posts | 需知乎登录 |
+| 知乎雷报 | https://www.jiemian.com/account/2079.html | 已改已认证“雷报”账号公开 API，三次各 10 条 |
 | 小红书 | https://www.xiaohongshu.com/explore | 需小红书登录 |
 
 ## 五、政府源（40个）- 每周跑一次
@@ -51,17 +51,17 @@
 | 文化和旅游部 | https://www.mct.gov.cn/ |
 | 国家广播电视总局 | https://www.nrta.gov.cn/ |
 | 中国动漫集团 | http://www.acgg.cn/ |
-| 国务院 | https://www.gov.cn/ |
+| 国务院 | https://www.gov.cn/zhengce/zhengceku/bmwj/home.htm（已修复） |
 | 国家发改委 | https://www.ndrc.gov.cn/ |
 | 工业和信息化部 | https://www.miit.gov.cn/ |
 | 国家知识产权局 | https://www.cnipa.gov.cn/ |
-| 财政部 | https://www.mof.gov.cn/ |
-| 浙江省文旅厅 | https://ct.zj.gov.cn/ |
-| 东莞市人民政府 | https://www.dg.gov.cn/ |
-| 杭州西湖区政府 | https://www.hzxh.gov.cn/ |
+| 财政部 | https://www.mof.gov.cn/zhengwuxinxi/zhengcefabu/（已修复） |
+| 浙江省文旅厅 | https://www.mct.gov.cn/whzx/qgwhxxlb/zj/（官方转载栏目，已修复） |
+| 东莞市人民政府 | https://wglt.dg.gov.cn/（文旅局栏目，已修复） |
+| 杭州西湖区政府 | https://www.hzxh.gov.cn/（WAF，本地 CDP） |
 | 新疆文旅厅 | https://wlt.xinjiang.gov.cn/ |
 | 北京市文旅局 | https://whlyj.beijing.gov.cn/ |
-| 天津市文旅局 | https://whly.tj.gov.cn/ |
+| 天津市文旅局 | https://whly.tj.gov.cn/（已修复） |
 | 上海市文旅局 | https://whlyj.sh.gov.cn/ |
 | 重庆市文旅委 | https://wlt.cq.gov.cn/ |
 | 河北省文旅厅 | https://wlt.hebei.gov.cn/ |
@@ -85,6 +85,20 @@
 | 云南省文旅厅 | https://wlt.yn.gov.cn/ |
 | 西藏文旅厅 | https://wlt.xizang.gov.cn/ |
 | 陕西省文旅厅 | https://wlt.shaanxi.gov.cn/ |
-| 甘肃省文旅厅 | https://wlt.gansu.gov.cn/ |
+| 甘肃省文旅厅 | https://www.mct.gov.cn/whzx/qgwhxxlb/gs/（官方转载栏目，已修复） |
 | 青海省文旅厅 | https://wlt.qinghai.gov.cn/ |
 | 宁夏文旅厅 | https://wlt.nx.gov.cn/ |
+
+## 六、2026-07-19 生产失败纠错记录
+
+| 原错误类型 | 信息源 | 最终动作 | 状态 |
+|---|---|---|---|
+| 选择器无有效资讯 | 北青网、红星新闻、财政部 | 改具体栏目/文章路径选择器 | 三连测通过 |
+| 选择器无有效资讯 | 艺恩网、猫眼专业版 | 非持续资讯源，从生产库清退 | 待部署后同步 |
+| RSS 15 秒超时 | 虎嗅 | 改第一方 JSON API | 三连测通过 |
+| 403/405/412/fetch failed | 国务院、北青、红星、浙江、东莞、天津、甘肃 | 换可访问官方栏目或文旅部官方省级栏目 | 三连测通过 |
+| 需登录 | 知乎雷报 | 改界面新闻已认证“雷报”账号 API | 三连测通过 |
+| XML 损坏/Feed 不识别 | Licensing International、Polygon | 前者改官方新闻 HTML，后者改当前 RSS | 三连测通过 |
+| RSS 可访问但无条目 | ICOM、Museums Association | 改官方新闻 HTML | 三连测通过 |
+| 404 | IGN Anime | 更新当前栏目并分流本地 CDP | 已配置，待 CDP dry-run |
+| 空 URL | RSSHub、Tiny Tiny RSS、The Old Reader、飞书订阅 | 属于工具而非资讯发布方，从生产库清退 | 待部署后同步 |
