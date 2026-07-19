@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase'
 import { SourcesClient } from './components/SourcesClient'
+import { SourceStats } from './components/SourceStats'
 import { AdminToggle } from '../components/AdminToggle'
 
 export const metadata = {
@@ -7,7 +8,7 @@ export const metadata = {
   description: 'IP行业信息源主库管理',
 }
 
-export const revalidate = 300
+export const revalidate = 0
 
 export default async function SourcesPage() {
   const supabase = getSupabase()
@@ -21,12 +22,6 @@ export default async function SourcesPage() {
   }
 
   const sources = data ?? []
-  const rssCount = sources.filter((source) =>
-    source.fetch_type === 'rss'
-    || source.type?.toLowerCase() === 'rss'
-    || /(?:feed|rss|atom|\.xml)(?:\/|$|\?)/i.test(source.url)
-  ).length
-
   return (
     <>
       <header className="page-header">
@@ -37,28 +32,7 @@ export default async function SourcesPage() {
               IP / ACG / 文创行业信息源主库 · 共 {sources.length} 条
             </p>
           </div>
-          <div className="sources-header-stats">
-            <div className="source-stat-item">
-              <strong>{sources.length}</strong>
-              <span>全部来源</span>
-            </div>
-            <div className="source-stat-item">
-              <strong>{rssCount}</strong>
-              <span>RSS</span>
-            </div>
-            <div className="source-stat-item">
-              <strong>{sources.length - rssCount}</strong>
-              <span>普通网页</span>
-            </div>
-            <div className="source-stat-item active">
-              <strong>{sources.filter((source) => source.enabled).length}</strong>
-              <span>自动抓取</span>
-            </div>
-            <div className="source-stat-item failed">
-              <strong>{sources.filter((source) => source.last_test_status === 'failed').length}</strong>
-              <span>测试异常</span>
-            </div>
-          </div>
+          <SourceStats initialSources={sources} />
           <AdminToggle />
         </div>
       </header>

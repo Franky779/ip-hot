@@ -176,10 +176,12 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   })
 
   const handleRefresh = useCallback(async () => {
-    const res = await fetch('/api/sources')
+    const res = await fetch('/api/sources', { cache: 'no-store' })
     if (res.ok) {
       const data = await res.json()
-      setSources(data.sources || [])
+      const updatedSources = data.sources || []
+      setSources(updatedSources)
+      window.dispatchEvent(new CustomEvent('sources-updated', { detail: updatedSources }))
     }
   }, [])
 
@@ -197,7 +199,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     })
     setDeletingId(null)
     if (res.ok) {
-      setSources((prev) => prev.filter((s) => s.id !== id))
+      await handleRefresh()
     } else {
       alert('删除失败')
     }
@@ -314,10 +316,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         setBulkNotice(`一键启动失败：${result.error || '未知错误'}`)
         return
       }
-      const startedIds = new Set(ids)
-      setSources((previous) => previous.map((source) =>
-        startedIds.has(source.id) ? { ...source, enabled: true } : source
-      ))
+      await handleRefresh()
       setBulkNotice(`已启动 ${ids.length} 条测试成功的信息源。`)
     } catch {
       setBulkNotice('一键启动失败：网络请求失败，请稍后重试。')
@@ -348,10 +347,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         setBulkNotice(`一键停用失败：${result.error || '未知错误'}`)
         return
       }
-      const stoppedIds = new Set(ids)
-      setSources((previous) => previous.map((source) =>
-        stoppedIds.has(source.id) ? { ...source, enabled: false } : source
-      ))
+      await handleRefresh()
       setBulkNotice(`已停用 ${ids.length} 条信息源。`)
     } catch {
       setBulkNotice('一键停用失败：网络请求失败，请稍后重试。')
