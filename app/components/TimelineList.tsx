@@ -78,7 +78,7 @@ export function TimelineList({
   const isSelectionMode = loaded && isAdmin && selectedIds.size > 0
 
   const filterArticles = useCallback((articles: Article[]) => {
-    let filtered = isAdmin
+    let filtered = isAdmin || category === '版权保护'
       ? articles
       : articles.filter((a) =>
           (a.relevance_score ?? 10) >= 7
@@ -90,7 +90,7 @@ export function TimelineList({
       filtered = filtered.filter((a) => a.relevance_score === filterScore)
     }
     return filtered
-  }, [filterScore, isAdmin])
+  }, [category, filterScore, isAdmin])
 
   // 当前页面所有出现的 relevance_score 唯一值(管理员模式用于评分筛选)
   const visibleScores = useMemo(() => {
