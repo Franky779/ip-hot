@@ -237,21 +237,24 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
                 {isExpanded && (
                   <div className="source-quality-expanded">
                     <div className="source-quality-funnel" aria-label={`${item.name}内容处理漏斗`}>
-                      <div className="source-quality-funnel-stage is-discovered"><span>抓取发现</span><strong>{item.discovered}</strong></div>
-                      <div className="source-quality-funnel-stage is-inserted"><span>去重入库</span><strong>{item.inserted}</strong></div>
+                      <div className="source-quality-funnel-stage is-discovered"><span>抓取发现</span><strong className="source-quality-funnel-value">{item.discovered}</strong></div>
+                      <div className="source-quality-funnel-stage is-inserted"><span>去重入库</span><strong className="source-quality-funnel-value">{item.inserted}</strong></div>
                       <div className="source-quality-funnel-stage is-llm">
                         <span>LLM 处理</span>
-                        <strong>已评分 {item.scored} <small>/ 未处理 {item.llmUnprocessed}</small></strong>
+                        <div className="source-quality-funnel-inline-stats">
+                          <b>已评分 <strong>{item.scored}</strong></b>
+                          <b>未处理 <strong>{item.llmUnprocessed}</strong></b>
+                        </div>
                       </div>
                       <div className="source-quality-funnel-stage is-score-buckets">
                         <span>评分分布</span>
-                        <div>
-                          <b>高分 7–10 {item.high}</b>
-                          <b>边界 4–6 {item.mid}</b>
-                          <b>低分 0–3 {item.low}</b>
+                        <div className="source-quality-score-grid">
+                          <span>高分 7–10 <b>{item.high}</b></span>
+                          <span>边界 4–6 <b>{item.mid}</b></span>
+                          <span>低分 0–3 <b>{item.low}</b></span>
                         </div>
                       </div>
-                      <div className="source-quality-funnel-stage is-selected"><span>精选</span><strong>{item.selected}</strong></div>
+                      <div className="source-quality-funnel-stage is-selected"><span>精选</span><strong className="source-quality-funnel-value">{item.selected}</strong></div>
                     </div>
                     <div className="source-quality-breakdown">
                       <span>低分 0–3：<b>{item.low}</b></span>

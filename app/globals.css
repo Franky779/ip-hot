@@ -1409,6 +1409,8 @@ body {
 .source-efficiency-summary strong {
   display: inline-block;
   padding: 0.05rem 0.3rem;
+  border: 1px solid #f0d56b;
+  border-radius: 999px;
   background: #fff0a8;
   color: #d93025;
   font-size: 1.05rem;
@@ -1545,6 +1547,7 @@ body {
 .source-quality-detail b {
   display: inline-block;
   padding: 0.05rem 0.25rem;
+  border-radius: 999px;
   background: #fff0a8;
   color: #d93025;
   font-size: 0.95rem;
@@ -1559,15 +1562,20 @@ body {
 }
 
 .source-quality-mini-funnel span {
-  padding: 0.3rem;
-  border-radius: 4px;
+  padding: 0.35rem 0.25rem;
+  border: 1px solid #eee8d9;
+  border-radius: 8px;
   background: transparent;
+  color: var(--text-muted);
   text-align: center;
 }
 
 .source-quality-mini-funnel b {
   display: inline-block;
-  padding: 0.08rem 0.35rem;
+  margin-left: 0.15rem;
+  padding: 0.08rem 0.4rem;
+  border: 1px solid #f0d56b;
+  border-radius: 999px;
   background: #fff0a8;
   color: #d93025;
   font-size: 1.05rem;
@@ -1594,10 +1602,12 @@ body {
 .source-quality-funnel-stage {
   display: grid;
   width: 100%;
-  min-height: 2.9rem;
+  min-height: 3.2rem;
   place-content: center;
-  padding: 0.35rem 1rem;
-  background: var(--bg);
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid #ece8dd;
+  background: linear-gradient(180deg, #fffdfa 0%, #f8f6f1 100%);
   clip-path: polygon(0 0, 100% 0, 94% 100%, 6% 100%);
   text-align: center;
 }
@@ -1607,25 +1617,56 @@ body {
 .source-quality-funnel-stage.is-score-buckets { width: 68%; }
 .source-quality-funnel-stage.is-selected { width: 52%; }
 
-.source-quality-funnel-stage span {
+.source-quality-funnel-stage > span {
   color: var(--text-muted);
-  font-size: 0.6875rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
 }
 
-.source-quality-funnel-stage strong {
-  display: inline-block;
-  margin-top: 0.15rem;
-  padding: 0.08rem 0.45rem;
-  background: #fff0a8;
-  color: #d93025;
-  font-size: 1.35rem;
+.source-quality-funnel-value {
+  display: inline-flex;
+  justify-self: center;
+  align-items: center;
+  min-width: 2.4rem;
+  justify-content: center;
+  padding: 0.12rem 0.55rem;
+  border: 1px solid #f0d56b;
+  border-radius: 999px;
+  background: #fff4bd;
+  color: #c7352b;
+  font-size: 1.15rem;
   font-variant-numeric: tabular-nums;
 }
 
-.source-quality-funnel-stage strong small {
-  color: #d93025;
-  font-size: 0.9rem;
-  font-weight: 400;
+.source-quality-funnel-inline-stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.source-quality-funnel-inline-stats b,
+.source-quality-score-grid span {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.source-quality-funnel-inline-stats b {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.18rem 0.35rem;
+  border: 1px solid #eee5c8;
+  border-radius: 999px;
+  background: #fffdf4;
+}
+
+.source-quality-funnel-inline-stats strong,
+.source-quality-score-grid b {
+  color: #c7352b;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .source-quality-funnel-stage.is-score-buckets {
@@ -1633,19 +1674,21 @@ body {
 }
 
 .source-quality-funnel-stage.is-score-buckets > div {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.25rem;
-  margin-top: 0.25rem;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
 }
 
-.source-quality-funnel-stage.is-score-buckets b {
-  display: inline-block;
-  padding: 0.12rem 0.25rem;
-  background: #fff0a8;
-  color: #d93025;
-  font-size: 0.8rem;
-  font-weight: 600;
+.source-quality-score-grid span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.35rem;
+  border: 1px solid #eee5c8;
+  border-radius: 999px;
+  background: #fffdf4;
 }
 
 .source-quality-breakdown {
@@ -1659,6 +1702,8 @@ body {
 .source-quality-breakdown b {
   display: inline-block;
   padding: 0.05rem 0.25rem;
+  border: 1px solid #f0d56b;
+  border-radius: 999px;
   background: #fff0a8;
   color: #d93025;
   font-size: 1rem;
@@ -1733,6 +1778,8 @@ body {
 .source-quality-sample-score {
   display: inline-block;
   padding: 0.05rem 0.25rem;
+  border: 1px solid #f0d56b;
+  border-radius: 999px;
   background: #fff0a8;
   color: #d93025;
   font-size: 0.9rem;
