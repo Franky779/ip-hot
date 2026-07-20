@@ -29,11 +29,11 @@ interface TimelineListProps {
   hasMore: boolean
   category: string
   query: string
-  sourceRegions: Record<string, 'domestic' | 'overseas' | 'japan'>
+  sourceRegions?: Record<string, 'domestic' | 'overseas' | 'japan'>
 }
 
 function getSourceRegionLabel(source: string, sourceRegions: TimelineListProps['sourceRegions']): string {
-  const region = sourceRegions[source.toLocaleLowerCase()]
+  const region = sourceRegions?.[source.toLocaleLowerCase()]
   if (region === 'domestic' || (!region && /[\u3400-\u9fff]/.test(source))) return '国内资讯'
   return '国外资讯'
 }
