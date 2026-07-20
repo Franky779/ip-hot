@@ -123,6 +123,7 @@ export default function MonitorPage() {
   const [data, setData] = useState<MonitorData | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetching, setFetching] = useState(false)
+  const [fetchProgress, setFetchProgress] = useState<{ completed: number; total: number } | null>(null)
   const [llming, setLlming] = useState(false)
   const [llmProgress, setLlmProgress] = useState<{ processed: number; remaining: number; rounds: number } | null>(null)
   const stopLlmRef = useRef(false)
@@ -253,27 +254,35 @@ export default function MonitorPage() {
 
   const handleSelectedSourceFetch = async (sourceIds: string[], actionLabel: string) => {
     if (sourceIds.length === 0) return
-    if (sourceIds.length > 24) {
-      alert(`一次最多补抓 24 个信源；当前有 ${sourceIds.length} 个，请分批处理。`)
-      return
-    }
-    if (!confirm(`确定${actionLabel} ${sourceIds.length} 个信源？抓取会同步执行，期间请保持本页打开。`)) return
+    const batchSize = 24
+    const batches = Array.from({ length: Math.ceil(sourceIds.length / batchSize) }, (_, index) =>
+      sourceIds.slice(index * batchSize, (index + 1) * batchSize)
+    )
+    const batchNotice = batches.length > 1 ? `系统会自动分成 ${batches.length} 批（每批最多 ${batchSize} 个）。` : ''
+    if (!confirm(`确定${actionLabel} ${sourceIds.length} 个信源？${batchNotice} 抓取会同步执行，期间请保持本页打开。`)) return
     setFetching(true)
+    setFetchProgress({ completed: 0, total: sourceIds.length })
     const pw = getPw() || ''
+    let completed = 0
     try {
-      const query = sourceIds.map((id) => `sourceId=${encodeURIComponent(id)}`).join('&')
-      const res = await fetch(`/api/cron/fetch-and-process?${query}`, { headers: { 'x-admin-password': pw } })
-      const resp = await res.json()
-      if (res.ok && resp.ok) {
-        alert(`${actionLabel}完成：已处理 ${resp.fetch?.processedSources ?? sourceIds.length} 个信源。`)
-      } else {
-        alert(`${actionLabel}失败：${resp.error || '未知错误'}`)
+      for (const batch of batches) {
+        const query = batch.map((id) => `sourceId=${encodeURIComponent(id)}`).join('&')
+        const res = await fetch(`/api/cron/fetch-and-process?${query}`, { headers: { 'x-admin-password': pw } })
+        const resp = await res.json()
+        if (!res.ok || !resp.ok) {
+          alert(`${actionLabel}在第 ${Math.floor(completed / batchSize) + 1} 批失败：${resp.error || '未知错误'}。已完成的批次已保留。`)
+          return
+        }
+        completed += resp.fetch?.processedSources ?? batch.length
+        setFetchProgress({ completed, total: sourceIds.length })
+        await fetchData()
       }
-      await fetchData()
+      alert(`${actionLabel}完成：已处理 ${completed} 个信源。`)
     } catch (error) {
       alert(`${actionLabel}失败：${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setFetching(false)
+      setFetchProgress(null)
     }
   }
 
@@ -459,7 +468,7 @@ export default function MonitorPage() {
                 <h2 className="monitor-section-title" style={{ margin: 0 }}>今日信源抓取覆盖</h2>
                 {coverage && missedCloudSourceIds.length > 0 && (
                   <button className="monitor-action-btn" onClick={() => handleSelectedSourceFetch(missedCloudSourceIds, '补抓今日遗漏')} disabled={fetching}>
-                    补抓今日遗漏（{missedCloudSourceIds.length}）
+                    {fetchProgress ? `补抓中 ${fetchProgress.completed}/${fetchProgress.total}` : `补抓今日遗漏（${missedCloudSourceIds.length}）`}
                   </button>
                 )}
               </div>
