@@ -23,6 +23,7 @@ type RuntimeSource = {
   url: string
   fetchType: 'rss' | 'web'
   scheduleTier: SourceScheduleTier
+  due: boolean
   scrapeConfig?: ScrapeConfig
   qualityMode: 'normal' | 'observe' | 'reduced' | 'paused'
 }
@@ -62,17 +63,7 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
         needsLocalCdp: configuredSource?.needsLocalCdp,
         loginRequired: configuredSource?.loginRequired,
       })
-      if (schedule.executionMode !== 'cloud' || !isCloudSourceDue({
-        id: source.id,
-        name: source.name,
-        url: source.url,
-        method: source.method,
-        type: source.type,
-        enabled: true,
-        priority: configuredSource?.priority,
-        needsLocalCdp: configuredSource?.needsLocalCdp,
-        loginRequired: configuredSource?.loginRequired,
-      })) {
+      if (schedule.executionMode !== 'cloud') {
         return []
       }
       const fetchType = configuredSource
@@ -84,6 +75,17 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
         url: configuredSource?.url || source.url,
         fetchType,
         scheduleTier: schedule.tier,
+        due: isCloudSourceDue({
+          id: source.id,
+          name: source.name,
+          url: source.url,
+          method: source.method,
+          type: source.type,
+          enabled: true,
+          priority: configuredSource?.priority,
+          needsLocalCdp: configuredSource?.needsLocalCdp,
+          loginRequired: configuredSource?.loginRequired,
+        }),
         qualityMode: qualityModes.get(source.id) ?? 'normal',
         scrapeConfig: configuredSource?.scrapeConfig || (
           fetchType === 'web' ? { adapter: 'auto-news-links', maxItems: 10 } : undefined
@@ -100,6 +102,7 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
     url,
     fetchType: 'rss',
     scheduleTier: 'every_2_days',
+    due: true,
     qualityMode: 'normal',
   }))
 }
@@ -146,7 +149,9 @@ function isNoise(title: string): boolean {
 }
 
 type FetchResult = {
+  sourceId: string
   source: string
+  sourceUrl: string
   ok: boolean
   discovered: number
   fetched: number
@@ -154,6 +159,7 @@ type FetchResult = {
   dead: number
   duplicates: number
   inserted: number
+  sourceRunId?: string | null
   error?: string
 }
 
@@ -182,9 +188,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const requestedSourceIds = new URL(request.url).searchParams.getAll('sourceId')
+    .filter((id) => /^[0-9a-f-]{36}$/i.test(id))
+  if (requestedSourceIds.length > 0 && !isAdminAuth) {
+    return NextResponse.json({ error: 'Only an administrator can select sources manually' }, { status: 403 })
+  }
+  if (requestedSourceIds.length > 24) {
+    return NextResponse.json({ error: 'At most 24 sources can be fetched in one manual batch' }, { status: 400 })
+  }
+
   const supabase = createServiceClient()
   const startTime = Date.now()
-  const triggerType = isAdminAuth ? 'manual' : 'cron'
+  const triggerType = requestedSourceIds.length > 0 ? 'manual_source' : isAdminAuth ? 'manual' : 'cron'
   let logId: string | null = null
 
   try {
@@ -225,8 +240,11 @@ export async function GET(request: Request) {
 
   const activeSources = await loadActiveSources(supabase)
   const batchSize = 24
-  const eligibleSources = activeSources.filter((source) =>
-    source.qualityMode !== 'reduced' || Math.floor(Date.now() / 86_400_000) % 2 === 0
+  const selectedSources = requestedSourceIds.length > 0
+    ? activeSources.filter((source) => requestedSourceIds.includes(source.id))
+    : activeSources.filter((source) => source.due)
+  const eligibleSources = selectedSources.filter((source) =>
+    requestedSourceIds.length > 0 || source.qualityMode !== 'reduced' || Math.floor(Date.now() / 86_400_000) % 2 === 0
   )
   const scheduledSources = eligibleSources
     .sort((left, right) => left.name.localeCompare(right.name, 'zh-CN'))
@@ -244,8 +262,62 @@ export async function GET(request: Request) {
     })
   }
 
+  const startSourceRun = async (source: RuntimeSource): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('source_fetch_runs')
+      .insert({
+        source_id: source.id,
+        source_name: source.name,
+        source_url: source.url,
+        cron_log_id: logId,
+        trigger_type: triggerType,
+        execution_mode: 'cloud',
+        scheduled_for: requestedSourceIds.length > 0 ? null : new Date().toISOString(),
+        status: 'running',
+      })
+      .select('id')
+      .maybeSingle()
+    if (error) {
+      console.warn('[SourceFetchRun] Could not start source audit record:', error.message)
+      return null
+    }
+    return data?.id ?? null
+  }
+
+  const completeSourceRun = async (result: FetchResult) => {
+    if (!result.sourceRunId) return
+    const status = result.error ? 'failed' : result.fetched === 0 ? 'empty' : 'success'
+    const { error } = await supabase
+      .from('source_fetch_runs')
+      .update({
+        ended_at: new Date().toISOString(),
+        status,
+        discovered_count: result.discovered,
+        fetched_count: result.fetched,
+        blocked_count: result.blocked,
+        dead_count: result.dead,
+        duplicate_count: result.duplicates,
+        inserted_count: result.inserted,
+        error_message: result.error ?? null,
+      })
+      .eq('id', result.sourceRunId)
+    if (error) console.warn('[SourceFetchRun] Could not finish source audit record:', error.message)
+  }
+
   for (const source of scheduledSources) {
-    const result: FetchResult = { source: source.name, ok: false, discovered: 0, fetched: 0, blocked: 0, dead: 0, duplicates: 0, inserted: 0 }
+    const result: FetchResult = {
+      sourceId: source.id,
+      source: source.name,
+      sourceUrl: source.url,
+      ok: false,
+      discovered: 0,
+      fetched: 0,
+      blocked: 0,
+      dead: 0,
+      duplicates: 0,
+      inserted: 0,
+      sourceRunId: await startSourceRun(source),
+    }
 
     try {
       const { data: currentSource, error: currentSourceError } = await supabase
@@ -257,6 +329,7 @@ export async function GET(request: Request) {
       if (currentSourceError || !currentSource) {
         result.error = 'Source was disabled or deleted before fetching'
         fetchResults.push(result)
+        await completeSourceRun(result)
         await updateFetchProgress(source.name)
         continue
       }
@@ -273,6 +346,7 @@ export async function GET(request: Request) {
         if (!feed) {
           result.error = 'RSS fetch failed (including Scrapling fallback)'
           fetchResults.push(result)
+          await completeSourceRun(result)
           await updateFetchProgress(source.name)
           continue
         }
@@ -288,6 +362,7 @@ export async function GET(request: Request) {
         if (!source.scrapeConfig) {
           result.error = 'Web source is missing scrapeConfig'
           fetchResults.push(result)
+          await completeSourceRun(result)
           await updateFetchProgress(source.name)
           continue
         }
@@ -295,6 +370,7 @@ export async function GET(request: Request) {
         if (scraped.error) {
           result.error = scraped.error
           fetchResults.push(result)
+          await completeSourceRun(result)
           await updateFetchProgress(source.name)
           continue
         }
@@ -352,6 +428,7 @@ export async function GET(request: Request) {
     }
 
     fetchResults.push(result)
+    await completeSourceRun(result)
     await updateFetchProgress(source.name)
   }
 

@@ -109,15 +109,26 @@ function tierIntervalSlots(tier: SourceScheduleTier): number {
   return 28
 }
 
-export function isCloudSourceDue(source: ScheduleInput, date = new Date()): boolean {
+export function isSourceTierDue(source: ScheduleInput, date = new Date()): boolean {
   const schedule = getSourceSchedule(source)
-  if (schedule.executionMode !== 'cloud') return false
   const interval = tierIntervalSlots(schedule.tier)
   const identity = source.id || `${source.url || ''}|${source.name || ''}`
   const assignedSlot = typeof schedule.slot === 'number'
     ? schedule.slot % interval
     : stableHash(identity) % interval
   return assignedSlot === getSlotAt(date) % interval
+}
+
+export function isCloudSourceDue(source: ScheduleInput, date = new Date()): boolean {
+  return getSourceSchedule(source).executionMode === 'cloud' && isSourceTierDue(source, date)
+}
+
+export function isLocalSourceDue(source: ScheduleInput, date = new Date()): boolean {
+  const schedule = getSourceSchedule(source)
+  if (schedule.executionMode !== 'local') return false
+  const intervalDays = schedule.tier === 'daily' ? 1 : schedule.tier === 'every_2_days' ? 2 : 7
+  const identity = source.id || `${source.url || ''}|${source.name || ''}`
+  return stableHash(identity) % intervalDays === Math.floor(date.getTime() / 86_400_000) % intervalDays
 }
 
 export function getNextScheduledAt(source: ScheduleInput, from = new Date()): Date | null {

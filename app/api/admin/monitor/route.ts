@@ -7,6 +7,8 @@ import {
   type SourceQualityAction,
   type SourceQualityLog,
 } from '@/lib/source-quality'
+import { buildSourceCoverage, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
+import { findSourceConfiguration } from '@/lib/sources'
 
 export const dynamic = 'force-dynamic'
 
@@ -121,8 +123,31 @@ export async function GET(request: Request) {
         .limit(500),
       supabase
         .from('info_sources')
-        .select('id, name, enabled, last_test_status'),
+        .select('id, name, url, method, type, enabled, last_test_status'),
     ])
+
+    const sourceRunsResult = await supabase
+      .from('source_fetch_runs')
+      .select('source_id, source_name, source_url, trigger_type, execution_mode, status, started_at, ended_at, discovered_count, fetched_count, blocked_count, dead_count, duplicate_count, inserted_count, error_message')
+      .gte('started_at', todayStart)
+      .lte('started_at', todayEnd)
+      .order('started_at', { ascending: false })
+      .limit(5000)
+
+    const sourceCoverage = sourceRunsResult.error
+      ? null
+      : buildSourceCoverage(
+          (sourceInfoResult.data ?? []).map((source) => {
+            const configured = findSourceConfiguration(source.url, source.name)
+            return {
+              ...source,
+              priority: configured?.priority,
+              needsLocalCdp: configured?.needsLocalCdp,
+              loginRequired: configured?.loginRequired,
+            } satisfies CoverageSource
+          }),
+          (sourceRunsResult.data ?? []) as SourceFetchRun[],
+        )
 
     // 兼容部署前的旧数据。旧记录来自 articles，可能因低分删除而偏乐观，前端会明确标注。
     const legacyQualityRows: LegacyQualityRow[] = []
@@ -263,6 +288,8 @@ export async function GET(request: Request) {
       pipelineState,
       sourceQuality,
       sourceQualityWindowDays: qualityDays,
+      sourceCoverage,
+      sourceCoverageError: sourceRunsResult.error?.message ?? null,
       reviewQueue: (reviewQueue || []).map((r: any) => ({
         id: r.id,
         titleCn: r.title_cn,

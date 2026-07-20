@@ -5,6 +5,23 @@ import Link from 'next/link'
 import { useAdmin } from '../components/AdminToggle'
 import SourceQualityPanel, { type SourceQualityItem } from './SourceQualityPanel'
 
+type SourceCoverageStatus = 'success' | 'empty' | 'failed' | 'running' | 'skipped' | 'pending' | 'overdue' | 'not_due' | 'manual' | 'paused'
+type SourceCoverageRow = {
+  sourceId: string; sourceName: string; sourceUrl: string
+  executionMode: 'cloud' | 'local' | 'manual' | 'paused'
+  scheduleTier: 'daily' | 'every_2_days' | 'weekly'
+  status: SourceCoverageStatus; scheduledAt: string | null; nextScheduledAt: string | null
+  lastRun: {
+    status: string; started_at: string; discovered_count: number; fetched_count: number
+    duplicate_count: number; inserted_count: number; error_message: string | null
+  } | null
+}
+type SourceCoverage = {
+  summary: { planned: number; completed: number; success: number; empty: number; failed: number; running: number; skipped: number; pending: number; overdue: number; notDue: number; excluded: number }
+  rows: SourceCoverageRow[]
+  nextBatches: Array<{ scheduledAt: string; sources: string[]; total: number }>
+}
+
 type MonitorData = {
   todayTask: {
     status: string; triggerType: string; startedAt: string; endedAt: string | null
@@ -26,6 +43,8 @@ type MonitorData = {
   categoryStats: Array<{ category: string; count: number }>
   sourceQualityWindowDays?: number
   sourceQuality?: SourceQualityItem[]
+  sourceCoverage?: SourceCoverage | null
+  sourceCoverageError?: string | null
   reviewQueue?: Array<{
     id: string; titleCn: string; summaryCn: string; commentary: string
     relevanceScore: number; source: string; createdAt: string
@@ -56,9 +75,37 @@ function getStatusLabel(s: string) { return s === 'success' ? '成功' : s === '
 function getTriggerLabel(triggerType: string | null) {
   return triggerType === 'manual' ? '手动'
     : triggerType === 'manual_llm' ? '手动LLM'
+      : triggerType === 'manual_source' ? '指定信源'
       : triggerType === 'source_add' ? '添加信源'
         : triggerType === 'source_delete' ? '删除信源'
           : '定时'
+}
+function getCoverageStatusLabel(status: SourceCoverageStatus) {
+  return status === 'success' ? '抓取成功'
+    : status === 'empty' ? '成功无新增'
+      : status === 'failed' ? '抓取失败'
+        : status === 'running' ? '抓取中'
+          : status === 'skipped' ? '已跳过'
+          : status === 'pending' ? '等待计划时间'
+            : status === 'overdue' ? '逾期未抓'
+              : status === 'not_due' ? '今天不需抓取'
+                : status === 'manual' ? '人工处理'
+                  : '已停用'
+}
+function getCoverageStatusColor(status: SourceCoverageStatus) {
+  return status === 'success' || status === 'empty' ? '#2e9d5a'
+    : status === 'failed' || status === 'overdue' ? '#e94560'
+      : status === 'running' ? '#3b82f6'
+        : '#888'
+}
+function getExecutionLabel(mode: SourceCoverageRow['executionMode']) {
+  return mode === 'cloud' ? '云端'
+    : mode === 'local' ? '本地 CDP'
+      : mode === 'manual' ? '人工'
+        : '停用'
+}
+function getTierLabel(tier: SourceCoverageRow['scheduleTier']) {
+  return tier === 'daily' ? '每天' : tier === 'every_2_days' ? '每两天' : '每周'
 }
 function getLogLine(log: CronLog): string {
   const started = log.started_at ? new Date(log.started_at).toLocaleString('zh-CN') : '-'
@@ -204,6 +251,32 @@ export default function MonitorPage() {
     }
   }
 
+  const handleSelectedSourceFetch = async (sourceIds: string[], actionLabel: string) => {
+    if (sourceIds.length === 0) return
+    if (sourceIds.length > 24) {
+      alert(`一次最多补抓 24 个信源；当前有 ${sourceIds.length} 个，请分批处理。`)
+      return
+    }
+    if (!confirm(`确定${actionLabel} ${sourceIds.length} 个信源？抓取会同步执行，期间请保持本页打开。`)) return
+    setFetching(true)
+    const pw = getPw() || ''
+    try {
+      const query = sourceIds.map((id) => `sourceId=${encodeURIComponent(id)}`).join('&')
+      const res = await fetch(`/api/cron/fetch-and-process?${query}`, { headers: { 'x-admin-password': pw } })
+      const resp = await res.json()
+      if (res.ok && resp.ok) {
+        alert(`${actionLabel}完成：已处理 ${resp.fetch?.processedSources ?? sourceIds.length} 个信源。`)
+      } else {
+        alert(`${actionLabel}失败：${resp.error || '未知错误'}`)
+      }
+      await fetchData()
+    } catch (error) {
+      alert(`${actionLabel}失败：${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setFetching(false)
+    }
+  }
+
   const handleStopLlm = () => {
     stopLlmRef.current = true
     setLlming(false)
@@ -310,6 +383,10 @@ export default function MonitorPage() {
   }
 
   const task = data?.todayTask
+  const coverage = data?.sourceCoverage
+  const missedCloudSourceIds = coverage?.rows
+    .filter((row) => row.executionMode === 'cloud' && (row.status === 'failed' || row.status === 'overdue'))
+    .map((row) => row.sourceId) ?? []
   const allCats = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护', '待分类']
   const catMap = new Map((data?.categoryStats || []).map(c => [c.category, c.count]))
 
@@ -376,6 +453,62 @@ export default function MonitorPage() {
                   )}
                 </div>
               </div>
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                <h2 className="monitor-section-title" style={{ margin: 0 }}>今日信源抓取覆盖</h2>
+                {coverage && missedCloudSourceIds.length > 0 && (
+                  <button className="monitor-action-btn" onClick={() => handleSelectedSourceFetch(missedCloudSourceIds, '补抓今日遗漏')} disabled={fetching}>
+                    补抓今日遗漏（{missedCloudSourceIds.length}）
+                  </button>
+                )}
+              </div>
+              {data?.sourceCoverageError ? (
+                <p className="empty-state">抓取审计表尚未创建：请先在 Supabase 执行 <code>supabase-source-fetch-runs.sql</code>。</p>
+              ) : !coverage ? (
+                <p className="empty-state">正在读取信源覆盖情况…</p>
+              ) : (
+                <>
+                  <div className="monitor-category-grid" style={{ marginBottom: '1rem' }}>
+                    <div className="monitor-category-card"><span>今日应抓</span><strong>{coverage.summary.planned}</strong></div>
+                    <div className="monitor-category-card"><span>已覆盖</span><strong>{coverage.summary.completed}</strong></div>
+                    <div className="monitor-category-card"><span>成功无新增</span><strong>{coverage.summary.empty}</strong></div>
+                    <div className="monitor-category-card"><span>失败待补</span><strong>{coverage.summary.failed}</strong></div>
+                    <div className="monitor-category-card"><span>逾期未抓</span><strong>{coverage.summary.overdue}</strong></div>
+                    <div className="monitor-category-card"><span>今日不需/豁免</span><strong>{coverage.summary.excluded}</strong></div>
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <h3 className="monitor-section-title" style={{ fontSize: '0.9375rem' }}>下一批计划</h3>
+                    {coverage.nextBatches.length === 0 ? <p className="empty-state">没有后续自动批次。</p> : (
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        {coverage.nextBatches.map((batch) => (
+                          <div key={batch.scheduledAt} className="monitor-category-card" style={{ minWidth: '14rem', textAlign: 'left' }}>
+                            <strong style={{ fontSize: '0.875rem' }}>{formatTime(batch.scheduledAt)} · {batch.total} 个来源</strong>
+                            <span style={{ display: 'block', marginTop: '0.25rem' }}>{batch.sources.join('、')}{batch.total > batch.sources.length ? '…' : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                      <thead><tr style={{ textAlign: 'left', color: 'var(--text-muted)' }}>
+                        <th style={{ padding: '0.5rem' }}>来源</th><th style={{ padding: '0.5rem' }}>方式/频率</th><th style={{ padding: '0.5rem' }}>今天状态</th><th style={{ padding: '0.5rem' }}>计划/下次</th><th style={{ padding: '0.5rem' }}>发现/有效/重复/入库</th><th style={{ padding: '0.5rem' }}>操作</th>
+                      </tr></thead>
+                      <tbody>{coverage.rows.map((row) => (
+                        <tr key={row.sourceId} style={{ borderTop: '1px solid var(--border)' }}>
+                          <td style={{ padding: '0.625rem 0.5rem' }}><a href={row.sourceUrl} target="_blank" rel="noreferrer">{row.sourceName}</a>{row.lastRun?.error_message && <div style={{ color: '#e94560', marginTop: '0.25rem' }}>{row.lastRun.error_message}</div>}</td>
+                          <td style={{ padding: '0.625rem 0.5rem' }}>{getExecutionLabel(row.executionMode)} · {getTierLabel(row.scheduleTier)}</td>
+                          <td style={{ padding: '0.625rem 0.5rem', color: getCoverageStatusColor(row.status) }}>{getCoverageStatusLabel(row.status)}</td>
+                          <td style={{ padding: '0.625rem 0.5rem' }}>{row.scheduledAt ? `今日 ${formatTime(row.scheduledAt)}` : '-'}<br /><span style={{ color: 'var(--text-muted)' }}>{row.nextScheduledAt ? `下次 ${formatTime(row.nextScheduledAt)}` : '-'}</span></td>
+                          <td style={{ padding: '0.625rem 0.5rem' }}>{row.lastRun ? `${row.lastRun.discovered_count} / ${row.lastRun.fetched_count} / ${row.lastRun.duplicate_count} / ${row.lastRun.inserted_count}` : '-'}</td>
+                          <td style={{ padding: '0.625rem 0.5rem' }}>{row.executionMode === 'cloud' && row.status !== 'running' && <button className="monitor-action-btn" onClick={() => handleSelectedSourceFetch([row.sourceId], row.status === 'success' || row.status === 'empty' ? '提前重抓' : '手动补抓')} disabled={fetching}>抓取此来源</button>}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
             {/* 分类资讯数量统计 */}
             <div>

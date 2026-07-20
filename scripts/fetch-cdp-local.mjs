@@ -382,6 +382,36 @@ async function insertSupabase(articles, source) {
   return inserted;
 }
 
+async function recordSourceFetchRun(source, result, inserted) {
+  if (!SUPABASE_KEY) return;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/source_fetch_runs`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        source_name: source.name,
+        source_url: source.url,
+        trigger_type: 'local_task',
+        execution_mode: 'local',
+        status: result.error ? 'failed' : result.articles.length === 0 ? 'empty' : 'success',
+        discovered_count: result.articles.length,
+        fetched_count: result.articles.length,
+        inserted_count: inserted,
+        error_message: result.error || null,
+        ended_at: new Date().toISOString(),
+      }),
+    });
+    if (!response.ok) log(`  抓取审计记录失败 HTTP ${response.status}`);
+  } catch (error) {
+    log(`  抓取审计记录异常: ${error.message}`);
+  }
+}
+
 // ============ 源配置 ============
 // selector 命中后直接提取 href and textContent
 let SOURCES = [
@@ -621,6 +651,8 @@ async function main() {
     const n = await insertSupabase(articles, r.source);
     log(`入库 ${r.source}: ${n} 条`);
     totalInserted += n;
+    const source = SOURCES.find((item) => item.name === r.source);
+    if (source) await recordSourceFetchRun(source, r, n);
   }
 
   const elapsed = Math.round((Date.now() - startTime) / 1000);
