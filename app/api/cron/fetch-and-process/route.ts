@@ -248,6 +248,19 @@ export async function GET(request: Request) {
     const result: FetchResult = { source: source.name, ok: false, discovered: 0, fetched: 0, blocked: 0, dead: 0, duplicates: 0, inserted: 0 }
 
     try {
+      const { data: currentSource, error: currentSourceError } = await supabase
+        .from('info_sources')
+        .select('id')
+        .eq('id', source.id)
+        .eq('enabled', true)
+        .maybeSingle()
+      if (currentSourceError || !currentSource) {
+        result.error = 'Source was disabled or deleted before fetching'
+        fetchResults.push(result)
+        await updateFetchProgress(source.name)
+        continue
+      }
+
       let rawItems: Array<{
         source: string
         url: string

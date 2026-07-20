@@ -121,6 +121,31 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
     }
   }
 
+  const deleteSource = async (item: SourceQualityItem) => {
+    if (!item.sourceId) {
+      alert('该统计名称尚未匹配到信息源管理记录，无法删除。')
+      return
+    }
+    if (!confirm(`确认删除“${item.name}”吗？该来源会立即退出管理页和后续抓取队列，历史资讯与审计日志会保留。`)) return
+
+    setBusy(`${item.sourceId}:delete`)
+    try {
+      const response = await fetch('/api/admin/sources/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword() },
+        body: JSON.stringify({ id: item.sourceId }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || '删除信息源失败')
+      setExpanded(null)
+      await onRefresh()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <section className="source-efficiency-section">
       <div className="source-efficiency-heading">
@@ -250,6 +275,14 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
                         ? <button className="is-danger" disabled={busy !== null} onClick={() => runAction(item, 'pause')}>停用来源</button>
                         : <button disabled={busy !== null} onClick={() => runAction(item, 'resume')}>恢复启用</button>}
                       <Link href="/sources">修改栏目/抓取规则</Link>
+                      <button
+                        className="is-normalize"
+                        disabled={busy !== null || item.managementStatus === 'normal'}
+                        onClick={() => runAction(item, item.enabled ? 'normal' : 'resume')}
+                      >
+                        转为正常信源
+                      </button>
+                      <button className="is-delete-source" disabled={busy !== null} onClick={() => deleteSource(item)}>删除信源</button>
                     </div>
                   </div>
                 )}

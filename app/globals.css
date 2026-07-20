@@ -1722,6 +1722,16 @@ body {
   color: #e94560;
 }
 
+.source-quality-actions button.is-normalize {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.source-quality-actions button.is-delete-source {
+  border-color: #e94560;
+  color: #e94560;
+}
+
 .source-quality-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;

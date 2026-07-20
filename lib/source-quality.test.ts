@@ -169,3 +169,30 @@ test('excludes historical metrics for a source removed from information source m
 
   assert.deepEqual(metrics, [])
 })
+
+test('uses an explicit normal decision as the management status', () => {
+  const [metric] = aggregateSourceQuality({
+    logs: [{
+      started_at: '2026-07-18T12:00:00.000Z',
+      details: {
+        qualityResults: Array.from({ length: 20 }, (_, index) => ({
+          source: source.name,
+          title: `低分${index}`,
+          url: `https://example.com/low-${index}`,
+          score: 1,
+          selected: false,
+          commentary: '',
+          status: 'scored' as const,
+        })),
+      },
+    }],
+    legacyRows: [],
+    sources: [source],
+    actions: [{ sourceId: source.id, sourceName: source.name, mode: 'normal' }],
+    periodDays: 7,
+    now,
+  })
+
+  assert.equal(metric.status, 'poor')
+  assert.equal(metric.managementStatus, 'normal')
+})
