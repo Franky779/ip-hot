@@ -260,7 +260,9 @@ export function aggregateSourceQuality(input: {
     if (action.sourceName && !actionByName.has(action.sourceName)) actionByName.set(action.sourceName, action)
   }
 
-  const names = new Set([...currentScores.keys(), ...currentFetch.keys(), ...sourceByName.keys()])
+  // 运营监控以当前信息源目录为准。已从 info_sources 删除的来源可能仍有历史
+  // cron_logs，但不应作为可操作的信息源卡片继续展示。
+  const names = new Set(sourceByName.keys())
   return Array.from(names).map((name): SourceQualityMetric => {
     const scores = currentScores.get(name) ?? scoreStats()
     const previous = previousScores.get(name) ?? scoreStats()

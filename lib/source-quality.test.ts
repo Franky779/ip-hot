@@ -142,3 +142,30 @@ test('keeps mid-score and selected samples while reporting unprocessed LLM items
   assert.equal(metric.selectedSamples.length, 2)
   assert.equal(metric.llmUnprocessed, 3)
 })
+
+test('excludes historical metrics for a source removed from information source management', () => {
+  const metrics = aggregateSourceQuality({
+    logs: [{
+      started_at: '2026-07-18T12:00:00.000Z',
+      details: {
+        fetchResults: [{ source: '已删除来源', discovered: 10, inserted: 8 }],
+        qualityResults: [{
+          source: '已删除来源',
+          title: '历史文章',
+          url: 'https://example.com/deleted',
+          score: 0,
+          selected: false,
+          commentary: '',
+          status: 'scored',
+        }],
+      },
+    }],
+    legacyRows: [],
+    sources: [],
+    actions: [],
+    periodDays: 7,
+    now,
+  })
+
+  assert.deepEqual(metrics, [])
+})
