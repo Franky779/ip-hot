@@ -105,6 +105,7 @@ export function AdminPendingArticles({ query }: { query: string }) {
         hasMore={false}
         category="待分类"
         query={query}
+        sourceRegions={{}}
       />
       <div ref={loadMoreRef} className="pending-load-status">
         {loading ? '正在加载更多…' : hasMore ? '继续向下滚动加载' : '已加载全部待分类资讯'}
