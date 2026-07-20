@@ -11,6 +11,7 @@ export type SourceQualityItem = {
   discovered: number
   inserted: number
   scored: number
+  llmUnprocessed: number
   low: number
   mid: number
   high: number
@@ -25,16 +26,19 @@ export type SourceQualityItem = {
   trend: number | null
   confidence: 'insufficient' | 'enough'
   status: 'insufficient' | 'healthy' | 'warning' | 'poor'
+  managementStatus: 'normal' | 'review' | 'insufficient' | 'reduced' | 'observe' | 'paused'
   recommendation: string
   legacyEstimate: boolean
   lowSamples: Array<{ title: string; url: string; score: number; commentary: string; createdAt: string }>
+  midSamples: Array<{ title: string; url: string; score: number; commentary: string; createdAt: string }>
   highSamples: Array<{ title: string; url: string; score: number; commentary: string; createdAt: string }>
+  selectedSamples: Array<{ title: string; url: string; score: number; commentary: string; createdAt: string }>
 }
 
 type Props = {
   items: SourceQualityItem[]
-  days: 7 | 30
-  onDaysChange: (days: 7 | 30) => void
+  days: 7 | 30 | 180 | 365
+  onDaysChange: (days: 7 | 30 | 180 | 365) => void
   onRefresh: () => Promise<void>
 }
 
@@ -52,6 +56,15 @@ const MODE_LABELS = {
   paused: '已停用',
 }
 
+const MANAGEMENT_STATUS_LABELS = {
+  normal: '正常信源',
+  review: '需人工复核',
+  insufficient: '样本不足',
+  reduced: '降低频率',
+  observe: '继续观察',
+  paused: '停用来源',
+}
+
 function adminPassword() {
   return typeof window === 'undefined' ? '' : localStorage.getItem('ip-hot-admin-pw') || ''
 }
@@ -63,15 +76,16 @@ function trendLabel(trend: number | null) {
 }
 
 export default function SourceQualityPanel({ items, days, onDaysChange, onRefresh }: Props) {
-  const [filter, setFilter] = useState<'attention' | 'all'>('attention')
+  const [filter, setFilter] = useState<'all' | SourceQualityItem['managementStatus']>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
 
-  const attentionCount = items.filter((item) => item.status === 'poor' || item.status === 'warning').length
+  const attentionCount = items.filter((item) => item.managementStatus === 'review').length
   const insufficientCount = items.filter((item) => item.status === 'insufficient').length
-  const visibleItems = useMemo(() => items.filter((item) =>
-    filter === 'all' || item.status === 'poor' || item.status === 'warning'
-  ), [filter, items])
+  const visibleItems = useMemo(
+    () => items.filter((item) => filter === 'all' || item.managementStatus === filter),
+    [filter, items],
+  )
 
   const runAction = async (
     item: SourceQualityItem,
@@ -117,12 +131,24 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
           </p>
         </div>
         <div className="source-efficiency-controls" aria-label="信源命中效率筛选">
-          <button className={days === 7 ? 'is-active' : ''} onClick={() => onDaysChange(7)}>近 7 天</button>
-          <button className={days === 30 ? 'is-active' : ''} onClick={() => onDaysChange(30)}>近 30 天</button>
-          <button className={filter === 'attention' ? 'is-active' : ''} onClick={() => setFilter('attention')}>
-            待关注 {attentionCount}
-          </button>
-          <button className={filter === 'all' ? 'is-active' : ''} onClick={() => setFilter('all')}>全部 {items.length}</button>
+          <label>
+            <span>时间</span>
+            <select value={days} onChange={(event) => onDaysChange(Number(event.target.value) as Props['days'])}>
+              <option value={7}>7 天</option>
+              <option value={30}>30 天</option>
+              <option value={180}>180 天</option>
+              <option value={365}>1 年</option>
+            </select>
+          </label>
+          <label>
+            <span>信息源状态</span>
+            <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
+              <option value="all">全部</option>
+              {Object.entries(MANAGEMENT_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
@@ -160,7 +186,9 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
                     <span className={`source-quality-status is-${item.status}`}>{STATUS_LABELS[item.status]}</span>
                     {item.legacyEstimate && <span className="source-quality-legacy-badge">历史估算</span>}
                   </span>
-                  <strong className="source-quality-rate">{item.scored > 0 ? `${item.lowRate}%` : '—'}</strong>
+                  <strong className={`source-quality-management-status is-${item.managementStatus}`}>
+                    {MANAGEMENT_STATUS_LABELS[item.managementStatus]}
+                  </strong>
                   <span className="source-quality-detail">低分 {item.low} / 已评分 {item.scored} 条</span>
                   <span className="source-quality-mode">{MODE_LABELS[item.mode]} · {item.enabled ? '自动抓取已启用' : '自动抓取已停用'}</span>
                   <span className="source-quality-mini-funnel">
@@ -175,11 +203,21 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
                 {isExpanded && (
                   <div className="source-quality-expanded">
                     <div className="source-quality-funnel" aria-label={`${item.name}内容处理漏斗`}>
-                      <span><small>抓取发现</small><strong>{item.discovered}</strong></span>
-                      <span><small>去重入库</small><strong>{item.inserted}</strong></span>
-                      <span><small>LLM 已评分</small><strong>{item.scored}</strong></span>
-                      <span><small>高分 7–10</small><strong>{item.high}</strong></span>
-                      <span><small>最终精选</small><strong>{item.selected}</strong></span>
+                      <div className="source-quality-funnel-stage is-discovered"><span>抓取发现</span><strong>{item.discovered}</strong></div>
+                      <div className="source-quality-funnel-stage is-inserted"><span>去重入库</span><strong>{item.inserted}</strong></div>
+                      <div className="source-quality-funnel-stage is-llm">
+                        <span>LLM 处理</span>
+                        <strong>已评分 {item.scored} <small>/ 未处理 {item.llmUnprocessed}</small></strong>
+                      </div>
+                      <div className="source-quality-funnel-stage is-score-buckets">
+                        <span>评分分布</span>
+                        <div>
+                          <b>高分 7–10 {item.high}</b>
+                          <b>边界 4–6 {item.mid}</b>
+                          <b>低分 0–3 {item.low}</b>
+                        </div>
+                      </div>
+                      <div className="source-quality-funnel-stage is-selected"><span>精选</span><strong>{item.selected}</strong></div>
                     </div>
                     <div className="source-quality-breakdown">
                       <span>低分 0–3：<b>{item.low}</b></span>
@@ -197,7 +235,9 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
 
                     <div className="source-quality-samples">
                       <SampleList title="最近低分样本" samples={item.lowSamples} empty="当前没有可展示的低分样本。" />
+                      <SampleList title="最近边界样本" samples={item.midSamples} empty="当前没有可展示的边界样本。" />
                       <SampleList title="最近高分样本" samples={item.highSamples} empty="当前没有可展示的高分样本。" />
+                      <SampleList title="最近精选样本" samples={item.selectedSamples} empty="当前没有可展示的精选样本。" />
                     </div>
 
                     <div className="source-quality-actions">

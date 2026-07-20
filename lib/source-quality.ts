@@ -66,6 +66,7 @@ export type SourceQualityMetric = {
   discovered: number
   inserted: number
   scored: number
+  llmUnprocessed: number
   low: number
   mid: number
   high: number
@@ -80,10 +81,13 @@ export type SourceQualityMetric = {
   trend: number | null
   confidence: 'insufficient' | 'enough'
   status: 'insufficient' | 'healthy' | 'warning' | 'poor'
+  managementStatus: 'normal' | 'review' | 'insufficient' | 'reduced' | 'observe' | 'paused'
   recommendation: string
   legacyEstimate: boolean
   lowSamples: SourceQualitySample[]
+  midSamples: SourceQualitySample[]
   highSamples: SourceQualitySample[]
+  selectedSamples: SourceQualitySample[]
 }
 
 type ScoreStats = {
@@ -94,7 +98,9 @@ type ScoreStats = {
   selected: number
   llmFailed: number
   lowSamples: SourceQualitySample[]
+  midSamples: SourceQualitySample[]
   highSamples: SourceQualitySample[]
+  selectedSamples: SourceQualitySample[]
 }
 
 type FetchStats = {
@@ -106,7 +112,18 @@ type FetchStats = {
 }
 
 function scoreStats(): ScoreStats {
-  return { scored: 0, low: 0, mid: 0, high: 0, selected: 0, llmFailed: 0, lowSamples: [], highSamples: [] }
+  return {
+    scored: 0,
+    low: 0,
+    mid: 0,
+    high: 0,
+    selected: 0,
+    llmFailed: 0,
+    lowSamples: [],
+    midSamples: [],
+    highSamples: [],
+    selectedSamples: [],
+  }
 }
 
 function fetchStats(): FetchStats {
@@ -129,10 +146,14 @@ function addScore(
   if (score <= 3) stats.low += 1
   else if (score <= 6) stats.mid += 1
   else stats.high += 1
-  if (selected) stats.selected += 1
   const completeSample = { ...sample, score }
   if (score <= 3) addSample(stats.lowSamples, completeSample)
-  if (score >= 7) addSample(stats.highSamples, completeSample)
+  else if (score <= 6) addSample(stats.midSamples, completeSample)
+  else addSample(stats.highSamples, completeSample)
+  if (selected) {
+    stats.selected += 1
+    addSample(stats.selectedSamples, completeSample)
+  }
 }
 
 function percentage(part: number, total: number): number {
@@ -239,7 +260,7 @@ export function aggregateSourceQuality(input: {
     if (action.sourceName && !actionByName.has(action.sourceName)) actionByName.set(action.sourceName, action)
   }
 
-  const names = new Set([...currentScores.keys(), ...currentFetch.keys()])
+  const names = new Set([...currentScores.keys(), ...currentFetch.keys(), ...sourceByName.keys()])
   return Array.from(names).map((name): SourceQualityMetric => {
     const scores = currentScores.get(name) ?? scoreStats()
     const previous = previousScores.get(name) ?? scoreStats()
@@ -257,6 +278,17 @@ export function aggregateSourceQuality(input: {
         : lowRate >= 30
           ? 'warning'
           : 'healthy'
+    const managementStatus: SourceQualityMetric['managementStatus'] = source?.enabled === false || action?.mode === 'paused'
+      ? 'paused'
+      : action?.mode === 'reduced'
+        ? 'reduced'
+        : action?.mode === 'observe'
+          ? 'observe'
+          : status === 'poor'
+            ? 'review'
+            : status === 'insufficient'
+              ? 'insufficient'
+              : 'normal'
 
     return {
       sourceId: source?.id ?? null,
@@ -265,6 +297,7 @@ export function aggregateSourceQuality(input: {
       mode: action?.mode ?? (source?.enabled === false ? 'paused' : 'normal'),
       ...fetched,
       scored: scores.scored,
+      llmUnprocessed: Math.max(0, fetched.inserted - scores.scored - scores.llmFailed),
       low: scores.low,
       mid: scores.mid,
       high: scores.high,
@@ -276,10 +309,13 @@ export function aggregateSourceQuality(input: {
       trend: previousLowRate === null ? null : lowRate - previousLowRate,
       confidence: enough ? 'enough' : 'insufficient',
       status,
+      managementStatus,
       recommendation: recommendation(scores.scored, lowRate),
       legacyEstimate: legacyNames.has(name),
       lowSamples: scores.lowSamples.slice(0, 5),
+      midSamples: scores.midSamples.slice(0, 5),
       highSamples: scores.highSamples.slice(0, 5),
+      selectedSamples: scores.selectedSamples.slice(0, 5),
     }
   }).sort((a, b) => {
     const statusOrder = { poor: 0, warning: 1, insufficient: 2, healthy: 3 }

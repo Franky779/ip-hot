@@ -1372,7 +1372,14 @@ body {
   gap: 0.375rem;
 }
 
-.source-efficiency-controls button,
+.source-efficiency-controls label {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+}
+
+.source-efficiency-controls select,
 .source-quality-actions button,
 .source-quality-actions a {
   padding: 0.375rem 0.625rem;
@@ -1386,10 +1393,8 @@ body {
   text-decoration: none;
 }
 
-.source-efficiency-controls button.is-active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+.source-efficiency-controls select {
+  min-width: 7.75rem;
 }
 
 .source-efficiency-summary {
@@ -1498,18 +1503,30 @@ body {
   color: #e94560;
 }
 
-.source-quality-rate {
+.source-quality-management-status {
+  align-self: start;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(46, 157, 90, 0.1);
   color: #2e9d5a;
-  font-size: 1.125rem;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
 }
 
-.source-quality-card.is-warning .source-quality-rate {
+.source-quality-management-status.is-review {
+  background: rgba(233, 69, 96, 0.12);
+  color: #e94560;
+}
+
+.source-quality-management-status.is-insufficient,
+.source-quality-management-status.is-observe {
+  background: rgba(245, 158, 11, 0.12);
   color: #d97706;
 }
 
-.source-quality-card.is-poor .source-quality-rate {
-  color: #e94560;
+.source-quality-management-status.is-reduced,
+.source-quality-management-status.is-paused {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--text-muted);
 }
 
 .source-quality-detail,
@@ -1554,34 +1571,60 @@ body {
 
 .source-quality-funnel {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.5rem;
+  justify-items: center;
+  gap: 0.25rem;
   margin: 0.75rem 0;
 }
 
-.source-quality-funnel span {
-  position: relative;
-  padding: 0.625rem;
-  border-radius: 6px;
+.source-quality-funnel-stage {
+  display: grid;
+  width: 100%;
+  min-height: 2.9rem;
+  place-content: center;
+  padding: 0.35rem 1rem;
   background: var(--bg);
+  clip-path: polygon(0 0, 100% 0, 94% 100%, 6% 100%);
   text-align: center;
 }
 
-.source-quality-funnel small,
-.source-quality-funnel strong {
-  display: block;
-}
+.source-quality-funnel-stage.is-inserted { width: 90%; }
+.source-quality-funnel-stage.is-llm { width: 80%; }
+.source-quality-funnel-stage.is-score-buckets { width: 68%; }
+.source-quality-funnel-stage.is-selected { width: 52%; }
 
-.source-quality-funnel small {
+.source-quality-funnel-stage span {
   color: var(--text-muted);
   font-size: 0.6875rem;
 }
 
-.source-quality-funnel strong {
-  margin-top: 0.2rem;
+.source-quality-funnel-stage strong {
+  margin-top: 0.15rem;
   color: var(--text);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
+}
+
+.source-quality-funnel-stage strong small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.source-quality-funnel-stage.is-score-buckets {
+  min-height: 4.35rem;
+}
+
+.source-quality-funnel-stage.is-score-buckets > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.source-quality-funnel-stage.is-score-buckets b {
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+  font-weight: 600;
 }
 
 .source-quality-breakdown {
@@ -1694,8 +1737,12 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .source-quality-funnel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .source-quality-funnel-stage.is-score-buckets {
+    width: 84%;
+  }
+
+  .source-quality-funnel-stage.is-selected {
+    width: 68%;
   }
 }
 

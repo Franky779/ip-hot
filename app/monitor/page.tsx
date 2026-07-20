@@ -82,7 +82,7 @@ export default function MonitorPage() {
   const [logs, setLogs] = useState<CronLog[]>([])
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
-  const [qualityDays, setQualityDays] = useState<7 | 30>(7)
+  const [qualityDays, setQualityDays] = useState<7 | 30 | 180 | 365>(7)
 
   const fetchData = useCallback(async () => {
     const pw = getPw(); if (!pw) return
@@ -212,7 +212,6 @@ export default function MonitorPage() {
 
   // 待复核：删除
   const handleReviewDelete = async (id: string) => {
-    if (!confirm('确定删除这条资讯？')) return
     setReviewing(p => ({ ...p, [id]: 'delete' }))
     const pw = getPw() || ''
     try {
@@ -221,8 +220,20 @@ export default function MonitorPage() {
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id }),
       })
-      if (res.ok) fetchData()
-      else alert('删除失败')
+      if (res.ok) {
+        setData((current) => current
+          ? { ...current, reviewQueue: current.reviewQueue?.filter((article) => article.id !== id) }
+          : current)
+        setSelectedReviews((current) => {
+          const next = new Set(current)
+          next.delete(id)
+          return next
+        })
+        void fetchData()
+      } else {
+        const result = await res.json().catch(() => null)
+        alert(result?.error || '删除失败')
+      }
     } catch { alert('请求失败') } finally { setReviewing(p => { const n = { ...p }; delete n[id]; return n }) }
   }
 
@@ -236,8 +247,20 @@ export default function MonitorPage() {
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id, is_selected: true }),
       })
-      if (res.ok) fetchData()
-      else alert('标记失败')
+      if (res.ok) {
+        setData((current) => current
+          ? { ...current, reviewQueue: current.reviewQueue?.filter((article) => article.id !== id) }
+          : current)
+        setSelectedReviews((current) => {
+          const next = new Set(current)
+          next.delete(id)
+          return next
+        })
+        void fetchData()
+      } else {
+        const result = await res.json().catch(() => null)
+        alert(result?.error || '标记失败')
+      }
     } catch { alert('请求失败') } finally { setReviewing(p => { const n = { ...p }; delete n[id]; return n }) }
   }
 

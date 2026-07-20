@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     const { start: todayStart, end: todayEnd } = getBeijingTodayRange()
     const sevenDaysAgo = getBeijing7DaysAgo()
     const requestedQualityDays = Number(new URL(request.url).searchParams.get('qualityDays'))
-    const qualityDays = requestedQualityDays === 30 ? 30 : 7
+    const qualityDays = [7, 30, 180, 365].includes(requestedQualityDays) ? requestedQualityDays : 7
     const qualityHistoryStart = new Date(Date.now() - qualityDays * 2 * 24 * 60 * 60 * 1000).toISOString()
 
     // 1. 今日任务（最新一条 cron_logs）
@@ -151,6 +151,7 @@ export async function GET(request: Request) {
       .eq('category', '待分类')
       .gte('relevance_score', 4)
       .lte('relevance_score', 6)
+      .or('is_selected.is.null,is_selected.eq.false')
       .not('title_cn', 'is', null)
       .order('created_at', { ascending: false })
       .limit(20)

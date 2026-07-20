@@ -46,6 +46,9 @@ test('uses persisted score audit even when low-score articles are later deleted'
   assert.equal(metric.duplicates, 10)
   assert.equal(metric.legacyEstimate, false)
   assert.equal(metric.lowSamples.length, 5)
+  assert.equal(metric.highSamples.length, 5)
+  assert.equal(metric.selectedSamples.length, 5)
+  assert.equal(metric.llmUnprocessed, 0)
 })
 
 test('legacy fallback counts every available article and marks the estimate', () => {
@@ -107,4 +110,35 @@ test('shows period trend and applies the latest manual mode', () => {
   assert.equal(metric.trend, 20)
   assert.equal(metric.mode, 'reduced')
   assert.equal(metric.status, 'warning')
+  assert.equal(metric.managementStatus, 'reduced')
+})
+
+test('keeps mid-score and selected samples while reporting unprocessed LLM items', () => {
+  const [metric] = aggregateSourceQuality({
+    logs: [{
+      started_at: '2026-07-18T12:00:00.000Z',
+      details: {
+        fetchResults: [{ source: source.name, discovered: 12, inserted: 10 }],
+        qualityResults: Array.from({ length: 7 }, (_, index) => ({
+          source: source.name,
+          title: `边界${index}`,
+          url: `https://example.com/mid-${index}`,
+          score: 5,
+          selected: index < 2,
+          commentary: '',
+          status: 'scored' as const,
+        })),
+      },
+    }],
+    legacyRows: [],
+    sources: [source],
+    actions: [],
+    periodDays: 7,
+    now,
+  })
+
+  assert.equal(metric.mid, 7)
+  assert.equal(metric.midSamples.length, 5)
+  assert.equal(metric.selectedSamples.length, 2)
+  assert.equal(metric.llmUnprocessed, 3)
 })
