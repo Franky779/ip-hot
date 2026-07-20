@@ -464,7 +464,7 @@ export default function MonitorPage() {
                 )}
               </div>
               {data?.sourceCoverageError ? (
-                <p className="empty-state">抓取审计表尚未创建：请先在 Supabase 执行 <code>supabase-source-fetch-runs.sql</code>。</p>
+                <p className="empty-state">抓取审计查询失败：{data.sourceCoverageError}</p>
               ) : !coverage ? (
                 <p className="empty-state">正在读取信源覆盖情况…</p>
               ) : (

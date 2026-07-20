@@ -211,7 +211,7 @@ export async function GET(request: Request) {
 
     const errors = [
       e1, e2, e3, e4, e5, e9,
-      qualityLogsResult.error, qualityActionsResult.error, sourceInfoResult.error, legacyQualityError,
+      qualityLogsResult.error, qualityActionsResult.error, sourceInfoResult.error, sourceRunsResult.error, legacyQualityError,
       ...categoryResults.map((result) => result.error),
     ].filter(Boolean)
     if (errors.length > 0) {
