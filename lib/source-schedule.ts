@@ -4,6 +4,7 @@ export type SourceScheduleTier = 'daily' | 'every_2_days' | 'weekly'
 export type SourceSchedule = {
   executionMode: SourceExecutionMode
   tier: SourceScheduleTier
+  slot?: number
   duplicateOf?: string
 }
 
@@ -68,6 +69,9 @@ export function getSourceSchedule(source: ScheduleInput): SourceSchedule {
   return {
     executionMode,
     tier,
+    slot: typeof config.schedule_slot === 'number' && Number.isInteger(config.schedule_slot)
+      ? config.schedule_slot
+      : undefined,
     duplicateOf: typeof config.duplicate_of === 'string' ? config.duplicate_of : undefined,
   }
 }
@@ -79,6 +83,7 @@ export function writeSourceSchedule(method: string | null | undefined, schedule:
     execution_mode: schedule.executionMode,
     schedule_tier: schedule.tier,
     scheduler_version: 1,
+    ...(typeof schedule.slot === 'number' ? { schedule_slot: schedule.slot } : {}),
     ...(schedule.duplicateOf ? { duplicate_of: schedule.duplicateOf } : {}),
   })
 }
@@ -109,7 +114,10 @@ export function isCloudSourceDue(source: ScheduleInput, date = new Date()): bool
   if (schedule.executionMode !== 'cloud') return false
   const interval = tierIntervalSlots(schedule.tier)
   const identity = source.id || `${source.url || ''}|${source.name || ''}`
-  return stableHash(identity) % interval === getSlotAt(date) % interval
+  const assignedSlot = typeof schedule.slot === 'number'
+    ? schedule.slot % interval
+    : stableHash(identity) % interval
+  return assignedSlot === getSlotAt(date) % interval
 }
 
 export function getNextScheduledAt(source: ScheduleInput, from = new Date()): Date | null {

@@ -89,26 +89,44 @@ if (shouldMergeDuplicates) {
 const updates = sources.map((source) => {
   const { current, executionMode, tier } = scheduleFor(source)
   const canonical = duplicateOf.get(source.id)
-  const nextMethod = {
-    ...current,
-    execution_mode: canonical ? 'paused' : executionMode,
-    schedule_tier: tier,
-    scheduler_version: 1,
-    ...(canonical ? { duplicate_of: canonical.id } : {}),
-  }
   return {
     id: source.id,
     name: source.name,
     duplicate: canonical?.name || null,
-    body: {
-      method: JSON.stringify(nextMethod),
-      ...(canonical ? {
-        enabled: false,
-        last_test_message: `已合并为主信息源：${canonical.name}（保留记录，可恢复）`,
-      } : {}),
-    },
+    current,
+    executionMode: canonical ? 'paused' : executionMode,
+    tier,
+    canonical,
   }
 })
+
+const intervals = { daily: 4, every_2_days: 8, weekly: 28 }
+for (const tier of Object.keys(intervals)) {
+  const tierUpdates = updates
+    .filter((item) => item.executionMode === 'cloud' && item.tier === tier)
+    .sort((left, right) => left.id.localeCompare(right.id))
+  tierUpdates.forEach((item, index) => {
+    item.slot = index % intervals[tier]
+  })
+}
+
+for (const update of updates) {
+  const nextMethod = {
+    ...update.current,
+    execution_mode: update.executionMode,
+    schedule_tier: update.tier,
+    scheduler_version: 1,
+    ...(typeof update.slot === 'number' ? { schedule_slot: update.slot } : {}),
+    ...(update.canonical ? { duplicate_of: update.canonical.id } : {}),
+  }
+  update.body = {
+    method: JSON.stringify(nextMethod),
+    ...(update.canonical ? {
+      enabled: false,
+      last_test_message: `已合并为主信息源：${update.canonical.name}（保留记录，可恢复）`,
+    } : {}),
+  }
+}
 
 console.log(`信息源：${sources.length} 条；重复网址组：${[...groups.values()].filter((group) => group.length > 1).length}；将停用副本：${duplicateOf.size} 条。`)
 console.log(updates.filter((item) => item.duplicate).map((item) => `- ${item.name} → ${item.duplicate}`).join('\n') || '没有需要合并的副本。')
