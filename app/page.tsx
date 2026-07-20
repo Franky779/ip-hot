@@ -152,7 +152,7 @@ export default async function Home({
   }
 
   const sourceRegions = Object.fromEntries(
-    (sources ?? []).map(({ name, region }) => [name.toLocaleLowerCase(), region as SourceRegion])
+    (sources ?? []).map(({ name, region }) => [String(name).toLocaleLowerCase(), region as SourceRegion])
   )
   const dateGroups = groupByDate(articles)
   const dates = Object.keys(dateGroups)
