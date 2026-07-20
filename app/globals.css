@@ -195,7 +195,10 @@ body {
 .page-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border-light);
-  padding: 2rem 2.5rem 1.25rem;
+  padding: 0.875rem 2.5rem 0.625rem;
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 .page-title {
@@ -215,21 +218,23 @@ body {
 
 .home-header-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .home-header-actions {
   display: flex;
-  flex: 0 0 396px;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.75rem;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  min-width: 0;
 }
 
 .home-header-actions .search-box {
-  width: 100%;
+  flex: 0 1 520px;
+  width: min(100%, 520px);
 }
 
 .home-header-actions .search-input {
@@ -243,7 +248,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 0.625rem;
   min-width: 0;
 }
 

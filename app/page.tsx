@@ -33,6 +33,8 @@ type ArticleResult = {
   hasMore: boolean
 }
 
+type SourceRegion = 'domestic' | 'overseas' | 'japan'
+
 function parsePage(value: string | undefined): number {
   const page = Number.parseInt(value ?? '1', 10)
   if (!Number.isFinite(page) || page < 1) return 1
@@ -141,6 +143,17 @@ export default async function Home({
   const { articles, hasMore } = isPendingCategory
     ? { articles: [], hasMore: false }
     : await getArticles(category, q, page)
+  const { data: sources, error: sourcesError } = await getSupabase()
+    .from('info_sources')
+    .select('name, region')
+
+  if (sourcesError) {
+    console.error('Failed to fetch source regions:', sourcesError)
+  }
+
+  const sourceRegions = Object.fromEntries(
+    (sources ?? []).map(({ name, region }) => [name.toLocaleLowerCase(), region as SourceRegion])
+  )
   const dateGroups = groupByDate(articles)
   const dates = Object.keys(dateGroups)
 
@@ -148,15 +161,10 @@ export default async function Home({
     <>
       <header className="page-header">
         <div className="home-header-top">
-          <div>
-            <h1 className="page-title font-serif">实时快讯</h1>
-            <p className="page-sub">
-              动漫 / IP / 潮玩 / 文创 / 文旅 / 博物馆 / 数字创意产业资讯聚合
-            </p>
-          </div>
+          <h1 className="page-title font-serif">实时快讯</h1>
           <div className="home-header-actions">
-            <AdminToggle />
             <SearchBox defaultValue={q} activeCategory={category} />
+            <AdminToggle />
           </div>
         </div>
         <div className="page-toolbar home-category-toolbar">
@@ -183,6 +191,7 @@ export default async function Home({
             hasMore={hasMore}
             category={category}
             query={q}
+            sourceRegions={sourceRegions}
           />
         )}
       </section>

@@ -29,6 +29,13 @@ interface TimelineListProps {
   hasMore: boolean
   category: string
   query: string
+  sourceRegions: Record<string, 'domestic' | 'overseas' | 'japan'>
+}
+
+function getSourceRegionLabel(source: string, sourceRegions: TimelineListProps['sourceRegions']): string {
+  const region = sourceRegions[source.toLocaleLowerCase()]
+  if (region === 'domestic' || (!region && /[\u3400-\u9fff]/.test(source))) return '国内资讯'
+  return '国外资讯'
 }
 
 function formatTime(iso: string | null): string {
@@ -63,6 +70,7 @@ export function TimelineList({
   hasMore,
   category,
   query,
+  sourceRegions,
 }: TimelineListProps) {
   const router = useRouter()
   const { isAdmin, loaded } = useAdmin()
@@ -339,11 +347,11 @@ export function TimelineList({
                       <div className="article-meta">
                         {typeof article.relevance_score === 'number' && (
                           <span className={`relevance-score ${article.relevance_score <= 3 ? 'score-low' : article.relevance_score >= 7 ? 'score-high' : 'score-mid'}`}>
-                            {article.relevance_score}
+                            {article.relevance_score}分
                           </span>
                         )}
                         {article.category && (isAdmin || article.category !== '待分类') && <span>{article.category}</span>}
-                        {article.source && <span className="article-source">{article.source}</span>}
+                        {article.source && <span className="article-source">{getSourceRegionLabel(article.source, sourceRegions)}</span>}
                       </div>
                       <h2 className="article-title font-serif">
                         {article.title_cn ?? article.title}
