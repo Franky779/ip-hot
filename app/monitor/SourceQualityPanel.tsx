@@ -79,12 +79,16 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
   const [filter, setFilter] = useState<'all' | SourceQualityItem['managementStatus']>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [deletedSourceIds, setDeletedSourceIds] = useState<Set<string>>(new Set())
 
   const attentionCount = items.filter((item) => item.managementStatus === 'review').length
   const insufficientCount = items.filter((item) => item.status === 'insufficient').length
   const visibleItems = useMemo(
-    () => items.filter((item) => filter === 'all' || item.managementStatus === filter),
-    [filter, items],
+    () => items.filter((item) => {
+      if (item.sourceId && deletedSourceIds.has(item.sourceId)) return false
+      return filter === 'all' || item.managementStatus === filter
+    }),
+    [deletedSourceIds, filter, items],
   )
 
   const runAction = async (
@@ -137,6 +141,11 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || '删除信息源失败')
+      setDeletedSourceIds((current) => {
+        const next = new Set(current)
+        next.add(item.sourceId!)
+        return next
+      })
       setExpanded(null)
       await onRefresh()
     } catch (error) {
@@ -214,7 +223,7 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
                   <strong className={`source-quality-management-status is-${item.managementStatus}`}>
                     {MANAGEMENT_STATUS_LABELS[item.managementStatus]}
                   </strong>
-                  <span className="source-quality-detail">低分 {item.low} / 已评分 {item.scored} 条</span>
+                  <span className="source-quality-detail">低分 <b>{item.low}</b> / 已评分 <b>{item.scored}</b> 条</span>
                   <span className="source-quality-mode">{MODE_LABELS[item.mode]} · {item.enabled ? '自动抓取已启用' : '自动抓取已停用'}</span>
                   <span className="source-quality-mini-funnel">
                     <span>发现 <b>{item.discovered}</b></span>
