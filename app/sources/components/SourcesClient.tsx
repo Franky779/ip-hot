@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useAdmin } from '@/app/components/AdminToggle'
 import { SourceModal } from './SourceModal'
+import { EXECUTION_MODE_LABELS, getNextScheduledAt, getSourceSchedule, SCHEDULE_TIER_LABELS } from '@/lib/source-schedule'
 
 interface Source {
   id: string
@@ -165,6 +166,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       || (statusFilter === 'success' && source.last_test_status === 'success')
       || (statusFilter === 'failed' && source.last_test_status === 'failed')
       || (statusFilter === 'untested' && (!source.last_test_status || source.last_test_status === 'untested'))
+      || (statusFilter === 'cloud' && getSourceSchedule(source).executionMode === 'cloud')
+      || (statusFilter === 'local' && getSourceSchedule(source).executionMode === 'local')
+      || (statusFilter === 'manual' && getSourceSchedule(source).executionMode === 'manual')
     return matchesKeyword && matchesRegion && matchesFetchType && matchesSection && matchesStatus
   })
   const hasFilters = keyword !== '' || regionFilter !== 'all' || fetchTypeFilter !== 'all'
@@ -450,6 +454,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                 <option value="success">最近测试成功</option>
                 <option value="failed">最近测试失败</option>
                 <option value="untested">尚未测试</option>
+                <option value="cloud">云端抓取</option>
+                <option value="local">本地 CDP</option>
+                <option value="manual">人工处理</option>
               </select>
             </label>
           </div>
@@ -547,17 +554,20 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                       </a>
                       <span className="source-tag">{item.type}</span>
                     </div>
-                    <p className="source-method source-runtime-status">
-                      {item.enabled ? '🟢 自动抓取已启用' : '⚪ 自动抓取已停用'}
-                      {' · '}{getFetchType(item) === 'rss' ? 'RSS' : '普通网页'}
-                      {item.last_test_status === 'success' && ' · 最近测试成功'}
-                      {item.last_test_status === 'failed' && ' · 最近测试失败'}
-                    </p>
+                    {(() => {
+                      const schedule = getSourceSchedule(item)
+                      const nextRun = getNextScheduledAt(item)
+                      return (
+                        <div className="source-schedule-grid">
+                          <span>{EXECUTION_MODE_LABELS[schedule.executionMode]}</span>
+                          <span>{schedule.executionMode === 'paused' ? '不参与自动任务' : SCHEDULE_TIER_LABELS[schedule.tier]}</span>
+                          <span>{nextRun ? `下次：${nextRun.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}` : '下次：—'}</span>
+                          <span>{item.last_test_status === 'success' ? '最近测试成功' : item.last_test_status === 'failed' ? '最近测试失败' : '尚未测试'}</span>
+                        </div>
+                      )
+                    })()}
                     {item.description && (
                       <p className="source-desc">{item.description}</p>
-                    )}
-                    {item.method && (
-                      <p className="source-method source-config">{item.method}</p>
                     )}
                     {loaded && isAdmin && (
                       <div className="source-actions">

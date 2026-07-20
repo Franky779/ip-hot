@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { getSourceSchedule, writeSourceSchedule, type SourceExecutionMode, type SourceScheduleTier } from '@/lib/source-schedule'
 
 interface Source {
   id?: string
@@ -31,6 +32,13 @@ const REGIONS = [
 
 export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
   const isEdit = !!source?.id
+  const initialSchedule = getSourceSchedule({
+    name: source?.name ?? '',
+    url: source?.url ?? '',
+    method: source?.method,
+    type: source?.type,
+    enabled: source?.enabled ?? false,
+  })
   const [form, setForm] = useState<Source>({
     section_id: source?.section_id ?? 'domestic-acg',
     section_title: source?.section_title ?? '动漫 / ACG 垂直媒体',
@@ -44,6 +52,8 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
     enabled: source?.enabled ?? false,
     sort_order: source?.sort_order ?? 0,
   })
+  const [executionMode, setExecutionMode] = useState<SourceExecutionMode>(initialSchedule.executionMode)
+  const [scheduleTier, setScheduleTier] = useState<SourceScheduleTier>(initialSchedule.tier)
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -63,7 +73,16 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
         'Content-Type': 'application/json',
         'x-admin-password': pw,
       },
-      body: JSON.stringify(isEdit ? { id: source!.id, ...form } : form),
+      body: JSON.stringify(isEdit ? {
+        id: source!.id,
+        ...form,
+        enabled: executionMode !== 'paused',
+        method: writeSourceSchedule(form.method, { executionMode, tier: scheduleTier }),
+      } : {
+        ...form,
+        enabled: executionMode !== 'paused',
+        method: writeSourceSchedule(form.method, { executionMode, tier: scheduleTier }),
+      }),
     })
     setSaving(false)
 
@@ -170,16 +189,25 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
             </select>
           </div>
           <div>
-            <label>运行状态</label>
+            <label>执行方式</label>
             <select
-              value={form.enabled ? 'enabled' : 'disabled'}
-              onChange={(e) => setForm({ ...form, enabled: e.target.value === 'enabled' })}
+              value={executionMode}
+              onChange={(e) => setExecutionMode(e.target.value as SourceExecutionMode)}
             >
-              <option value="disabled">停用</option>
-              <option value="enabled">启用</option>
+              <option value="cloud">云端抓取</option>
+              <option value="local">本地 CDP</option>
+              <option value="manual">人工处理</option>
+              <option value="paused">已暂停</option>
             </select>
           </div>
         </div>
+
+        <label>抓取频率</label>
+        <select value={scheduleTier} onChange={(e) => setScheduleTier(e.target.value as SourceScheduleTier)}>
+          <option value="daily">每天</option>
+          <option value="every_2_days">每两天</option>
+          <option value="weekly">每周</option>
+        </select>
 
         <div className="admin-modal-btns">
           <button type="button" onClick={onClose}>取消</button>

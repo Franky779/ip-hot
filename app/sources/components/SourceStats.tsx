@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { getSourceSchedule } from '@/lib/source-schedule'
 
 interface Source {
   id: string
@@ -10,6 +11,7 @@ interface Source {
   fetch_type?: 'rss' | 'web'
   enabled?: boolean
   last_test_status?: 'untested' | 'success' | 'failed'
+  method?: string
 }
 
 interface SourceStatsProps {
@@ -59,7 +61,9 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
   const stats = useMemo(() => {
     const domestic = sources.filter((source) => source.region === 'domestic').length
     const rss = sources.filter(isRssSource).length
-    const enabled = sources.filter((source) => source.enabled).length
+    const cloud = sources.filter((source) => getSourceSchedule(source).executionMode === 'cloud').length
+    const local = sources.filter((source) => getSourceSchedule(source).executionMode === 'local').length
+    const paused = sources.filter((source) => getSourceSchedule(source).executionMode === 'paused').length
     const success = sources.filter((source) => source.last_test_status === 'success').length
     const failed = sources.filter((source) => source.last_test_status === 'failed').length
 
@@ -69,8 +73,9 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
       overseas: sources.length - domestic,
       rss,
       web: sources.length - rss,
-      enabled,
-      disabled: sources.length - enabled,
+      cloud,
+      local,
+      paused,
       success,
       failed,
       untested: sources.length - success - failed,
@@ -113,12 +118,16 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
         <span className="source-stat-group-title">运行状态</span>
         <div className="source-stat-values">
           <div className="source-stat-metric active">
-            <strong>{stats.enabled}</strong>
-            <span>抓取已启动</span>
+            <strong>{stats.cloud}</strong>
+            <span>云端</span>
+          </div>
+          <div className="source-stat-metric active">
+            <strong>{stats.local}</strong>
+            <span>本地 CDP</span>
           </div>
           <div className="source-stat-metric muted">
-            <strong>{stats.disabled}</strong>
-            <span>已停用</span>
+            <strong>{stats.paused}</strong>
+            <span>已暂停</span>
           </div>
         </div>
       </section>

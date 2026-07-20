@@ -1,7 +1,7 @@
 // scripts/fetch-cdp-local.mjs
 // 本地CDP脚本：抓取JS渲染页面（无需登录）
-// 覆盖：微博热搜、知乎热榜
-// 由 Windows schtasks 每小时触发，或手动 node 执行
+// 覆盖：仅限需要浏览器 CDP 的已启用源
+// 由 Windows schtasks 每天 22:45 静默触发，或手动 node 执行
 // 依赖：Node.js 22+、Chrome CDP(9222)
 
 import http from 'http';
@@ -386,60 +386,9 @@ async function insertSupabase(articles, source) {
 // selector 命中后直接提取 href and textContent
 let SOURCES = [
   {
-    name: '微博热搜',
-    url: 'https://s.weibo.com/top/summary',
-    selector: 'td.td-02 a, a[href*="/weibo?"]',
-    maxItems: 20,
-    loadWait: 10000,
-  },
-  {
-    name: '知乎热榜',
-    url: 'https://www.zhihu.com/hot',
-    selector: 'a[href*="/question/"]',
-    maxItems: 15,
-    loadWait: 12000,
-  },
-  {
-    name: '澎湃新闻',
-    url: 'https://www.thepaper.cn/list_25462',
-    selector: 'h2 a, h3 a',
-    maxItems: 10,
-    loadWait: 10000,
-  },
-  {
-    name: 'ScreenRant',
-    url: 'https://screenrant.com/category/anime/',
-    selector: 'h3 a[href]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
-  {
-    name: 'CBR',
-    url: 'https://www.cbr.com/category/anime/',
-    selector: 'h3 a[href]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
-  {
     name: 'License Global',
     url: 'https://www.licenseglobal.com/latest-news',
     selector: '.VerticalCard-Title_displayOption_default',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: 'KidScreen',
-    url: 'https://kidscreen.com/category/screen/',
-    selector: 'h2 a, h3 a, article a[href*="/202"], .entry-title a',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: 'Licensing International',
-    url: 'https://www.licensing.org.cn/news/inside-licensing',
-    selector: 'h2.entry-title a',
     maxItems: 10,
     loadWait: 15000,
   },
@@ -566,6 +515,33 @@ let SOURCES = [
     name: 'IGN Anime',
     url: 'https://sea.ign.com/anime',
     selector: 'h3 a[href*="/anime/"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+  },
+  {
+    id: 'crunchyroll',
+    name: 'Crunchyroll News',
+    url: 'https://www.crunchyroll.com/news/latest',
+    selector: 'a[href*="/news/"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+  },
+  {
+    id: 'animeanime',
+    name: 'Anime Anime',
+    url: 'https://animeanime.jp/category/news/',
+    selector: 'a[href*="/article/"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+  },
+  {
+    id: 'famitsu',
+    name: 'Famitsu',
+    url: 'https://www.famitsu.com/category/news/page/1',
+    selector: 'a[href*="/article/"], a[href*="/news/"]',
     maxItems: 10,
     loadWait: 20000,
     needsScroll: true,

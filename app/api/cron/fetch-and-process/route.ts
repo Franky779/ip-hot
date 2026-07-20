@@ -6,6 +6,7 @@ import { findSourceConfiguration, RSS_SOURCES, NEW_SOURCE_NAMES, type ScrapeConf
 import { scrapeNewsList } from '@/lib/scraper'
 import { parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
+import { getSourceSchedule, isCloudSourceDue, type SourceScheduleTier } from '@/lib/source-schedule'
 import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -21,6 +22,7 @@ type RuntimeSource = {
   name: string
   url: string
   fetchType: 'rss' | 'web'
+  scheduleTier: SourceScheduleTier
   scrapeConfig?: ScrapeConfig
   qualityMode: 'normal' | 'observe' | 'reduced' | 'paused'
 }
@@ -28,7 +30,7 @@ type RuntimeSource = {
 async function loadActiveSources(supabase: ReturnType<typeof createServiceClient>): Promise<RuntimeSource[]> {
   const { data, error } = await supabase
     .from('info_sources')
-    .select('id, name, url, fetch_type')
+    .select('id, name, url, fetch_type, method, type, sort_order')
     .eq('enabled', true)
     .order('sort_order', { ascending: true })
 
@@ -49,7 +51,28 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
     }
     return (data ?? []).flatMap((source): RuntimeSource[] => {
       const configuredSource = findSourceConfiguration(source.url, source.name)
-      if (configuredSource?.loginRequired || configuredSource?.needsLocalCdp) {
+      const schedule = getSourceSchedule({
+        id: source.id,
+        name: source.name,
+        url: source.url,
+        method: source.method,
+        type: source.type,
+        enabled: true,
+        priority: configuredSource?.priority,
+        needsLocalCdp: configuredSource?.needsLocalCdp,
+        loginRequired: configuredSource?.loginRequired,
+      })
+      if (schedule.executionMode !== 'cloud' || !isCloudSourceDue({
+        id: source.id,
+        name: source.name,
+        url: source.url,
+        method: source.method,
+        type: source.type,
+        enabled: true,
+        priority: configuredSource?.priority,
+        needsLocalCdp: configuredSource?.needsLocalCdp,
+        loginRequired: configuredSource?.loginRequired,
+      })) {
         return []
       }
       const fetchType = configuredSource
@@ -60,6 +83,7 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
         name: source.name,
         url: configuredSource?.url || source.url,
         fetchType,
+        scheduleTier: schedule.tier,
         qualityMode: qualityModes.get(source.id) ?? 'normal',
         scrapeConfig: configuredSource?.scrapeConfig || (
           fetchType === 'web' ? { adapter: 'auto-news-links', maxItems: 10 } : undefined
@@ -70,11 +94,12 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
 
   // 数据库迁移执行前保持现有任务可用，避免部署过程停止抓取。
   console.warn('[Sources] 数据库运行字段尚不可用，暂用代码内 RSS 清单:', error.message)
-  return RSS_SOURCES.filter((source) => source.type === 'rss').map(({ name, url }) => ({
-    id: name,
+  return RSS_SOURCES.filter((source) => source.type === 'rss').map(({ id, name, url }) => ({
+    id,
     name,
     url,
     fetchType: 'rss',
+    scheduleTier: 'every_2_days',
     qualityMode: 'normal',
   }))
 }
@@ -198,28 +223,14 @@ export async function GET(request: Request) {
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
-  const allActiveSources = await loadActiveSources(supabase)
+  const activeSources = await loadActiveSources(supabase)
   const batchSize = 24
-  const requestUrl = new URL(request.url)
-  const requestedBatchParam = requestUrl.searchParams.get('batch')
-  const requestedBatch = requestedBatchParam === null ? Number.NaN : Number(requestedBatchParam)
-  const scheduleHours = [4, 9, 14, 23]
-  const now = new Date()
-  const scheduleSlot = scheduleHours.indexOf(now.getUTCHours())
-  const fallbackSlot = Math.floor(now.getUTCHours() / 6)
-  const runNumber =
-    Math.floor(now.getTime() / 86_400_000) * scheduleHours.length +
-    (scheduleSlot >= 0 ? scheduleSlot : fallbackSlot)
-  const eligibleSources = allActiveSources.filter((source) =>
-    source.qualityMode !== 'reduced' || runNumber % 2 === 0
+  const eligibleSources = activeSources.filter((source) =>
+    source.qualityMode !== 'reduced' || Math.floor(Date.now() / 86_400_000) % 2 === 0
   )
-  const totalBatches = Math.max(1, Math.ceil(eligibleSources.length / batchSize))
-  const batchIndex =
-    Number.isInteger(requestedBatch) && requestedBatch >= 0
-      ? requestedBatch % totalBatches
-      : runNumber % totalBatches
-  const batchStart = batchIndex * batchSize
-  const activeSources = eligibleSources.slice(batchStart, batchStart + batchSize)
+  const scheduledSources = eligibleSources
+    .sort((left, right) => left.name.localeCompare(right.name, 'zh-CN'))
+    .slice(0, batchSize)
   const updateFetchProgress = async (currentSource: string) => {
     await updateRunningLog({
       fetch_total_fetched: fetchResults.reduce((sum, item) => sum + item.fetched, 0),
@@ -228,12 +239,12 @@ export async function GET(request: Request) {
         stage: 'fetch',
         currentSource,
         sourcesCompleted: fetchResults.length,
-        totalSources: activeSources.length,
+        totalSources: scheduledSources.length,
       },
     })
   }
 
-  for (const source of activeSources) {
+  for (const source of scheduledSources) {
     const result: FetchResult = { source: source.name, ok: false, discovered: 0, fetched: 0, blocked: 0, dead: 0, duplicates: 0, inserted: 0 }
 
     try {
@@ -477,12 +488,11 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
       elapsedMs: elapsed,
       fetch: {
-        batchIndex,
-        totalBatches,
+        scheduling: 'tiered',
         batchSize,
-        totalActiveSources: allActiveSources.length,
+        totalActiveSources: activeSources.length,
         eligibleSources: eligibleSources.length,
-        processedSources: activeSources.length,
+        processedSources: scheduledSources.length,
         totalFetched,
         totalBlocked,
         totalDead,
