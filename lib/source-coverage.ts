@@ -198,11 +198,19 @@ export function buildSourceCoverage(
       continue
     }
     summary.planned += 1
-    if (row.status === 'success' || row.status === 'empty') {
-      summary.completed += 1
-      summary[row.status] += 1
-    } else {
-      summary[row.status] += 1
+    switch (row.status) {
+      case 'success':
+      case 'empty':
+        summary.completed += 1
+        summary[row.status] += 1
+        break
+      case 'failed':
+      case 'running':
+      case 'skipped':
+      case 'pending':
+      case 'overdue':
+        summary[row.status] += 1
+        break
     }
   }
 
