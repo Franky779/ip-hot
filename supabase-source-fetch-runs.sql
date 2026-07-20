@@ -32,6 +32,8 @@ create index if not exists idx_source_fetch_runs_source_url_started
   on public.source_fetch_runs (source_url, started_at desc);
 
 alter table public.source_fetch_runs enable row level security;
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.source_fetch_runs to service_role;
 do $$
 begin
   if not exists (
