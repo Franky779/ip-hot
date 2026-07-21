@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { fetchSourceArticles } from '@/lib/article-fetchers'
 import { filterRelevantArticles, type PruneDecision } from '@/lib/domain-pruning'
-import { runLlmQueueBatch, type LlmQueueRunnerResult } from '@/lib/llm-queue-runner'
 import { withCronOrAdminAuth } from '@/lib/withAdminAuth'
 import { checkLinks } from '@/lib/link-checker'
 import { createServiceClient } from '@/lib/supabase'
@@ -11,9 +10,6 @@ import { listRunnableNewsSources } from '@/services/sourceService'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const LLM_BATCH_SIZE = 10
-const LLM_CONCURRENCY = 3
-const ARTICLE_TIMEOUT_MS = 35_000
 const FETCH_BUDGET_MS = 28_000
 
 type FetchResult = {
@@ -38,16 +34,6 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-// 随机洗牌：28 秒抓取预算每次只能覆盖部分源，洗牌让高频周期下所有源轮流被覆盖
-function shuffleSources<T>(items: T[]): T[] {
-  const result = [...items]
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[result[i], result[j]] = [result[j], result[i]]
-  }
-  return result
-}
-
 async function updateCronLog(supabase: ServiceClient, logId: string | null, updates: Record<string, unknown>) {
   if (!logId) return
 
@@ -66,6 +52,16 @@ function countDropReasons(dropped: Array<{ decision: PruneDecision }>): Record<s
     acc[item.decision.reason] = (acc[item.decision.reason] || 0) + 1
     return acc
   }, {})
+}
+
+// 随机洗牌：28 秒抓取预算每次只能覆盖部分源，洗牌让高频周期下所有源轮流被覆盖
+function shuffleSources<T>(items: T[]): T[] {
+  const result = [...items]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
 }
 
 export const GET = withCronOrAdminAuth(async (request: Request) => {
@@ -148,71 +144,29 @@ export const GET = withCronOrAdminAuth(async (request: Request) => {
       fetchResults.push(result)
     }
 
-    let llmResult: LlmQueueRunnerResult
-    try {
-      llmResult = await runLlmQueueBatch(supabase, {
-        batchSize: LLM_BATCH_SIZE,
-        concurrency: LLM_CONCURRENCY,
-        articleTimeoutMs: ARTICLE_TIMEOUT_MS,
-        includeNewSourceReview: true,
-      })
-    } catch (error) {
-      llmResult = {
-        ok: false,
-        timestamp: new Date().toISOString(),
-        total: 0,
-        processed: 0,
-        completed: 0,
-        failed: 1,
-        irrelevantDeleted: 0,
-        skipped: 0,
-        llmFailureMarked: 0,
-        fallbackMarked: 0,
-        remaining: 0,
-        timedOut: false,
-        firstError: getErrorMessage(error),
-        results: [],
-      }
-    }
-
     const elapsed = Date.now() - startedAt
     const totalFetched = fetchResults.reduce((sum, result) => sum + result.fetched, 0)
     const totalHardDropped = fetchResults.reduce((sum, result) => sum + result.hardDropped, 0)
     const totalDead = fetchResults.reduce((sum, result) => sum + result.dead, 0)
-    const processedCount = llmResult.completed
-    const llmFailed = llmResult.failed
-    const errorMessages = [
-      ...fetchResults.filter((result) => result.error).map((result) => `[${result.source}] ${result.error}`),
-      ...(llmResult.firstError ? [`[LLM] ${llmResult.firstError}`] : []),
-    ]
-
-    // 只有整体失败（全部信源都失败 或 LLM 完全失败）才标红；单个信源失败不影响整体状态
+    const errorMessages = fetchResults.filter((result) => result.error).map((result) => `[${result.source}] ${result.error}`)
     const allFetchFailed = fetchResults.length > 0 && fetchResults.every((result) => !result.ok)
-    const llmCompletelyFailed = llmResult.total > 0 && llmResult.completed === 0 && llmResult.failed > 0
-    const isRealFailure = allFetchFailed || llmCompletelyFailed
 
     await updateCronLog(supabase, logId, {
       ended_at: new Date().toISOString(),
       fetch_total_fetched: totalFetched,
       fetch_total_inserted: totalInserted,
-      llm_pending: llmResult.remaining,
-      llm_processed: processedCount,
-      llm_failed: llmFailed,
-      status: isRealFailure ? 'error' : 'success',
-      error_message: isRealFailure ? errorMessages.join('; ').slice(0, 1000) : null,
+      status: allFetchFailed ? 'error' : 'success',
+      error_message: allFetchFailed ? errorMessages.join('; ').slice(0, 1000) : null,
       details: {
         fetchResults,
-        processResults: llmResult.results,
         elapsedMs: elapsed,
         fetchBudgetMs: FETCH_BUDGET_MS,
-        llmBatchSize: LLM_BATCH_SIZE,
-        llmConcurrency: LLM_CONCURRENCY,
         partialErrors: errorMessages.length > 0 ? errorMessages : null,
       },
     })
 
     return NextResponse.json({
-      ok: true,
+      ok: !allFetchFailed,
       timestamp: new Date().toISOString(),
       elapsedMs: elapsed,
       fetch: {
@@ -222,12 +176,6 @@ export const GET = withCronOrAdminAuth(async (request: Request) => {
         totalDead,
         totalInserted,
         results: fetchResults,
-      },
-      llm: {
-        pending: llmResult.remaining,
-        processed: processedCount,
-        failed: llmFailed,
-        results: llmResult.results,
       },
     })
   } catch (error) {
