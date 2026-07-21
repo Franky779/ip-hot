@@ -17,20 +17,19 @@ jobs:
           echo "$resp"
           ok=$(echo "$resp" | jq -r '.ok // false')
           if [ "$ok" != "true" ]; then
-            echo "::warning::fetch-and-process returned ok=$ok"
+            echo "::error::fetch-and-process returned ok=$ok"
+            exit 1
           fi
 
       - name: drain-llm-queue
         run: |
-          for i in $(seq 1 8); do
-            resp=$(curl -sS -m 310 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-              https://hot.laojia-ip.com/api/cron/process-llm)
-            echo "[round $i] $resp"
-            total=$(echo "$resp" | jq -r '.total // 0')
-            remaining=$(echo "$resp" | jq -r '.remaining // 0')
-            if [ "$total" = "0" ] || [ "$remaining" = "0" ]; then
-              echo "queue drained (total=$total remaining=$remaining)"
-              break
-            fi
-            sleep 5
-          done
+          resp=$(curl -sS -m 310 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://hot.laojia-ip.com/api/cron/process-llm)
+          echo "$resp"
+          ok=$(echo "$resp" | jq -r '.ok // false')
+          remaining=$(echo "$resp" | jq -r '.remaining // 0')
+          if [ "$ok" != "true" ]; then
+            echo "::error::process-llm returned ok=$ok"
+            exit 1
+          fi
+          echo "queue remaining: $remaining"
