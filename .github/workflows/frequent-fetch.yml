@@ -1,0 +1,36 @@
+name: frequent-fetch
+
+on:
+  schedule:
+    # 每 20 分钟；刻意避开 :00/:15/:30/:45 整点拥堵段（GitHub 定时器整点常延迟 10+ 分钟）
+    - cron: '7,27,47 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-and-drain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch-and-process
+        run: |
+          resp=$(curl -sS -m 120 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://hot.laojia-ip.com/api/cron/fetch-and-process)
+          echo "$resp"
+          ok=$(echo "$resp" | jq -r '.ok // false')
+          if [ "$ok" != "true" ]; then
+            echo "::warning::fetch-and-process returned ok=$ok"
+          fi
+
+      - name: drain-llm-queue
+        run: |
+          for i in $(seq 1 8); do
+            resp=$(curl -sS -m 310 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              https://hot.laojia-ip.com/api/cron/process-llm)
+            echo "[round $i] $resp"
+            total=$(echo "$resp" | jq -r '.total // 0')
+            remaining=$(echo "$resp" | jq -r '.remaining // 0')
+            if [ "$total" = "0" ] || [ "$remaining" = "0" ]; then
+              echo "queue drained (total=$total remaining=$remaining)"
+              break
+            fi
+            sleep 5
+          done
