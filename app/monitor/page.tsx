@@ -17,6 +17,17 @@ import type { CronLog, LlmProgress, MonitorData, ReviewItem, SourceItem } from '
 import { useAutoProcessor, useLatestValueRef } from './_components/useAutoProcessor'
 import { getErrorMessage, removeReviews, sleep } from './_components/utils'
 
+type ReclassifyResult = {
+  id: string
+  title: string
+  oldCategory: string | null
+  oldScore: number | null
+  newCategory: string
+  newScore: number
+  newSelected: boolean
+  commentary: string
+}
+
 export default function MonitorPage() {
   const { isAdmin, loaded, refresh } = useAdmin()
   const [data, setData] = useState<MonitorData | null>(null)
@@ -32,16 +43,7 @@ export default function MonitorPage() {
   const [reviewing, setReviewing] = useState<Record<string, string>>({})
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
   const [reclassifying, setReclassifying] = useState(false)
-  const [reclassifyResults, setReclassifyResults] = useState<Array<{
-    id: string
-    title: string
-    oldCategory: string | null
-    oldScore: number | null
-    newCategory: string
-    newScore: number
-    newSelected: boolean
-    commentary: string
-  }>> | null>(null)
+  const [reclassifyResults, setReclassifyResults] = useState<ReclassifyResult[] | null>(null)
   const stopLlmRef = useRef(false)
   const dataRef = useLatestValueRef(data)
 
