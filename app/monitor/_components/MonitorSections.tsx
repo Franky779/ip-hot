@@ -90,6 +90,8 @@ export function StatsCards({
   onManualFetch,
   onManualLlm,
   onStopLlm,
+  onManualReclassify,
+  reclassifying,
 }: {
   data: MonitorData
   fetching: boolean
