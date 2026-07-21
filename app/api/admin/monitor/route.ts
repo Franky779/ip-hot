@@ -1,22 +1,80 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-auth'
+import { REVIEW_CATEGORY } from '@/lib/categories'
 import { createServiceClient } from '@/lib/supabase'
-import {
-  aggregateSourceQuality,
-  type LegacyQualityRow,
-  type SourceInfo,
-  type SourceQualityAction,
-  type SourceQualityLog,
-} from '@/lib/source-quality'
-import { buildSourceCoverage, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
-import { findSourceConfiguration } from '@/lib/sources'
 
-export const dynamic = 'force-dynamic'
+type CronLogRow = {
+  id: string
+  status: string
+  trigger_type: string
+  started_at: string
+  ended_at: string | null
+  fetch_total_fetched: number | null
+  fetch_total_inserted: number | null
+  llm_pending: number | null
+  llm_processed: number | null
+  llm_failed: number | null
+  error_message: string | null
+  details?: Record<string, unknown> | null
+}
 
-const MONITOR_CATEGORIES = [
-  '创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺',
-  '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化',
-  '政策规则', '版权保护', '待分类',
-]
+type CategoryRow = {
+  category: string | null
+}
+
+type SourceActivityRow = {
+  source: string | null
+  created_at: string
+}
+
+type SourceQualityRow = {
+  source: string | null
+  relevance_score: number | null
+}
+
+type InfoSourceRow = {
+  id: string
+  name: string
+  url: string | null
+}
+
+type ReviewQueueRow = {
+  id: string
+  title_cn: string | null
+  summary_cn: string | null
+  commentary: string | null
+  relevance_score: number | null
+  source: string | null
+  created_at: string
+}
+
+type PipelineStateRow = {
+  status: string | null
+  stage: string | null
+  current_group: number | null
+  total_groups: number | null
+  current_source: string | null
+  total_fetched: number | null
+  total_inserted: number | null
+  total_llm_processed: number | null
+  total_llm_selected: number | null
+  total_llm_failed: number | null
+  rounds: number | null
+  started_at: string | null
+  last_update: string | null
+  error_message: string | null
+}
+
+type QueryResult<T> = {
+  data: T | null
+  error: { message?: string } | null
+}
+
+export const runtime = 'nodejs'
+
+const QUEUE_WARNING_THRESHOLD = 100
+const QUEUE_CRITICAL_THRESHOLD = 300
+const STALE_SUCCESS_HOURS = 12
 
 function getBeijingTodayRange(): { start: string; end: string } {
   const now = new Date()
@@ -41,197 +99,348 @@ function getBeijing7DaysAgo(): string {
   return new Date(Date.UTC(year, month, day, -8, 0, 0)).toISOString()
 }
 
+function getErrorMessages(results: Array<QueryResult<unknown>>): string[] {
+  return results
+    .map((result) => result.error?.message)
+    .filter((message): message is string => Boolean(message))
+}
+
+function mapCronLog(log: CronLogRow) {
+  return {
+    id: log.id,
+    startedAt: log.started_at,
+    triggerType: log.trigger_type,
+    fetchTotal: log.fetch_total_fetched,
+    inserted: log.fetch_total_inserted,
+    llmPending: log.llm_pending,
+    llmProcessed: log.llm_processed,
+    llmFailed: log.llm_failed,
+    status: log.status,
+    errorMessage: log.error_message,
+    details: log.details,
+    elapsedSeconds:
+      log.ended_at && log.started_at
+        ? Math.round((new Date(log.ended_at).getTime() - new Date(log.started_at).getTime()) / 1000)
+        : null,
+  }
+}
+
+function buildCategoryStats(rows: CategoryRow[] | null) {
+  const categoryCounts = new Map<string, number>()
+
+  for (const row of rows || []) {
+    if (!row.category) continue
+    categoryCounts.set(row.category, (categoryCounts.get(row.category) || 0) + 1)
+  }
+
+  return Array.from(categoryCounts.entries())
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+function buildSourceHealth(
+  activityRows: SourceActivityRow[] | null,
+  allSources: InfoSourceRow[] | null,
+  sevenDaysAgo: string,
+) {
+  const sourceHealthMap = new Map<string, { lastActive: string | null; count7d: number }>()
+
+  for (const row of activityRows || []) {
+    if (!row.source) continue
+
+    const existing = sourceHealthMap.get(row.source) || { lastActive: null, count7d: 0 }
+    if (!existing.lastActive || row.created_at > existing.lastActive) {
+      existing.lastActive = row.created_at
+    }
+    if (row.created_at >= sevenDaysAgo) {
+      existing.count7d += 1
+    }
+    sourceHealthMap.set(row.source, existing)
+  }
+
+  const sourceUrlMap = new Map<string, { id: string; url: string }>()
+  for (const row of allSources || []) {
+    sourceUrlMap.set(row.name, { id: row.id, url: row.url || '' })
+  }
+
+  const now = Date.now()
+  const deadList: Array<{ name: string; url: string; id: string }> = []
+  const failedList: Array<{ name: string; url: string; id: string; lastActive: string; count7d: number }> = []
+  const activeList: Array<{ name: string; url: string; id: string; lastActive: string; count7d: number }> = []
+
+  for (const [name, data] of sourceHealthMap.entries()) {
+    const sourceInfo = sourceUrlMap.get(name) || { id: '', url: '' }
+    if (!data.lastActive) {
+      deadList.push({ name, url: sourceInfo.url, id: sourceInfo.id })
+      continue
+    }
+
+    const hoursInactive = (now - new Date(data.lastActive).getTime()) / (1000 * 60 * 60)
+    if (hoursInactive > 72) {
+      failedList.push({ name, url: sourceInfo.url, id: sourceInfo.id, lastActive: data.lastActive, count7d: data.count7d })
+    } else {
+      activeList.push({ name, url: sourceInfo.url, id: sourceInfo.id, lastActive: data.lastActive, count7d: data.count7d })
+    }
+  }
+
+  for (const row of allSources || []) {
+    if (!sourceHealthMap.has(row.name)) {
+      deadList.push({ name: row.name, url: row.url || '', id: row.id })
+    }
+  }
+
+  deadList.sort((a, b) => a.name.localeCompare(b.name))
+  failedList.sort((a, b) => a.name.localeCompare(b.name))
+  activeList.sort((a, b) => a.name.localeCompare(b.name))
+
+  return {
+    deadList,
+    failedList,
+    activeList,
+    sourceHealth: Array.from(sourceHealthMap.entries()).map(([name, data]) => ({
+      name,
+      lastActive: data.lastActive,
+      count7d: data.count7d,
+    })),
+  }
+}
+
+function buildSourceQuality(rows: SourceQualityRow[] | null) {
+  const sourceQualityMap = new Map<string, { total: number; low: number }>()
+
+  for (const row of rows || []) {
+    if (!row.source || row.relevance_score == null) continue
+    const existing = sourceQualityMap.get(row.source) || { total: 0, low: 0 }
+    existing.total += 1
+    if (row.relevance_score <= 3) existing.low += 1
+    sourceQualityMap.set(row.source, existing)
+  }
+
+  return Array.from(sourceQualityMap.entries())
+    .map(([name, data]) => ({
+      name,
+      total: data.total,
+      low: data.low,
+      rate: data.total > 0 ? Math.round((data.low / data.total) * 100) : 0,
+    }))
+    .sort((a, b) => b.rate - a.rate || b.total - a.total)
+}
+
+function mapPipelineState(row: PipelineStateRow | null) {
+  if (!row) return null
+
+  return {
+    status: row.status,
+    stage: row.stage,
+    currentGroup: row.current_group,
+    totalGroups: row.total_groups,
+    currentSource: row.current_source,
+    totalFetched: row.total_fetched,
+    totalInserted: row.total_inserted,
+    totalLlmProcessed: row.total_llm_processed,
+    totalLlmSelected: row.total_llm_selected,
+    totalLlmFailed: row.total_llm_failed,
+    rounds: row.rounds,
+    startedAt: row.started_at,
+    lastUpdate: row.last_update,
+    errorMessage: row.error_message,
+  }
+}
+
+function buildQueueHealth({
+  queue,
+  latestLog,
+  recentErrors,
+}: {
+  queue: number
+  latestLog: CronLogRow | null
+  recentErrors: Array<Pick<CronLogRow, 'id' | 'started_at' | 'status' | 'error_message'>>
+}) {
+  const alerts: Array<{ level: 'warning' | 'critical'; message: string; action: string }> = []
+  const lastEndedAt = latestLog?.ended_at || latestLog?.started_at || null
+  const hoursSinceLastRun = lastEndedAt
+    ? (Date.now() - new Date(lastEndedAt).getTime()) / (1000 * 60 * 60)
+    : null
+
+  if (queue >= QUEUE_CRITICAL_THRESHOLD) {
+    alerts.push({
+      level: 'critical',
+      message: `LLM 待处理已达到 ${queue} 条，更新会明显滞后。`,
+      action: '请立即点击“手动处理LLM”，并保持页面打开直到清零。',
+    })
+  } else if (queue >= QUEUE_WARNING_THRESHOLD) {
+    alerts.push({
+      level: 'warning',
+      message: `LLM 待处理已有 ${queue} 条，建议尽快消化。`,
+      action: '建议启动自动处理，或使用外部定时器更高频调用处理接口。',
+    })
+  }
+
+  if (latestLog?.status === 'error') {
+    alerts.push({
+      level: 'critical',
+      message: '最近一次抓取/处理任务失败。',
+      action: latestLog.error_message || '请查看最近错误日志。',
+    })
+  }
+
+  if (hoursSinceLastRun != null && hoursSinceLastRun > STALE_SUCCESS_HOURS) {
+    alerts.push({
+      level: 'warning',
+      message: `距离上次任务结束已超过 ${Math.round(hoursSinceLastRun)} 小时。`,
+      action: '请确认 Vercel Cron、外部定时器或本机任务计划是否仍在运行。',
+    })
+  }
+
+  if (recentErrors.length >= 3) {
+    alerts.push({
+      level: 'warning',
+      message: `最近有 ${recentErrors.length} 条失败日志。`,
+      action: '请优先检查 LLM 频限、信源 URL 和 Supabase 写入错误。',
+    })
+  }
+
+  const level = alerts.some((alert) => alert.level === 'critical')
+    ? 'critical'
+    : alerts.length > 0
+      ? 'warning'
+      : 'healthy'
+
+  return {
+    level,
+    queueWarningThreshold: QUEUE_WARNING_THRESHOLD,
+    queueCriticalThreshold: QUEUE_CRITICAL_THRESHOLD,
+    hoursSinceLastRun: hoursSinceLastRun == null ? null : Math.round(hoursSinceLastRun * 10) / 10,
+    alerts,
+  }
+}
+
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get('x-admin-password')
-    if (!authHeader || authHeader !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const denied = requireAdmin(request)
+    if (denied) return denied
 
     const supabase = createServiceClient()
     const { start: todayStart, end: todayEnd } = getBeijingTodayRange()
     const sevenDaysAgo = getBeijing7DaysAgo()
-    const requestedQualityDays = Number(new URL(request.url).searchParams.get('qualityDays'))
-    const qualityDays = [7, 30, 180, 365].includes(requestedQualityDays) ? requestedQualityDays : 7
-    const qualityHistoryStart = new Date(Date.now() - qualityDays * 2 * 24 * 60 * 60 * 1000).toISOString()
 
-    // 1. 今日任务（最新一条 cron_logs）
-    const { data: todayTaskRaw, error: e1 } = await supabase
-      .from('cron_logs')
-      .select('*')
-      .order('started_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    // 2. 历史记录（最近 7 天，最多 20 条）
-    const { data: historyRaw, error: e2 } = await supabase
-      .from('cron_logs')
-      .select('*')
-      .gte('started_at', sevenDaysAgo)
-      .order('started_at', { ascending: false })
-      .limit(20)
-
-    // 3. LLM 待处理队列
-    const { count: queueCount, error: e3 } = await supabase
-      .from('articles')
-      .select('*', { count: 'exact', head: true })
-      .is('title_cn', null)
-
-    // 4. 今日入库数
-    const { count: todayInserted, error: e4 } = await supabase
-      .from('articles')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', todayStart)
-      .lte('created_at', todayEnd)
-
-    // 5. 后台 LLM 守护任务最近一次心跳
-    const { data: llmWorkerRaw, error: e5 } = await supabase
-      .from('cron_logs')
-      .select('status, started_at, ended_at, llm_processed, llm_failed, llm_pending, error_message')
-      .eq('trigger_type', 'cron_llm')
-      .order('started_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    // 5. 分类统计 — 对每个分类执行数据库精确计数，避免 Supabase 默认1000行上限截断。
-    const categoryResults = await Promise.all(
-      MONITOR_CATEGORIES.map(async (category) => {
-        const { count, error } = await supabase
-          .from('articles')
-          .select('*', { count: 'exact', head: true })
-          .eq('category', category)
-          .not('title_cn', 'is', null)
-          .not('summary_cn', 'is', null)
-        return { category, count: count ?? 0, error }
-      })
-    )
-
-    // 8. 信源命中效率：优先使用 cron_logs 中删除前持久化的漏斗和评分审计。
-    const [qualityLogsResult, qualityActionsResult, sourceInfoResult] = await Promise.all([
+    const [
+      todayTaskResult,
+      historyResult,
+      queueResult,
+      todayInsertedResult,
+      categoryResult,
+      sourceActivityResult,
+      recentErrorsResult,
+      sourceQualityResult,
+      reviewQueueResult,
+      allSourcesResult,
+      pipelineStateResult,
+      reviewStatsResult,
+    ] = await Promise.all([
       supabase
         .from('cron_logs')
-        .select('started_at, details')
-        .gte('started_at', qualityHistoryStart)
-        .not('details', 'is', null)
+        .select('id, status, trigger_type, started_at, ended_at, fetch_total_fetched, fetch_total_inserted, llm_pending, llm_processed, llm_failed, error_message, details')
         .order('started_at', { ascending: false })
-        .limit(1000),
+        .limit(1)
+        .maybeSingle(),
       supabase
         .from('cron_logs')
-        .select('details')
-        .eq('trigger_type', 'source_quality_action')
+        .select('id, status, trigger_type, started_at, ended_at, fetch_total_fetched, fetch_total_inserted, llm_pending, llm_processed, llm_failed, error_message, details')
+        .gte('started_at', sevenDaysAgo)
         .order('started_at', { ascending: false })
-        .limit(500),
+        .limit(20),
+      supabase
+        .from('articles')
+        .select('id', { count: 'exact', head: true })
+        .is('title_cn', null),
+      supabase
+        .from('articles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', todayStart)
+        .lte('created_at', todayEnd),
+      supabase
+        .from('articles')
+        .select('category')
+        .not('title_cn', 'is', null)
+        .not('summary_cn', 'is', null)
+        .not('category', 'is', null),
+      supabase
+        .from('articles')
+        .select('source, created_at')
+        .not('source', 'is', null),
+      supabase
+        .from('cron_logs')
+        .select('id, started_at, status, error_message')
+        .eq('status', 'error')
+        .order('started_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('articles')
+        .select('source, relevance_score')
+        .gte('created_at', sevenDaysAgo)
+        .not('source', 'is', null)
+        .not('relevance_score', 'is', null),
+      supabase
+        .from('articles')
+        .select('id, title_cn, summary_cn, commentary, relevance_score, source, created_at')
+        .eq('category', REVIEW_CATEGORY)
+        .gte('relevance_score', 4)
+        .lte('relevance_score', 6)
+        .not('title_cn', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(20),
       supabase
         .from('info_sources')
-        .select('id, name, url, method, type, enabled, last_test_status'),
+        .select('id, name, url'),
+      supabase
+        .from('pipeline_state')
+        .select('status, stage, current_group, total_groups, current_source, total_fetched, total_inserted, total_llm_processed, total_llm_selected, total_llm_failed, rounds, started_at, last_update, error_message')
+        .eq('id', 1)
+        .maybeSingle(),
+      supabase
+        .from('articles')
+        .select('relevance_score')
+        .eq('category', REVIEW_CATEGORY)
+        .not('title_cn', 'is', null),
     ])
 
-    const sourceRunsResult = await supabase
-      .from('source_fetch_runs')
-      .select('source_id, source_name, source_url, trigger_type, execution_mode, status, started_at, ended_at, discovered_count, fetched_count, blocked_count, dead_count, duplicate_count, inserted_count, error_message')
-      .gte('started_at', todayStart)
-      .lte('started_at', todayEnd)
-      .order('started_at', { ascending: false })
-      .limit(5000)
+    const queryErrors = getErrorMessages([
+      todayTaskResult,
+      historyResult,
+      queueResult,
+      todayInsertedResult,
+      categoryResult,
+      sourceActivityResult,
+      recentErrorsResult,
+      sourceQualityResult,
+      reviewQueueResult,
+      allSourcesResult,
+    ])
 
-    const sourceCoverage = sourceRunsResult.error
-      ? null
-      : buildSourceCoverage(
-          (sourceInfoResult.data ?? []).map((source) => {
-            const configured = findSourceConfiguration(source.url, source.name)
-            return {
-              ...source,
-              priority: configured?.priority,
-              needsLocalCdp: configured?.needsLocalCdp,
-              loginRequired: configured?.loginRequired,
-            } satisfies CoverageSource
-          }),
-          (sourceRunsResult.data ?? []) as SourceFetchRun[],
-        )
-
-    // 兼容部署前的旧数据。旧记录来自 articles，可能因低分删除而偏乐观，前端会明确标注。
-    const legacyQualityRows: LegacyQualityRow[] = []
-    let legacyQualityError: { message: string } | null = null
-    for (let from = 0; from < 5000; from += 1000) {
-      const { data, error } = await supabase
-        .from('articles')
-        .select('source, relevance_score, is_selected, title, title_cn, url, commentary, created_at')
-        .gte('created_at', qualityHistoryStart)
-        .not('source', 'is', null)
-        .not('relevance_score', 'is', null)
-        .order('created_at', { ascending: false })
-        .range(from, from + 999)
-      if (error) {
-        legacyQualityError = error
-        break
-      }
-      legacyQualityRows.push(...((data ?? []) as LegacyQualityRow[]))
-      if ((data?.length ?? 0) < 1000) break
+    if (queryErrors.length > 0) {
+      console.error('[monitor] 查询错误:', queryErrors)
     }
 
-    // 9. 待人工复核队列（待分类 + 评分4-6，LLM拿不准的）
-    const { data: reviewQueue, error: e9 } = await supabase
-      .from('articles')
-      .select('id, title_cn, summary_cn, commentary, relevance_score, source, created_at')
-      .eq('category', '待分类')
-      .gte('relevance_score', 4)
-      .lte('relevance_score', 6)
-      .or('is_selected.is.null,is_selected.eq.false')
-      .not('title_cn', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    // 8. 流水线实时状态（pipeline_state 表，可能还未创建）
-    let pipelineState = null
-    try {
-      const { data: ps } = await supabase
-        .from('pipeline_state')
-        .select('*')
-        .eq('id', 1)
-        .single()
-      if (ps) {
-        pipelineState = {
-          status: ps.status,
-          stage: ps.stage,
-          currentGroup: ps.current_group,
-          totalGroups: ps.total_groups,
-          currentSource: ps.current_source,
-          totalFetched: ps.total_fetched,
-          totalInserted: ps.total_inserted,
-          totalLlmProcessed: ps.total_llm_processed,
-          totalLlmSelected: ps.total_llm_selected,
-          totalLlmFailed: ps.total_llm_failed,
-          rounds: ps.rounds,
-          startedAt: ps.started_at,
-          lastUpdate: ps.last_update,
-          errorMessage: ps.error_message,
-        }
-      }
-    } catch { /* 表不存在时静默 */ }
-
-    const errors = [
-      e1, e2, e3, e4, e5, e9,
-      qualityLogsResult.error, qualityActionsResult.error, sourceInfoResult.error, sourceRunsResult.error, legacyQualityError,
-      ...categoryResults.map((result) => result.error),
-    ].filter(Boolean)
-    if (errors.length > 0) {
-      console.error('[monitor] 查询错误:', errors.map((e) => (e as any).message || e))
+    if (pipelineStateResult.error?.message) {
+      console.warn('[monitor] pipeline_state 查询跳过:', pipelineStateResult.error.message)
     }
 
-    const categoryStats = categoryResults.map(({ category, count }) => ({ category, count }))
-    const llmWorkerAge = llmWorkerRaw?.started_at
-      ? Date.now() - new Date(llmWorkerRaw.started_at).getTime()
-      : Number.POSITIVE_INFINITY
-    const llmWorker = {
-      active: llmWorkerAge <= 10 * 60 * 1000,
-      intervalMinutes: 3,
-      lastRunAt: llmWorkerRaw?.started_at || null,
-      lastStatus: llmWorkerRaw?.status || null,
-      processed: llmWorkerRaw?.llm_processed ?? 0,
-      failed: llmWorkerRaw?.llm_failed ?? 0,
-      remaining: llmWorkerRaw?.llm_pending ?? queueCount ?? 0,
-      errorMessage: llmWorkerRaw?.error_message || null,
-    }
+    const categoryStats = buildCategoryStats((categoryResult.data || []) as CategoryRow[])
+    const sourceHealth = buildSourceHealth(
+      (sourceActivityResult.data || []) as SourceActivityRow[],
+      (allSourcesResult.data || []) as InfoSourceRow[],
+      sevenDaysAgo,
+    )
+    const sourceQuality = buildSourceQuality((sourceQualityResult.data || []) as SourceQualityRow[])
+    const todayTaskRaw = todayTaskResult.data as CronLogRow | null
+    const recentErrors = ((recentErrorsResult.data || []) as Pick<CronLogRow, 'id' | 'started_at' | 'status' | 'error_message'>[]).map((error) => ({
+      id: error.id,
+      startedAt: error.started_at,
+      status: error.status,
+      errorMessage: error.error_message,
+    }))
+    const queueCount = queueResult.count || 0
 
     const todayTask = todayTaskRaw
       ? {
@@ -248,59 +457,50 @@ export async function GET(request: Request) {
         }
       : null
 
-    const history = (historyRaw || []).map((log: any) => ({
-      id: log.id,
-      startedAt: log.started_at,
-      triggerType: log.trigger_type,
-      fetchTotal: log.fetch_total_fetched,
-      inserted: log.fetch_total_inserted,
-      llmPending: log.llm_pending,
-      llmProcessed: log.llm_processed,
-      llmFailed: log.llm_failed,
-      status: log.status,
-      errorMessage: log.error_message,
-      details: log.details,
-      elapsedSeconds:
-        log.ended_at && log.started_at
-          ? Math.round((new Date(log.ended_at).getTime() - new Date(log.started_at).getTime()) / 1000)
-          : null,
-    }))
-
-    const sourceQuality = aggregateSourceQuality({
-      logs: (qualityLogsResult.data ?? []) as SourceQualityLog[],
-      legacyRows: legacyQualityRows,
-      sources: (sourceInfoResult.data ?? []) as SourceInfo[],
-      actions: (qualityActionsResult.data ?? []).flatMap((row) =>
-        row.details && typeof row.details === 'object'
-          ? [row.details as SourceQualityAction]
-          : [],
-      ),
-      periodDays: qualityDays,
-    })
-
     return NextResponse.json({
       todayTask,
-      llmWorker,
-      history,
-      queue: queueCount || 0,
-      todayInserted: todayInserted || 0,
+      history: ((historyResult.data || []) as CronLogRow[]).map(mapCronLog),
+      queue: queueCount,
+      queueHealth: buildQueueHealth({
+        queue: queueCount,
+        latestLog: todayTaskRaw,
+        recentErrors: (recentErrorsResult.data || []) as Pick<CronLogRow, 'id' | 'started_at' | 'status' | 'error_message'>[],
+      }),
+      todayInserted: todayInsertedResult.count || 0,
+      failedSources: sourceHealth.failedList.length,
+      deadSources: sourceHealth.deadList.length,
+      activeSources: sourceHealth.activeList.length,
+      deadSourceList: sourceHealth.deadList,
+      failedSourceList: sourceHealth.failedList,
+      activeSourceList: sourceHealth.activeList,
       categoryStats,
-      pipelineState,
+      sourceHealth: sourceHealth.sourceHealth,
+      recentErrors,
+      pipelineState: mapPipelineState(pipelineStateResult.data as PipelineStateRow | null),
       sourceQuality,
-      sourceQualityWindowDays: qualityDays,
-      sourceCoverage,
-      sourceCoverageError: sourceRunsResult.error?.message ?? null,
-      reviewQueue: (reviewQueue || []).map((r: any) => ({
-        id: r.id,
-        titleCn: r.title_cn,
-        summaryCn: r.summary_cn,
-        commentary: r.commentary,
-        relevanceScore: r.relevance_score,
-        source: r.source,
-        createdAt: r.created_at,
+      reviewQueue: ((reviewQueueResult.data || []) as ReviewQueueRow[]).map((row) =>
+
+({
+        id: row.id,
+        titleCn: row.title_cn,
+        summaryCn: row.summary_cn,
+        commentary: row.commentary,
+        relevanceScore: row.relevance_score,
+        source: row.source,
+        createdAt: row.created_at,
       })),
+      reviewStats: (() => {
+        const rows = (reviewStatsResult.data || []) as Array<{ relevance_score: number | null }>
+        const total = rows.length
+        const lowScore = rows.filter((r) => (r.relevance_score ?? 10) <= 3).length
+        const midScore = rows.filter((r) => {
+          const s = r.relevance_score ?? 10
+          return s >= 4 && s <= 6
+        }).length
+        return { total, lowScore, midScore }
+      })(),
     })
-  } catch (err: any) {
+  } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[monitor] 未捕获异常:', message)
     return NextResponse.json({ error: message }, { status: 500 })
