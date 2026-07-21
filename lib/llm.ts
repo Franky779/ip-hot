@@ -1,38 +1,28 @@
-// lib/llm.ts — LLM 调用模块
-// 主力: Kimi K2.6 (kimi-for-coding)  via ccswith 路由 → https://api.kimi.com/coding
-// 备份: DeepSeek V3 (deepseek-chat) via ccswith 路由 → https://api.deepseek.com/anthropic
-// 协议: Anthropic Messages (/v1/messages)
-
 import { createServiceClient } from './supabase'
 import { findRelevantLearnings, formatLearningRules } from './classification-learning'
-import { enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
+import { ARTICLE_CATEGORIES, CATEGORY_PROMPT_REQUIREMENTS, REVIEW_CATEGORY, normalizeCategory, type ArticleCategory } from './categories'
 
 const LLM_BASE_URL = process.env.LLM_BASE_URL || ''
 const LLM_API_KEY = process.env.LLM_API_KEY || ''
 const LLM_MODEL = process.env.LLM_MODEL || 'kimi-for-coding'
+const LLM_PROTOCOL = process.env.LLM_PROTOCOL || 'anthropic'
 
-// 备用 LLM
 const BACKUP_URL = process.env.LLM_BACKUP_URL || ''
 const BACKUP_KEY = process.env.LLM_BACKUP_KEY || ''
 const BACKUP_MODEL = process.env.LLM_BACKUP_MODEL || 'deepseek-chat'
+const BACKUP_PROTOCOL = process.env.LLM_BACKUP_PROTOCOL || 'openai'
 
-export const CATEGORIES = [
-  '创作/上新',
-  'IP/品牌/授权',
-  '潮玩谷子',
-  '零售/渠道',
-  '影视综艺',
-  '游戏/体育',
-  'AI/新技术',
-  '展会活动',
-  '文旅及商品',
-  '艺术/亚文化',
-  '政策规则',
-  '版权保护',
-  '待分类',
-] as const
+const BACKUP2_URL = process.env.LLM_BACKUP2_URL || ''
+const BACKUP2_KEY = process.env.LLM_BACKUP2_KEY || ''
+const BACKUP2_MODEL = process.env.LLM_BACKUP2_MODEL || 'deepseek-v4-flash'
+const BACKUP2_PROTOCOL = process.env.LLM_BACKUP2_PROTOCOL || 'openai'
 
-export type Category = (typeof CATEGORIES)[number]
+const PRIMARY_ATTEMPTS = Math.max(1, Number(process.env.LLM_PRIMARY_ATTEMPTS || 1))
+const BACKUP_ATTEMPTS = Math.max(1, Number(process.env.LLM_BACKUP_ATTEMPTS || 2))
+const LLM_TIMEOUT_MS = Math.max(5_000, Number(process.env.LLM_TIMEOUT_MS || 45_000))
+
+export const CATEGORIES = ARTICLE_CATEGORIES
+export type Category = ArticleCategory
 
 export type LlmResult = {
   title_cn: string
@@ -43,216 +33,391 @@ export type LlmResult = {
   commentary: string
 }
 
-const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位：专注动漫 / IP / 潮玩谷子 / 文创 / 文旅 / 博物馆 / 旅游纪念品 / 数字创意产业等多元资讯聚合。
-请对以下新闻进行分析和处理：
-
-${INDUSTRY_SCOPE_RULES}
-
-【最高优先级：直接行业相关性门槛】
-只有新闻的核心事件、核心产品、交易对象或主要参与者直接属于以下目标行业，才允许评分达到7分：
-- 文创、动漫IP、影视IP、游戏IP、文学IP、传统文化IP、文旅IP、体育IP、艺术家IP、明星/虚拟角色IP、企业品牌IP的开发与运营
-- IP授权、品牌授权、版权交易、内容改编、授权代理、品牌联名、联合营销、商品化开发
-- 潮玩、谷子、手办、卡牌、玩具及其零售渠道
-- IP衍生消费品、体验型授权与数字型授权业务
-- 文创商品、博物馆文创、文化遗产活化、文旅项目、主题乐园、商业空间、城市IP、旅游纪念品
-- 上述行业的展会、政策、版权保护及明确落地的新技术应用
-
-不能因为一条泛科技、泛AI、泛财经、泛消费或泛政策新闻“可能影响”“可以用于”“值得关注”目标行业，就把它判为直接相关。禁止从无关新闻中强行提炼IP、文旅或商业角度。
-
-AI/新技术必须同时出现明确的目标行业对象和具体应用案例，例如AI用于某动画制作、某IP运营、某博物馆项目或某文旅产品。通用大模型发布、AI公司融资、芯片算力、智能体、办公提效、AI政策伦理、泛AIGC工具等，即使可能影响内容行业，也属于间接相关，最高3分。
-
-任务：
-1. 将标题翻译为简洁、吸引人的中文标题（不超过30字）
-2. 用80字以内的中文写摘要，突出IP/商业/文旅角度
-3. 从以下12个分类中选一个最贴切的：
-   - 创作/上新：动漫/IP的新作品、新动画、新角色、新PV发布、创作者动态、独立作品、同人创作、插画/美术新作
-   - IP/品牌/授权：IP/品牌/授权合作、品牌联名、授权案例、商业合作
-   - 潮玩谷子：潮玩、盲盒、谷子、手办等实物商品及相关品牌动态。重点品牌包括：泡泡玛特、寻找独角兽、TNT SPACE、52toys、玩乐主义、JPTOYS、奇梦岛、TOP TOY、布鲁可、卡游、若来、酷彼伴、19八3、奥飞娱乐、万代、森宝积木、摩点、潮玩族、千岛、X11
-   - 零售/渠道：IP衍生品零售渠道、线下门店扩张、渠道合作、新零售模式、便利店/商超/餐饮IP联名。重点渠道包括：名创优品、酷乐潮玩、三福、九木杂物社、TOP TOY、X11、The Green Party、伶俐、酷玩星球、沃尔玛、全家、罗森、7-Eleven等
-   - 影视综艺：动漫改编电影/剧集、漫画改编影视、IP衍生影视内容、虚拟偶像综艺、影视IP联动
-   - 游戏/体育：游戏新作发布、游戏IP联动、电竞赛事、游戏公司动态、体育IP化、体育明星联名、运动品牌合作、体育赛事周边
-   - AI/新技术：新技术在动漫、IP、授权、潮玩、文创、博物馆或文旅项目中的明确落地应用；不得收录没有具体目标行业对象的泛AI资讯
-   - 展会活动：行业展会、活动、市集、发布会、展览
-   - 文旅及商品：文旅项目、博物馆IP、旅游纪念品、主题公园、城市IP、文旅商品、景区联名、文化遗产数字化
-   - 艺术/亚文化：当代艺术、涂鸦、街头文化、小众审美、亚文化社群、独立音乐/乐队、地下文化、实验艺术
-   - 政策规则：动漫/文创/潮玩/文旅相关产业政策、行业法规、政府扶持计划、行业规范、市场准入、税收优惠、进出口政策
-   - 版权保护：版权登记、维权诉讼、侵权打击、版权交易平台、IP版权纠纷、盗版治理、商标争议、知识产权保护
-   - 待分类：无法明确归入以上12类的资讯，等待人工复核
-4. 给出 0-10 的产业匹配度评分：
-   - 9-10 核心命中：新闻主体和核心事件都直接属于目标行业，并具有明确业务信息或行业价值
-   - 7-8  直接相关：核心事件至少明确涉及一个目标行业对象、产品、项目、合作、交易或政策
-   - 4-6  边界待审：提到目标行业，但核心事件是否直接相关仍不明确；不会进入公开资讯流
-   - 0-3  间接相关或无关：只是可能影响目标行业、可被目标行业采用，或属于泛AI/科技/财经/消费/政策资讯；纯原创真人剧集、纪录片、人物传记片、传统好莱坞商业片、纯IPO/融资/财报也在此列
-   - ⚠️ 如果内容与动漫/IP/潮玩/文创/文旅/博物馆/数字创意产业完全无关，评分直接给0
-5. 精选标记规则：评分 >= 7 标记为精选（is_selected = true）
-6. 用一句话给出你的行业解读（犀利、有洞察、带观点，20字以内），不要加署名
-
-【特别约束 — 争议性内容处理】
-以下内容无论产业匹配度评分多高，一律强制归类为"待分类"，等待人工审核：
-- 中国统一、台湾问题、香港问题、新疆问题、西藏问题等国家主权和领土完整相关议题
-- 政治敏感话题、意识形态争论、政府体制批评、选举相关
-- LGBT、性别认同、性取向、跨性别、同性婚姻等有社会争议的话题
-- 宗教极端主义、民族分裂、种族主义相关内容
-- 战争、军事冲突、武器扩散等敏感国际议题
-- 其他可能引发政治或社会争议、不符合中国大陆主流价值观的话题
-
-注意：
-- 如果内容无法明确归入前12类，请选择"待分类"
-- 如果内容涉及上述【特别约束】中的任何一类，必须选择"待分类"
-- 评分0-3的文章会被系统自动删除，请谨慎评分
-
-请严格按以下JSON格式返回，不要添加任何其他文字：
-{"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true,"commentary":"..."}`
-
-/** 调用单个 LLM API */
-async function callLLM(
-  title: string,
-  content: string,
-  systemPrompt: string,
-  baseUrl: string,
-  apiKey: string,
+type ProviderConfig = {
+  name: string
+  baseUrl: string
+  apiKey: string
   model: string
-): Promise<LlmResult> {
-  const normalizedUrl = baseUrl.replace(/\/v1(\/messages)?\/?$/, '') + '/v1/messages'
-  const res = await fetch(normalizedUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 500,
-    }),
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`API ${res.status}: ${text.slice(0, 200)}`)
-  }
-
-  const data = await res.json()
-  const raw: string = data.content?.[0]?.text ?? ''
-  if (!raw) throw new Error('Empty response')
-
-  const jsonMatch = raw.match(/\{[\s\S]*?\}/)
-  if (!jsonMatch) throw new Error(`No JSON in: ${raw.slice(0, 120)}`)
-
-  return JSON.parse(jsonMatch[0])
+  protocol: string
+  attempts: number
 }
 
-/** 解析 LLM 返回的 JSON 为标准结果 */
-function parseResult(parsed: Record<string, unknown>, title: string): LlmResult {
-  const category = CATEGORIES.includes(parsed.category as Category)
-    ? (parsed.category as Category)
-    : '待分类'
+const JSON_KEYS = ['title_cn', 'summary_cn', 'category', 'relevance_score', 'is_selected', 'commentary'] as const
 
-  const parsedScore = Number(parsed.relevance_score)
-  const modelScore = Number.isFinite(parsedScore)
-    ? Math.min(10, Math.max(0, parsedScore))
-    : 5
-  const relevance_score = enforceDirectIndustryScore(title, category, modelScore)
+const SYSTEM_PROMPT = [
+  '你是文创/IP/ACG资讯编辑。请对输入新闻输出结构化结果。',
+  '要求：',
+  '1) title_cn: 中文标题，不超过100字。',
+  '2) summary_cn: 中文摘要，不超过200字。',
+  `3) 分类规则：\n${CATEGORY_PROMPT_REQUIREMENTS}`,
+  '4) relevance_score: 0-10整数。',
+  '5) is_selected: relevance_score >= 5 时为 true，否则 false。',
+  '6) commentary: 1句行业解读，不超过100字。',
+  `7) 若无法确定分类，category 必须为 "${REVIEW_CATEGORY}"。`,
+  '8) 若内容与目标产业明显无关，relevance_score 应给 0-3。',
+  '只输出 JSON，不要输出 Markdown，不要附加解释。',
+  '返回格式：{"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true,"commentary":"..."}',
+].join('\n')
 
-  return {
-    title_cn: String(parsed.title_cn || title).slice(0, 100),
-    summary_cn: String(parsed.summary_cn || '').slice(0, 200),
-    category,
-    relevance_score,
-    is_selected: relevance_score >= 7,
-    commentary: String(parsed.commentary || '待人工编辑')
-      .replace(/[\s—–-]{0,3}(贾田点评|推荐理由|编辑推荐).*$/g, '')
-      .replace(/^[\s—–-]+|[\s—–-]+$/g, '')
-      .slice(0, 100),
+export class LlmParseError extends Error {
+  readonly rawSnippet: string
+
+  constructor(message: string, rawSnippet: string) {
+    super(message)
+    this.name = 'LlmParseError'
+    this.rawSnippet = rawSnippet
   }
 }
 
-/** 检测 commentary 是否明确表示与产业完全无关 */
-export function isIrrelevantByCommentary(commentary: string | null): boolean {
-  if (!commentary || commentary === '待人工编辑') return false
-  // 匹配模式：完全无关 / 与XX无关 / 无关产业 / 建议不收录
-  return /完全无关|与[一-龥\/]{1,20}无关|无关产业|建议不收录|不建议收录/.test(commentary)
+export class LlmRetryExhaustedError extends Error {
+  readonly reasons: string[]
+
+  constructor(reasons: string[]) {
+    super(`All LLM providers failed: ${reasons.join(' | ').slice(0, 500)}`)
+    this.name = 'LlmRetryExhaustedError'
+    this.reasons = reasons
+  }
 }
 
-/** 统一判断文章是否应被忽略（低分或 commentary 明确无关） */
-export function shouldIgnoreArticle(
-  relevanceScore: number | null,
-  commentary: string | null
-): boolean {
-  // LLM 已判定弱相关/无关（prompt 要求 0-3 分自动删除）
-  if ((relevanceScore ?? 10) <= 3) return true
-  // commentary 明确表达无关
-  return isIrrelevantByCommentary(commentary)
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
 function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export async function summarizeArticle(
-  title: string,
+function normalizeMessagesUrl(baseUrl: string): string {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/v1/messages')) return trimmed
+  if (trimmed.endsWith('/v1')) return `${trimmed}/messages`
+  return `${trimmed}/v1/messages`
+}
+
+function normalizeChatCompletionsUrl(baseUrl: string): string {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/chat/completions')) return trimmed
+  if (trimmed.endsWith('/v1')) return `${trimmed}/chat/completions`
+  return `${trimmed}/v1/chat/completions`
+}
+
+function extractTextFromPart(part: unknown): string {
+  if (typeof part === 'string') return part
+  if (!isRecord(part)) return ''
+
+  if (typeof part.text === 'string') return part.text
+  if (typeof part.content === 'string') return part.content
+  if (Array.isArray(part.content)) {
+    return part.content.map(extractTextFromPart).filter(Boolean).join('\n')
+  }
+
+  return ''
+}
+
+function extractTextFromResponse(data: unknown): string {
+  if (!isRecord(data)) return ''
+
+  if (typeof data.output_text === 'string') return data.output_text
+  if (typeof data.text === 'string') return data.text
+
+  if (typeof data.content === 'string') return data.content
+  if (Array.isArray(data.content)) {
+    const text = data.content.map(extractTextFromPart).filter(Boolean).join('\n')
+    if (text) return text
+  }
+
+  if (Array.isArray(data.choices) && data.choices.length > 0) {
+    const firstChoice = data.choices[0]
+    if (isRecord(firstChoice)) {
+      const fromMessage = isRecord(firstChoice.message) ? firstChoice.message.content : undefined
+      const fromDelta = isRecord(firstChoice.delta) ? firstChoice.delta.content : undefined
+      const fromText = firstChoice.text
+      const merged = [fromMessage, fromDelta, fromText]
+        .map((item) => (Array.isArray(item) ? item.map(extractTextFromPart).join('\n') : extractTextFromPart(item)))
+        .filter(Boolean)
+        .join('\n')
+
+      if (merged) return merged
+    }
+  }
+
+  return ''
+}
+
+function extractCodeBlockCandidates(raw: string): string[] {
+  const candidates: string[] = []
+  const regex = /```(?:json)?\s*([\s\S]*?)```/gi
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(raw))) {
+    if (match[1]?.trim()) candidates.push(match[1].trim())
+  }
+
+  return candidates
+}
+
+function extractBalancedJsonObjects(raw: string, limit = 6): string[] {
+  const candidates: string[] = []
+  let depth = 0
+  let start = -1
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < raw.length; i += 1) {
+    const ch = raw[i]
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (ch === '\\') {
+        escaped = true
+      } else if (ch === '"') {
+        inString = false
+      }
+      continue
+    }
+
+    if (ch === '"') {
+      inString = true
+      continue
+    }
+
+    if (ch === '{') {
+      if (depth === 0) start = i
+      depth += 1
+      continue
+    }
+
+    if (ch === '}') {
+      if (depth > 0) depth -= 1
+      if (depth === 0 && start >= 0) {
+        candidates.push(raw.slice(start, i + 1))
+        start = -1
+        if (candidates.length >= limit) break
+      }
+    }
+  }
+
+  return candidates
+}
+
+function repairJsonCandidate(input: string): string {
+  return input
+    .replace(/^\uFEFF/, '')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/,\s*([}\]])/g, '$1')
+    .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3')
+    .trim()
+}
+
+function parseCandidate(candidate: string): Record<string, unknown> | null {
+  const attempts = [candidate.trim(), repairJsonCandidate(candidate)]
+
+  for (const item of attempts) {
+    if (!item) continue
+
+    try {
+      const parsed = JSON.parse(item)
+      if (isRecord(parsed)) return parsed
+    } catch {
+      // continue
+    }
+  }
+
+  return null
+}
+
+export function parseLlmJsonOrThrow(raw: string): Record<string, unknown> {
+  const snippet = raw.replace(/\s+/g, ' ').slice(0, 260)
+  if (!raw.trim()) throw new LlmParseError('LLM response is empty', snippet)
+
+  const orderedCandidates = [
+    ...extractCodeBlockCandidates(raw),
+    ...extractBalancedJsonObjects(raw),
+    raw,
+  ]
+
+  const unique = Array.from(new Set(orderedCandidates.map((item) => item.trim()).filter(Boolean)))
+
+  for (const candidate of unique) {
+    const parsed = parseCandidate(candidate)
+    if (!parsed) continue
+
+    if (JSON_KEYS.some((key) => key in parsed)) {
+      return parsed
+    }
+  }
+
+  throw new LlmParseError('Failed to parse valid JSON from LLM response', snippet)
+}
+
+function toIntScore(value: unknown): number {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return 5
+  return Math.max(0, Math.min(10, Math.round(num)))
+}
+
+function parseResult(parsed: Record<string, unknown>, fallbackTitle: string): LlmResult {
+  const category = normalizeCategory(parsed.category)
+  const relevance_score = toIntScore(parsed.relevance_score)
+
+  const title_cn = String(parsed.title_cn || fallbackTitle).trim().slice(0, 100)
+  const summary_cn = String(parsed.summary_cn || '').trim().slice(0, 200)
+  const commentary = String(parsed.commentary || '待人工复核')
+    .replace(/^\s+|\s+$/g, '')
+    .slice(0, 100)
+
+  return {
+    title_cn,
+    summary_cn,
+    category,
+    relevance_score,
+    is_selected: relevance_score >= 5 && category !== REVIEW_CATEGORY,
+    commentary,
+  }
+}
+
+async function callLLM({
+  title,
+  content,
+  systemPrompt,
+  provider,
+}: {
+  title: string
   content: string
-): Promise<LlmResult | null> {
+  systemPrompt: string
+  provider: ProviderConfig
+}): Promise<LlmResult> {
+  const isOpenAI = provider.protocol === 'openai'
+  const endpoint = isOpenAI
+    ? normalizeChatCompletionsUrl(provider.baseUrl)
+    : normalizeMessagesUrl(provider.baseUrl)
+
+  const userContent = `标题: ${title}\n\n正文: ${content.slice(0, 3000)}`
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (isOpenAI) {
+    headers.Authorization = `Bearer ${provider.apiKey}`
+  } else {
+    headers['x-api-key'] = provider.apiKey
+    headers['anthropic-version'] = '2023-06-01'
+  }
+
+  const body = isOpenAI
+    ? {
+        model: provider.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
+        ],
+        temperature: 0.2,
+        max_tokens: 600,
+      }
+    : {
+        model: provider.model,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }],
+        temperature: 0.2,
+        max_tokens: 600,
+      }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`API ${response.status}: ${text.slice(0, 220)}`)
+  }
+
+  const responseBody: unknown = await response.json()
+  const text = extractTextFromResponse(responseBody)
+  const parsed = parseLlmJsonOrThrow(text)
+  return parseResult(parsed, title)
+}
+
+function buildProviders(): ProviderConfig[] {
+  return [
+    {
+      name: 'Backup2',
+      baseUrl: BACKUP2_URL,
+      apiKey: BACKUP2_KEY,
+      model: BACKUP2_MODEL,
+      protocol: BACKUP2_PROTOCOL,
+      attempts: BACKUP_ATTEMPTS,
+    },
+    {
+      name: 'Primary',
+      baseUrl: LLM_BASE_URL,
+      apiKey: LLM_API_KEY,
+      model: LLM_MODEL,
+      protocol: LLM_PROTOCOL,
+      attempts: PRIMARY_ATTEMPTS,
+    },
+    {
+      name: 'Backup1',
+      baseUrl: BACKUP_URL,
+      apiKey: BACKUP_KEY,
+      model: BACKUP_MODEL,
+      protocol: BACKUP_PROTOCOL,
+      attempts: BACKUP_ATTEMPTS,
+    },
+  ].filter((provider) => provider.baseUrl && provider.apiKey)
+}
+
+/** 检测 commentary 是否明确表示与产业无关 */
+export function isIrrelevantByCommentary(commentary: string | null): boolean {
+  if (!commentary || commentary === '待人工复核') return false
+  return /完全无关|不相关|无关产业|建议不收录|not related|irrelevant/i.test(commentary)
+}
+
+/** 统一判断文章是否应被忽略（低分或明确无关） */
+export function shouldIgnoreArticle(relevanceScore: number | null, commentary: string | null): boolean {
+  if ((relevanceScore ?? 10) <= 3) return true
+  return isIrrelevantByCommentary(commentary)
+}
+
+export async function summarizeArticle(title: string, content: string): Promise<LlmResult | null> {
   if (!LLM_BASE_URL || !LLM_API_KEY) {
-    console.warn('[LLM] 未配置 LLM_BASE_URL 或 LLM_API_KEY，跳过摘要')
+    console.warn('[LLM] Missing LLM_BASE_URL or LLM_API_KEY, skip summarization.')
     return null
   }
 
-  // 查询学习记录并注入 prompt
   let systemPrompt = SYSTEM_PROMPT
   try {
     if (process.env.SUPABASE_SECRET_KEY) {
       const supabase = createServiceClient()
       const learnings = await findRelevantLearnings(supabase, title, 15)
       const learningRules = formatLearningRules(learnings)
-      if (learningRules) {
-        systemPrompt += learningRules
-      }
+      if (learningRules) systemPrompt += learningRules
     }
-  } catch (e) {
-    console.error('[LLM] 查询学习记录失败:', e instanceof Error ? e.message : String(e))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[LLM] Failed to load learning rules:', message)
   }
 
-  // 主力 Kimi 3次重试
-  for (let i = 0; i < 3; i++) {
-    try {
-      const parsed = await callLLM(title, content, systemPrompt, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL)
-      return parseResult(parsed, title)
-    } catch (e) {
-      console.warn(`[LLM] Kimi 第${i + 1}次失败:`, (e as Error).message?.slice(0, 80))
-    }
-    if (i < 2) await sleep(2000)
-  }
+  const providers = buildProviders()
+  const reasons: string[] = []
 
-  // 备用 DeepSeek 2次重试
-  if (BACKUP_URL && BACKUP_KEY) {
-    for (let i = 0; i < 2; i++) {
+  for (const provider of providers) {
+    for (let attempt = 1; attempt <= provider.attempts; attempt += 1) {
       try {
-        const parsed = await callLLM(title, content, systemPrompt, BACKUP_URL, BACKUP_KEY, BACKUP_MODEL)
-        return parseResult(parsed, title)
-      } catch (e) {
-        console.warn(`[LLM] DeepSeek 第${i + 1}次失败:`, (e as Error).message?.slice(0, 80))
+        return await callLLM({ title, content, systemPrompt, provider })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        reasons.push(`${provider.name}#${attempt}: ${message}`)
+        console.warn(`[LLM] ${provider.name} attempt ${attempt} failed: ${message.slice(0, 200)}`)
       }
-      if (i < 1) await sleep(2000)
+
+      if (attempt < provider.attempts) await sleep(1000)
     }
   }
 
-  // 全部失败，返回降级结果（不返回 null）
-  console.error('[LLM] 所有模型均失败，返回降级结果')
-  return {
-    title_cn: title.slice(0, 60),
-    summary_cn: '',
-    category: '待分类',
-    relevance_score: 5,
-    is_selected: false,
-    commentary: '待人工编辑',
-  }
+  throw new LlmRetryExhaustedError(reasons)
 }
