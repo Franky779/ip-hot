@@ -1,0 +1,12 @@
+[Unit]
+Description=Run IP Hot fetch job every 20 minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/20:00
+RandomizedDelaySec=30
+Persistent=true
+Unit=ip-hot-fetch.service
+
+[Install]
+WantedBy=timers.target
+

@@ -1,20 +1,42 @@
 // lib/llm.ts — LLM 调用模块
-// 主力: Kimi K2.6 (kimi-for-coding)  via ccswith 路由 → https://api.kimi.com/coding
-// 备份: DeepSeek V3 (deepseek-chat) via ccswith 路由 → https://api.deepseek.com/anthropic
-// 协议: Anthropic Messages (/v1/messages)
+// 调用顺序: DeepSeek V4 Flash → Kimi K2.6 → Kimi for Coding
+// 三个服务均使用各自的 OpenAI 兼容接口。
 
 import { createServiceClient } from './supabase'
 import { findRelevantLearnings, formatLearningRules } from './classification-learning'
 import { enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
 
-const LLM_BASE_URL = process.env.LLM_BASE_URL || ''
-const LLM_API_KEY = process.env.LLM_API_KEY || ''
-const LLM_MODEL = process.env.LLM_MODEL || 'kimi-for-coding'
+type LlmProvider = {
+  name: string
+  baseUrl: string
+  apiKey: string
+  model: string
+  attempts: number
+}
 
-// 备用 LLM
-const BACKUP_URL = process.env.LLM_BACKUP_URL || ''
-const BACKUP_KEY = process.env.LLM_BACKUP_KEY || ''
-const BACKUP_MODEL = process.env.LLM_BACKUP_MODEL || 'deepseek-chat'
+const LLM_PROVIDERS: LlmProvider[] = [
+  {
+    name: 'DeepSeek',
+    baseUrl: process.env.LLM_BASE_URL || '',
+    apiKey: process.env.LLM_API_KEY || '',
+    model: process.env.LLM_MODEL || 'deepseek-v4-flash',
+    attempts: 3,
+  },
+  {
+    name: 'Kimi',
+    baseUrl: process.env.LLM_BACKUP_URL || '',
+    apiKey: process.env.LLM_BACKUP_KEY || '',
+    model: process.env.LLM_BACKUP_MODEL || 'kimi-k2.6',
+    attempts: 2,
+  },
+  {
+    name: 'Kimi Coding',
+    baseUrl: process.env.LLM_BACKUP2_URL || '',
+    apiKey: process.env.LLM_BACKUP2_KEY || '',
+    model: process.env.LLM_BACKUP2_MODEL || 'kimi-for-coding',
+    attempts: 2,
+  },
+]
 
 export const CATEGORIES = [
   '创作/上新',
@@ -113,27 +135,34 @@ async function callLLM(
   apiKey: string,
   model: string
 ): Promise<LlmResult> {
-  const normalizedUrl = baseUrl.replace(/\/v1(\/messages)?\/?$/, '') + '/v1/messages'
-  const res = await fetch(normalizedUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 500,
-    }),
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 90000)
+  const endpoint = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+  let res: Response
+  try {
+    res = await fetch(endpoint, {
+      signal: controller.signal,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 3000,
+      }),
+    })
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (!res.ok) {
     const text = await res.text()
@@ -141,7 +170,7 @@ async function callLLM(
   }
 
   const data = await res.json()
-  const raw: string = data.content?.[0]?.text ?? ''
+  const raw: string = data.choices?.[0]?.message?.content ?? ''
   if (!raw) throw new Error('Empty response')
 
   const jsonMatch = raw.match(/\{[\s\S]*?\}/)
@@ -201,15 +230,18 @@ export async function summarizeArticle(
   title: string,
   content: string
 ): Promise<LlmResult | null> {
-  if (!LLM_BASE_URL || !LLM_API_KEY) {
-    console.warn('[LLM] 未配置 LLM_BASE_URL 或 LLM_API_KEY，跳过摘要')
+  const providers = LLM_PROVIDERS.filter(
+    (provider) => provider.baseUrl && provider.apiKey && provider.model
+  )
+  if (!providers.length) {
+    console.warn('[LLM] 未配置可用的 LLM，跳过摘要')
     return null
   }
 
   // 查询学习记录并注入 prompt
   let systemPrompt = SYSTEM_PROMPT
   try {
-    if (process.env.SUPABASE_SECRET_KEY) {
+    if (process.env.DATABASE_URL) {
       const supabase = createServiceClient()
       const learnings = await findRelevantLearnings(supabase, title, 15)
       const learningRules = formatLearningRules(learnings)
@@ -221,27 +253,25 @@ export async function summarizeArticle(
     console.error('[LLM] 查询学习记录失败:', e instanceof Error ? e.message : String(e))
   }
 
-  // 主力 Kimi 3次重试
-  for (let i = 0; i < 3; i++) {
-    try {
-      const parsed = await callLLM(title, content, systemPrompt, LLM_BASE_URL, LLM_API_KEY, LLM_MODEL)
-      return parseResult(parsed, title)
-    } catch (e) {
-      console.warn(`[LLM] Kimi 第${i + 1}次失败:`, (e as Error).message?.slice(0, 80))
-    }
-    if (i < 2) await sleep(2000)
-  }
-
-  // 备用 DeepSeek 2次重试
-  if (BACKUP_URL && BACKUP_KEY) {
-    for (let i = 0; i < 2; i++) {
+  for (const provider of providers) {
+    for (let i = 0; i < provider.attempts; i++) {
       try {
-        const parsed = await callLLM(title, content, systemPrompt, BACKUP_URL, BACKUP_KEY, BACKUP_MODEL)
+        const parsed = await callLLM(
+          title,
+          content,
+          systemPrompt,
+          provider.baseUrl,
+          provider.apiKey,
+          provider.model
+        )
         return parseResult(parsed, title)
       } catch (e) {
-        console.warn(`[LLM] DeepSeek 第${i + 1}次失败:`, (e as Error).message?.slice(0, 80))
+        console.warn(
+          `[LLM] ${provider.name} 第${i + 1}次失败:`,
+          (e as Error).message?.slice(0, 160)
+        )
       }
-      if (i < 1) await sleep(2000)
+      if (i < provider.attempts - 1) await sleep(2000)
     }
   }
 

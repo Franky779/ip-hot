@@ -2,7 +2,7 @@
 // 用法：npx tsx _sensitive_review.ts
 
 import { readFileSync } from 'fs'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from './lib/supabase'
 
 const envContent = readFileSync('.env.local', 'utf8')
 for (const line of envContent.split('\n')) {
@@ -14,11 +14,7 @@ for (const line of envContent.split('\n')) {
   }
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!,
-  { auth: { persistSession: false, autoRefreshToken: false } }
-)
+const supabase = createServiceClient()
 
 const SENSITIVE_RULES = [
   // 国家主权与领土完整

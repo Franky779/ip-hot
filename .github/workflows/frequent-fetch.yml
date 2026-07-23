@@ -1,9 +1,6 @@
 name: frequent-fetch
 
 on:
-  schedule:
-    # 每 20 分钟；刻意避开 :00/:15/:30/:45 整点拥堵段（GitHub 定时器整点常延迟 10+ 分钟）
-    - cron: '7,27,47 * * * *'
   workflow_dispatch:
 
 jobs:

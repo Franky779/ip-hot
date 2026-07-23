@@ -5,7 +5,7 @@
 //   node _push_via_api.mjs "msg" file1 file2 ...        # 显式指定 commit message 和要推的文件
 //
 // 必需环境变量：GITHUB_TOKEN
-// 仓库：Franky779/ip-news / 分支 main（如需改，调整下方 OWNER/REPO/BRANCH）
+// 仓库：Franky779/ip-hot / 分支 main（如需改，调整下方 OWNER/REPO/BRANCH）
 
 import { readFileSync, existsSync } from 'fs';
 import { request } from 'https';
@@ -35,7 +35,7 @@ if (args.length === 0) {
     let p = line.slice(3);
     if (p.startsWith('"') && p.endsWith('"')) p = JSON.parse(p);
     return p;
-  }).filter(p => !p.startsWith('_') && existsSync(p));
+  }).filter(p => !p.startsWith('_'));
   if (files.length === 0) {
     const lastCommit = gitOut('git diff-tree --no-commit-id --name-only -r HEAD');
     files = lastCommit.split('\n').filter(Boolean).filter(p => existsSync(p));
@@ -99,6 +99,11 @@ function api(method, path, data) {
   console.log('2) 上传 blobs...');
   const treeItems = [];
   for (const file of files) {
+    if (!existsSync(file)) {
+      console.log(`   delete ${file}`);
+      treeItems.push({ path: file, mode: '100644', type: 'blob', sha: null });
+      continue;
+    }
     const content = readFileSync(file).toString('base64');
     const blob = await api('POST', '/git/blobs', { content, encoding: 'base64' });
     console.log(`   blob ${file} -> ${blob.sha}`);

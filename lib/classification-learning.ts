@@ -1,6 +1,6 @@
 // 分类学习系统：提取关键词、查询学习记录、注入 LLM prompt
 
-import { SupabaseClient } from '@supabase/supabase-js'
+import type { DatabaseClient } from './supabase'
 
 const STOP_WORDS = new Set([
   '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很',
@@ -42,7 +42,7 @@ export function extractKeywords(title: string): string[] {
 
 /** 查询与当前标题相关的学习记录 */
 export async function findRelevantLearnings(
-  supabase: SupabaseClient,
+  supabase: DatabaseClient,
   title: string,
   limit: number = 8
 ): Promise<Array<{ original_title: string; corrected_category: string; match_count: number }>> {

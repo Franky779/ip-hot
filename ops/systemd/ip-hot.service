@@ -1,0 +1,24 @@
+[Unit]
+Description=IP Hot Next.js application
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=iphot
+Group=iphot
+WorkingDirectory=/srv/apps/ip-hot/current
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3101
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+LimitNOFILE=65535
+MemoryMax=1G
+StandardOutput=append:/var/log/ip-hot/app.log
+StandardError=append:/var/log/ip-hot/error.log
+
+[Install]
+WantedBy=multi-user.target
+

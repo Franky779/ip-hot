@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+  echo 'Run this script as root.' >&2
+  exit 1
+fi
+
+source_env=${1:-/root/ip-hot-source.env}
+pg_hba=/var/lib/pgsql/data/pg_hba.conf
+app_root=/srv/apps/ip-hot
+
+dnf install -y --disableexcludes=all nginx certbot python3-certbot-nginx nodejs npm
+
+if ! id iphot >/dev/null 2>&1; then
+  useradd --system --create-home --home-dir "$app_root" --shell /bin/bash iphot
+fi
+
+install -d -m 0755 -o iphot -g iphot "$app_root/releases" "$app_root/shared"
+install -d -m 0755 -o root -g root /srv/jobs /srv/www /var/www/certbot
+install -d -m 0750 -o iphot -g iphot /var/log/ip-hot
+install -d -m 0750 -o postgres -g postgres /srv/backups/postgresql
+
+if ! grep -Eq '^local[[:space:]]+all[[:space:]]+postgres[[:space:]]+peer' "$pg_hba"; then
+  cp -a "$pg_hba" "$pg_hba.before-ip-hot"
+  sed -i '/^local[[:space:]]\+all[[:space:]]\+all[[:space:]]/i local   all   postgres   peer' "$pg_hba"
+  systemctl reload postgresql
+fi
+
+umask 077
+password_file=/root/.ip-hot-db-password
+if [[ ! -s $password_file ]]; then
+  openssl rand -hex 24 > "$password_file"
+fi
+db_password=$(<"$password_file")
+cron_secret_file=/root/.ip-hot-cron-secret
+if [[ ! -s $cron_secret_file ]]; then
+  openssl rand -hex 32 > "$cron_secret_file"
+fi
+cron_secret=$(<"$cron_secret_file")
+
+if ! runuser -u postgres -- psql -Atc "select 1 from pg_roles where rolname='ip_hot_app'" | grep -q 1; then
+  runuser -u postgres -- createuser --login --no-createdb --no-createrole --no-superuser ip_hot_app
+fi
+runuser -u postgres -- psql -v ON_ERROR_STOP=1 -c "alter role ip_hot_app password '$db_password'"
+if ! runuser -u postgres -- psql -Atc "select 1 from pg_database where datname='ip_hot'" | grep -q 1; then
+  runuser -u postgres -- createdb --owner=ip_hot_app ip_hot
+fi
+runuser -u postgres -- psql -v ON_ERROR_STOP=1 -d ip_hot -c 'grant all on schema public to ip_hot_app'
+runuser -u postgres -- psql -v ON_ERROR_STOP=1 -d ip_hot -c 'create extension if not exists pgcrypto'
+
+if [[ ! -f $source_env ]]; then
+  echo "Missing source environment file: $source_env" >&2
+  exit 1
+fi
+
+app_env="$app_root/shared/.env.production.local"
+: > "$app_env"
+while IFS= read -r raw_line || [[ -n $raw_line ]]; do
+  line=${raw_line%$'\r'}
+  key=${line%%=*}
+  case "$key" in
+    ADMIN_PASSWORD|LLM_API_KEY|LLM_MODEL|LLM_BASE_URL|LLM_BACKUP_KEY|LLM_BACKUP_MODEL|LLM_BACKUP_URL|LLM_BACKUP_PROTOCOL|LLM_BACKUP2_KEY|LLM_BACKUP2_MODEL|LLM_BACKUP2_URL|LLM_BACKUP2_PROTOCOL)
+      printf '%s\n' "$line" >> "$app_env"
+      ;;
+  esac
+done < "$source_env"
+
+grep -q '^LLM_BASE_URL=' "$app_env" || printf '%s\n' 'LLM_BASE_URL=https://api.deepseek.com' >> "$app_env"
+grep -q '^LLM_MODEL=' "$app_env" || printf '%s\n' 'LLM_MODEL=deepseek-v4-flash' >> "$app_env"
+grep -q '^LLM_BACKUP_URL=' "$app_env" || printf '%s\n' 'LLM_BACKUP_URL=https://api.moonshot.cn/v1' >> "$app_env"
+grep -q '^LLM_BACKUP_MODEL=' "$app_env" || printf '%s\n' 'LLM_BACKUP_MODEL=kimi-k2.6' >> "$app_env"
+grep -q '^LLM_BACKUP2_URL=' "$app_env" || printf '%s\n' 'LLM_BACKUP2_URL=https://api.kimi.com/coding/v1' >> "$app_env"
+grep -q '^LLM_BACKUP2_MODEL=' "$app_env" || printf '%s\n' 'LLM_BACKUP2_MODEL=kimi-for-coding' >> "$app_env"
+printf 'DATABASE_URL=postgresql://ip_hot_app:%s@127.0.0.1:5432/ip_hot\n' "$db_password" >> "$app_env"
+printf '%s\n' 'DATABASE_POOL_SIZE=10' >> "$app_env"
+printf 'CRON_SECRET=%s\n' "$cron_secret" >> "$app_env"
+printf 'LLM_WORKER_SECRET=%s\n' "$cron_secret" >> "$app_env"
+
+printf 'header = "Authorization: Bearer %s"\n' "$cron_secret" > "$app_root/shared/curl-auth.conf"
+chmod 0600 "$app_env" "$app_root/shared/curl-auth.conf"
+chown iphot:iphot "$app_env" "$app_root/shared/curl-auth.conf"
+
+systemctl enable --now nginx
+echo 'Server bootstrap completed.'

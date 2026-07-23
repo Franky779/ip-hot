@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+  echo 'Run this script as root.' >&2
+  exit 1
+fi
+
+release_archive=${1:-/root/ip-hot-release.tar.gz}
+app_root=/srv/apps/ip-hot
+release="$app_root/releases/$(date +%Y%m%d-%H%M%S)"
+previous_release=$(readlink -f "$app_root/current" 2>/dev/null || true)
+nginx_config=/etc/nginx/conf.d/ip-hot.conf
+nginx_backup=$(mktemp /tmp/ip-hot-nginx.XXXXXX.conf)
+nginx_existed=false
+trap 'rm -f "$nginx_backup"' EXIT
+
+install -d -m 0755 -o iphot -g iphot "$release"
+tar -xzf "$release_archive" -C "$release"
+chown -R iphot:iphot "$release"
+ln -s "$app_root/shared/.env.production.local" "$release/.env.production.local"
+
+runuser -u iphot -- bash -lc "cd '$release' && npm ci && npm run build"
+
+install -m 0750 "$release/ops/scripts/health-check" /usr/local/sbin/ip-hot-health-check
+install -m 0750 "$release/ops/scripts/ip-hot-backup" /usr/local/sbin/ip-hot-backup
+install -m 0644 "$release/ops/logrotate/ip-hot" /etc/logrotate.d/ip-hot
+install -m 0644 "$release"/ops/systemd/*.service "$release"/ops/systemd/*.timer /etc/systemd/system/
+
+if [[ -f $nginx_config ]]; then
+  cp -a "$nginx_config" "$nginx_backup"
+  nginx_existed=true
+else
+  : > "$nginx_backup"
+fi
+
+if [[ -f /etc/letsencrypt/live/hot.laojia-ip.com/fullchain.pem ]]; then
+  install -m 0644 "$release/ops/nginx/ip-hot.conf" "$nginx_config"
+else
+  install -m 0644 "$release/ops/nginx/ip-hot-http.conf" "$nginx_config"
+fi
+
+if ! nginx -t; then
+  if [[ -s $nginx_backup ]]; then
+    cp -a "$nginx_backup" "$nginx_config"
+  else
+    rm -f "$nginx_config"
+  fi
+  echo 'Nginx validation failed; the previous configuration was restored.' >&2
+  exit 1
+fi
+
+ln -sfn "$release" "$app_root/current.new"
+mv -Tf "$app_root/current.new" "$app_root/current"
+
+systemctl daemon-reload
+systemctl enable ip-hot.service
+systemctl enable --now ip-hot-health.timer
+systemctl reload nginx
+
+health_ok=false
+if systemctl restart ip-hot.service; then
+  for _ in {1..20}; do
+    if /usr/local/sbin/ip-hot-health-check; then
+      health_ok=true
+      break
+    fi
+    sleep 1
+  done
+fi
+
+if [[ $health_ok != true ]]; then
+  echo 'Health check failed; rolling back the release.' >&2
+  if [[ -n $previous_release && -d $previous_release ]]; then
+    ln -sfn "$previous_release" "$app_root/current.rollback"
+    mv -Tf "$app_root/current.rollback" "$app_root/current"
+  fi
+  if [[ $nginx_existed == true ]]; then
+    cp -a "$nginx_backup" "$nginx_config"
+  else
+    rm -f "$nginx_config"
+  fi
+  nginx -t
+  systemctl reload nginx
+  systemctl restart ip-hot.service
+  exit 1
+fi
+
+echo "Installed release: $release"
+
+# Database migration is intentionally not part of routine releases.
+# For a one-time import, run ops/migration/import-postgres.mjs explicitly.

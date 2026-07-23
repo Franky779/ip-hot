@@ -1,0 +1,12 @@
+[Unit]
+Description=Drain the IP Hot LLM queue every 3 minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/3:00
+RandomizedDelaySec=20
+Persistent=true
+Unit=ip-hot-llm.service
+
+[Install]
+WantedBy=timers.target
+

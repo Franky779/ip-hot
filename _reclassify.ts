@@ -2,7 +2,7 @@
 // 用法：npx tsx _reclassify.ts
 
 import { readFileSync } from 'fs'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from './lib/supabase'
 
 // 加载 .env.local
 const envContent = readFileSync('.env.local', 'utf8')
@@ -15,12 +15,7 @@ for (const line of envContent.split('\n')) {
   }
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-})
+const supabase = createServiceClient()
 
 async function main() {
   // 动态 import lib/llm.ts（确保环境变量先设置好）

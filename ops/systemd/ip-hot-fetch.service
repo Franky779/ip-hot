@@ -1,0 +1,9 @@
+[Unit]
+Description=IP Hot fetch and process job
+After=network-online.target ip-hot.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=iphot
+ExecStart=/usr/bin/curl --config /srv/apps/ip-hot/shared/curl-auth.conf --fail-with-body --silent --show-error --max-time 330 http://127.0.0.1:3101/api/cron/fetch-and-process

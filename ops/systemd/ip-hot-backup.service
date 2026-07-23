@@ -1,0 +1,8 @@
+[Unit]
+Description=Back up the IP Hot PostgreSQL database
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ip-hot-backup
+

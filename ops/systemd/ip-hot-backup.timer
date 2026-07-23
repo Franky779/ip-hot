@@ -1,0 +1,12 @@
+[Unit]
+Description=Back up IP Hot every day
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+RandomizedDelaySec=10m
+Persistent=true
+Unit=ip-hot-backup.service
+
+[Install]
+WantedBy=timers.target
+

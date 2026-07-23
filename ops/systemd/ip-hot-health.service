@@ -1,0 +1,7 @@
+[Unit]
+Description=Check the IP Hot application health
+After=ip-hot.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ip-hot-health-check
