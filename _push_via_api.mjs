@@ -1,15 +1,15 @@
 // 通过 GitHub API 推送（适用于 github.com:443 不可达但 api.github.com 可达的网络环境）
 //
 // 用法：
-//   node _push_via_api.mjs                              # 自动从 git 读取暂存/已修改文件 + 最近 commit message
+//   node _push_via_api.mjs                              # 上传最近一次本地 commit
 //   node _push_via_api.mjs "msg" file1 file2 ...        # 显式指定 commit message 和要推的文件
 //
 // 必需环境变量：GITHUB_TOKEN
 // 仓库：Franky779/ip-hot / 分支 main（如需改，调整下方 OWNER/REPO/BRANCH）
 
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { request } from 'https';
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 
 const token = process.env.GITHUB_TOKEN;
 if (!token) { console.error('GITHUB_TOKEN not set'); process.exit(1); }
@@ -30,16 +30,8 @@ let files;
 if (args.length === 0) {
   commitMessage = gitOut('git log -1 --format=%B');
   if (!commitMessage) { console.error('未传参数，且本地无 git commit 可读'); process.exit(1); }
-  const porcelain = gitOut('git status --porcelain');
-  files = porcelain.split('\n').filter(Boolean).map(line => {
-    let p = line.slice(3);
-    if (p.startsWith('"') && p.endsWith('"')) p = JSON.parse(p);
-    return p;
-  }).filter(p => !p.startsWith('_'));
-  if (files.length === 0) {
-    const lastCommit = gitOut('git diff-tree --no-commit-id --name-only -r HEAD');
-    files = lastCommit.split('\n').filter(Boolean).filter(p => existsSync(p));
-  }
+  const lastCommit = gitOut('git diff-tree --no-commit-id --name-only -r HEAD');
+  files = lastCommit.split('\n').filter(Boolean);
 } else {
   commitMessage = args[0];
   files = args.slice(1);
@@ -104,7 +96,7 @@ function api(method, path, data) {
       treeItems.push({ path: file, mode: '100644', type: 'blob', sha: null });
       continue;
     }
-    const content = readFileSync(file).toString('base64');
+    const content = execFileSync('git', ['show', `HEAD:${file}`]).toString('base64');
     const blob = await api('POST', '/git/blobs', { content, encoding: 'base64' });
     console.log(`   blob ${file} -> ${blob.sha}`);
     treeItems.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
