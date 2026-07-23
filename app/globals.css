@@ -190,6 +190,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
 }
 
 /* ====== 主内容区:页面头部(标题 + 分类 tabs + 搜索) ====== */
@@ -1346,6 +1347,91 @@ body {
   color: var(--accent);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
+}
+
+.monitor-attention-panel {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(233, 69, 96, 0.28);
+  border-radius: 10px;
+  background: rgba(233, 69, 96, 0.035);
+}
+
+.monitor-attention-heading h3,
+.monitor-attention-heading p {
+  margin: 0;
+}
+
+.monitor-attention-heading h3 {
+  color: #e94560;
+  font-size: 0.875rem;
+}
+
+.monitor-attention-heading p {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.monitor-attention-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.5rem;
+  max-height: 18rem;
+  margin-top: 0.625rem;
+  padding-right: 0.25rem;
+  overflow-y: auto;
+}
+
+.monitor-attention-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.monitor-attention-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.monitor-attention-copy a {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-attention-copy span {
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.monitor-disclosure-btn {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.monitor-disclosure-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .source-efficiency-section {

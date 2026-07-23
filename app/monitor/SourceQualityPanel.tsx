@@ -81,14 +81,27 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
   const [busy, setBusy] = useState<string | null>(null)
   const [deletedSourceIds, setDeletedSourceIds] = useState<Set<string>>(new Set())
 
-  const attentionCount = items.filter((item) => item.managementStatus === 'review').length
-  const insufficientCount = items.filter((item) => item.status === 'insufficient').length
+  const availableItems = useMemo(
+    () => items.filter((item) => !item.sourceId || !deletedSourceIds.has(item.sourceId)),
+    [deletedSourceIds, items],
+  )
+  const statusCounts = useMemo(() => {
+    const counts: Record<SourceQualityItem['managementStatus'], number> = {
+      normal: 0,
+      review: 0,
+      insufficient: 0,
+      reduced: 0,
+      observe: 0,
+      paused: 0,
+    }
+    availableItems.forEach((item) => { counts[item.managementStatus] += 1 })
+    return counts
+  }, [availableItems])
+  const attentionCount = availableItems.filter((item) => item.managementStatus === 'review').length
+  const insufficientCount = availableItems.filter((item) => item.status === 'insufficient').length
   const visibleItems = useMemo(
-    () => items.filter((item) => {
-      if (item.sourceId && deletedSourceIds.has(item.sourceId)) return false
-      return filter === 'all' || item.managementStatus === filter
-    }),
-    [deletedSourceIds, filter, items],
+    () => availableItems.filter((item) => filter === 'all' || item.managementStatus === filter),
+    [availableItems, filter],
   )
 
   const runAction = async (
@@ -177,9 +190,9 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
           <label>
             <span>信息源状态</span>
             <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
-              <option value="all">全部</option>
+              <option value="all">{availableItems.length} 条 · 全部</option>
               {Object.entries(MANAGEMENT_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>{statusCounts[value as SourceQualityItem['managementStatus']]} 条 · {label}</option>
               ))}
             </select>
           </label>
