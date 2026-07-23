@@ -6,6 +6,7 @@ import { findSourceConfiguration, RSS_SOURCES, NEW_SOURCE_NAMES, type ScrapeConf
 import { scrapeNewsList } from '@/lib/scraper'
 import { parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
+import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
 import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -25,11 +26,17 @@ type RuntimeSource = {
   qualityMode: 'normal' | 'observe' | 'reduced' | 'paused'
 }
 
-async function loadActiveSources(supabase: ReturnType<typeof createServiceClient>): Promise<RuntimeSource[]> {
-  const { data, error } = await supabase
+async function loadSources(
+  supabase: ReturnType<typeof createServiceClient>,
+  requestedSourceIds: string[] = [],
+): Promise<RuntimeSource[]> {
+  const sourceQuery = supabase
     .from('info_sources')
     .select('id, name, url, fetch_type')
-    .eq('enabled', true)
+
+  const { data, error } = await (requestedSourceIds.length > 0
+    ? sourceQuery.in('id', requestedSourceIds)
+    : sourceQuery.eq('enabled', true))
     .order('sort_order', { ascending: true })
 
   if (!error) {
@@ -66,6 +73,10 @@ async function loadActiveSources(supabase: ReturnType<typeof createServiceClient
         ),
       }]
     })
+  }
+
+  if (requestedSourceIds.length > 0) {
+    throw new Error(`读取指定信息源失败：${error.message}`)
   }
 
   // 数据库迁移执行前保持现有任务可用，避免部署过程停止抓取。
@@ -157,9 +168,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const requestUrl = new URL(request.url)
+  let requestedSourceIds: string[]
+  try {
+    requestedSourceIds = parseRequestedSourceIds(request.url)
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 400 })
+  }
+  if (requestedSourceIds.length > 0 && !isAdminAuth) {
+    return NextResponse.json({ error: '只有管理员可以手动指定信息源。' }, { status: 403 })
+  }
+  const enqueueOnly = requestedSourceIds.length > 0 && requestUrl.searchParams.get('enqueueOnly') === '1'
+
   const supabase = createServiceClient()
   const startTime = Date.now()
-  const triggerType = isAdminAuth ? 'manual' : 'cron'
+  const triggerType = requestedSourceIds.length > 0 ? 'manual_source' : isAdminAuth ? 'manual' : 'cron'
   let logId: string | null = null
 
   try {
@@ -198,9 +221,8 @@ export async function GET(request: Request) {
   const fetchResults: FetchResult[] = []
   let totalInserted = 0
 
-  const allActiveSources = await loadActiveSources(supabase)
+  const loadedSources = await loadSources(supabase, requestedSourceIds)
   const batchSize = 24
-  const requestUrl = new URL(request.url)
   const requestedBatchParam = requestUrl.searchParams.get('batch')
   const requestedBatch = requestedBatchParam === null ? Number.NaN : Number(requestedBatchParam)
   const scheduleHours = [4, 9, 14, 23]
@@ -210,16 +232,24 @@ export async function GET(request: Request) {
   const runNumber =
     Math.floor(now.getTime() / 86_400_000) * scheduleHours.length +
     (scheduleSlot >= 0 ? scheduleSlot : fallbackSlot)
-  const eligibleSources = allActiveSources.filter((source) =>
-    source.qualityMode !== 'reduced' || runNumber % 2 === 0
-  )
+  const requestedSelection = selectRequestedSources(loadedSources, requestedSourceIds)
+  if (requestedSelection.missingSourceIds.length > 0) {
+    throw new Error(`指定信息源不存在或不支持云端抓取：${requestedSelection.missingSourceIds.join(', ')}`)
+  }
+  const eligibleSources = requestedSourceIds.length > 0
+    ? requestedSelection.selectedSources
+    : loadedSources.filter((source) => source.qualityMode !== 'reduced' || runNumber % 2 === 0)
   const totalBatches = Math.max(1, Math.ceil(eligibleSources.length / batchSize))
-  const batchIndex =
+  const batchIndex = requestedSourceIds.length > 0
+    ? 0
+    :
     Number.isInteger(requestedBatch) && requestedBatch >= 0
       ? requestedBatch % totalBatches
       : runNumber % totalBatches
   const batchStart = batchIndex * batchSize
-  const activeSources = eligibleSources.slice(batchStart, batchStart + batchSize)
+  const activeSources = requestedSourceIds.length > 0
+    ? eligibleSources
+    : eligibleSources.slice(batchStart, batchStart + batchSize)
   const updateFetchProgress = async (currentSource: string) => {
     await updateRunningLog({
       fetch_total_fetched: fetchResults.reduce((sum, item) => sum + item.fetched, 0),
@@ -233,8 +263,36 @@ export async function GET(request: Request) {
     })
   }
 
+  const recordSourceFetchRun = async (source: RuntimeSource, result: FetchResult, startedAt: string) => {
+    const sourceId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(source.id)
+      ? source.id
+      : null
+    const { error } = await supabase.from('source_fetch_runs').insert({
+      source_id: sourceId,
+      source_name: source.name,
+      source_url: source.url,
+      cron_log_id: logId,
+      trigger_type: triggerType,
+      execution_mode: 'cloud',
+      started_at: startedAt,
+      ended_at: new Date().toISOString(),
+      status: result.error ? 'failed' : result.inserted > 0 ? 'success' : 'empty',
+      discovered_count: result.discovered,
+      fetched_count: result.fetched,
+      blocked_count: result.blocked,
+      dead_count: result.dead,
+      duplicate_count: result.duplicates,
+      inserted_count: result.inserted,
+      error_message: result.error ?? null,
+    })
+    if (error) {
+      console.error('[SourceFetchRun] 记录单源抓取结果失败:', error.message)
+    }
+  }
+
   for (const source of activeSources) {
     const result: FetchResult = { source: source.name, ok: false, discovered: 0, fetched: 0, blocked: 0, dead: 0, duplicates: 0, inserted: 0 }
+    const sourceStartedAt = new Date().toISOString()
 
     try {
       let rawItems: Array<{
@@ -248,8 +306,6 @@ export async function GET(request: Request) {
         const feed = await fetchFeedWithFallback(source.url)
         if (!feed) {
           result.error = 'RSS fetch failed (including Scrapling fallback)'
-          fetchResults.push(result)
-          await updateFetchProgress(source.name)
           continue
         }
         rawItems = feed.items
@@ -263,15 +319,11 @@ export async function GET(request: Request) {
       } else {
         if (!source.scrapeConfig) {
           result.error = 'Web source is missing scrapeConfig'
-          fetchResults.push(result)
-          await updateFetchProgress(source.name)
           continue
         }
         const scraped = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
         if (scraped.error) {
           result.error = scraped.error
-          fetchResults.push(result)
-          await updateFetchProgress(source.name)
           continue
         }
         rawItems = scraped.items.map((item) => ({
@@ -325,22 +377,26 @@ export async function GET(request: Request) {
       }
     } catch (e) {
       result.error = e instanceof Error ? e.message : String(e)
+    } finally {
+      fetchResults.push(result)
+      await recordSourceFetchRun(source, result, sourceStartedAt)
+      await updateFetchProgress(source.name)
     }
-
-    fetchResults.push(result)
-    await updateFetchProgress(source.name)
   }
 
   // ===== 第2步：对新文章跑 LLM =====
   // max_tokens=3000 后每条LLM约40-60秒，4条约40-60秒，控制在60秒超时内
   const LLM_BATCH_SIZE = 8
 
-  const { data: pendingArticles, error: pendingError } = await supabase
-    .from('articles')
-    .select('id, title, url, source, published_at')
-    .is('title_cn', null)
-    .order('published_at', { ascending: false })
-    .limit(LLM_BATCH_SIZE)
+  const pendingResult = enqueueOnly
+    ? { data: [], error: null }
+    : await supabase
+      .from('articles')
+      .select('id, title, url, source, published_at')
+      .is('title_cn', null)
+      .order('published_at', { ascending: false })
+      .limit(LLM_BATCH_SIZE)
+  const { data: pendingArticles, error: pendingError } = pendingResult
 
   let processResults: ProcessResult[] = []
   let processedCount = 0
@@ -350,9 +406,9 @@ export async function GET(request: Request) {
   await updateRunningLog({
     fetch_total_fetched: fetchResults.reduce((sum, item) => sum + item.fetched, 0),
     fetch_total_inserted: totalInserted,
-    llm_pending: pendingArticles?.length ?? 0,
+    llm_pending: enqueueOnly ? totalInserted : pendingArticles?.length ?? 0,
     details: {
-      stage: 'llm',
+      stage: enqueueOnly ? 'queued' : 'llm',
       llmCompleted: 0,
       llmTotal: pendingArticles?.length ?? 0,
     },
@@ -462,12 +518,12 @@ export async function GET(request: Request) {
         ended_at: new Date().toISOString(),
         fetch_total_fetched: totalFetched,
         fetch_total_inserted: totalInserted,
-        llm_pending: pendingArticles?.length ?? 0,
+        llm_pending: enqueueOnly ? totalInserted : pendingArticles?.length ?? 0,
         llm_processed: processedCount,
         llm_failed: (pendingArticles?.length ?? 0) - processedCount,
         status,
         error_message: errorMessages.length > 0 ? errorMessages.join('; ') : null,
-        details: { fetchResults, qualityResults: processResults, elapsedMs: elapsed },
+        details: { fetchResults, qualityResults: processResults, elapsedMs: elapsed, enqueueOnly },
       })
       .eq('id', logId)
   }
@@ -480,7 +536,7 @@ export async function GET(request: Request) {
         batchIndex,
         totalBatches,
         batchSize,
-        totalActiveSources: allActiveSources.length,
+        totalActiveSources: loadedSources.length,
         eligibleSources: eligibleSources.length,
         processedSources: activeSources.length,
         totalFetched,
@@ -490,6 +546,8 @@ export async function GET(request: Request) {
         results: fetchResults,
       },
       llm: {
+        enqueued: totalInserted,
+        enqueueOnly,
         pending: pendingArticles?.length ?? 0,
         processed: processedCount,
         failed: (pendingArticles?.length ?? 0) - processedCount,

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeToggle } from './ThemeToggle'
-import { useAdmin } from './AdminToggle'
+import { AdminToggle, useAdmin } from './AdminToggle'
 
 const NAV_ITEMS = [
   {
@@ -103,6 +103,7 @@ export function Sidebar() {
         )}
       </nav>
       <div className="sidebar-footer">
+        <AdminToggle />
         <ThemeToggle />
       </div>
     </aside>

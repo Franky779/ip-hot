@@ -32,6 +32,11 @@ type TestResult = {
   message: string
 }
 
+type SourceFetchNotice = {
+  status: 'success' | 'failed'
+  message: string
+}
+
 function buildChatGptRepairPrompt(source: Source, testResult?: TestResult): string {
   return `请作为信息源抓取调试工程师，专门排查下面这个信息源，持续调试直到给出可执行的修复方案。
 
@@ -132,6 +137,8 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [testingIds, setTestingIds] = useState<Set<string>>(new Set())
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
+  const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set())
+  const [fetchNotices, setFetchNotices] = useState<Record<string, SourceFetchNotice>>({})
   const [repairNoticeId, setRepairNoticeId] = useState<string | null>(null)
   const [bulkAction, setBulkAction] = useState<'test' | 'start' | 'stop' | null>(null)
   const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 })
@@ -267,6 +274,58 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       setTestingIds((previous) => {
         const next = new Set(previous)
         next.delete(id)
+        return next
+      })
+    }
+  }
+
+  const handleFetchSource = async (source: Source) => {
+    if (fetchingIds.has(source.id)) return
+    if (!confirm(`确定只抓取“${source.name}”，并将新资讯加入 LLM 处理队列？`)) return
+
+    setFetchingIds((previous) => new Set(previous).add(source.id))
+    setFetchNotices((previous) => {
+      const next = { ...previous }
+      delete next[source.id]
+      return next
+    })
+
+    try {
+      const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+      const query = new URLSearchParams({ sourceId: source.id, enqueueOnly: '1' })
+      const response = await fetch(`/api/cron/fetch-and-process?${query}`, {
+        headers: { 'x-admin-password': pw },
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || '抓取失败')
+      }
+
+      const result = payload.fetch?.results?.[0]
+      const discovered = result?.discovered ?? 0
+      const inserted = result?.inserted ?? 0
+      const duplicates = result?.duplicates ?? 0
+      const blocked = result?.blocked ?? 0
+      const dead = result?.dead ?? 0
+      const message = result?.error
+        ? `抓取失败：${result.error}`
+        : `抓取完成：发现 ${discovered} 条，新增 ${inserted} 条，重复 ${duplicates} 条，过滤 ${blocked + dead} 条；${inserted} 条已加入 LLM 队列。`
+      setFetchNotices((previous) => ({
+        ...previous,
+        [source.id]: { status: result?.error ? 'failed' : 'success', message },
+      }))
+    } catch (error) {
+      setFetchNotices((previous) => ({
+        ...previous,
+        [source.id]: {
+          status: 'failed',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      }))
+    } finally {
+      setFetchingIds((previous) => {
+        const next = new Set(previous)
+        next.delete(source.id)
         return next
       })
     }
@@ -585,6 +644,13 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                           {testingIds.has(item.id) ? '测试中...' : '测试'}
                         </button>
                         <button
+                          className="article-action-btn source-repair-btn"
+                          onClick={() => handleFetchSource(item)}
+                          disabled={fetchingIds.has(item.id)}
+                        >
+                          {fetchingIds.has(item.id) ? '抓取中...' : '抓取'}
+                        </button>
+                        <button
                           className="article-action-btn edit"
                           onClick={() => {
                             setEditingSource(item)
@@ -607,6 +673,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         >
                           {deletingId === item.id ? '删除中...' : '删除'}
                         </button>
+                      </div>
+                    )}
+                    {fetchNotices[item.id] && (
+                      <div className="source-repair-notice" role="status">
+                        {fetchNotices[item.id].message}
                       </div>
                     )}
                     {repairNoticeId === item.id && (
