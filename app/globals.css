@@ -136,6 +136,8 @@ body {
   justify-content: center;
   flex-shrink: 0;
   letter-spacing: 0.02em;
+  object-fit: cover;
+  object-position: center;
 }
 
 .sidebar-brand-text {

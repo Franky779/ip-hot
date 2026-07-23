@@ -31,9 +31,13 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <Link href="/" className="sidebar-brand">
-        <span className="sidebar-brand-icon">资</span>
+        <img
+          className="sidebar-brand-icon"
+          src="/laojia-ip-avatar.jpg"
+          alt="老贾"
+        />
         <span className="sidebar-brand-text">
-          IP 行业资讯快报
+          新文创老贾聊IP
         </span>
       </Link>
       <nav className="sidebar-nav">
