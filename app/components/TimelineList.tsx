@@ -91,6 +91,7 @@ export function TimelineList({
       : articles.filter((a) =>
           (a.relevance_score ?? 10) >= 6
           && a.category !== '待分类'
+          && a.category !== '待人工复核'
           && a.commentary
           && !isClearlyIndirectTechTitle(a.title, a.category)
         )
@@ -270,7 +271,7 @@ export function TimelineList({
                   onClick={() => toggleScoreFilter(score)}
                   title={`只显示评分 ${score} 的资讯`}
                 >
-                  {score}
+                  {score}分资讯
                   <span className="score-count">{scoreCounts[score] || 0}</span>
                 </button>
               ))}

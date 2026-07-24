@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
-import { useAdmin } from './AdminToggle'
 
 const ALL_CATEGORIES = [
   { value: 'all', label: '全部' },
@@ -18,7 +17,6 @@ const ALL_CATEGORIES = [
   { value: '艺术/亚文化', label: '艺术/亚文化' },
   { value: '政策规则', label: '政策规则' },
   { value: '版权保护', label: '版权保护' },
-  { value: '待分类', label: '待分类' },
 ] as const
 
 export function CategoryTabs({
@@ -28,20 +26,16 @@ export function CategoryTabs({
   active: string
   query: string
 }) {
-  const { isAdmin, loaded } = useAdmin()
-  const categories = loaded && !isAdmin
-    ? ALL_CATEGORIES.filter((c) => c.value !== '待分类')
-    : ALL_CATEGORIES
   const tabsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const activeTab = tabsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')
     activeTab?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
-  }, [active, isAdmin])
+  }, [active])
 
   return (
     <div ref={tabsRef} className="category-tabs" role="tablist">
-      {categories.map((c) => {
+      {ALL_CATEGORIES.map((c) => {
         const params = new URLSearchParams()
         if (c.value !== 'all') params.set('category', c.value)
         if (query) params.set('q', query)

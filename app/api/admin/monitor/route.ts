@@ -169,17 +169,14 @@ export async function GET(request: Request) {
       if ((data?.length ?? 0) < 1000) break
     }
 
-    // 9. 待人工复核队列（待分类 + 评分4-6，LLM拿不准的）
+    // 9. 待人工复核队列（4-5 分边界资讯，以及高分但仍未能自动归类的内容）
     const { data: reviewQueue, error: e9 } = await supabase
       .from('articles')
       .select('id, title_cn, summary_cn, commentary, relevance_score, source, created_at')
-      .eq('category', '待分类')
-      .gte('relevance_score', 4)
-      .lte('relevance_score', 6)
-      .or('is_selected.is.null,is_selected.eq.false')
+      .eq('category', '待人工复核')
       .not('title_cn', 'is', null)
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(100)
 
     // 8. 流水线实时状态（pipeline_state 表，可能还未创建）
     let pipelineState = null
@@ -290,7 +287,7 @@ export async function GET(request: Request) {
       sourceQualityWindowDays: qualityDays,
       sourceCoverage,
       sourceCoverageError: sourceRunsResult.error?.message ?? null,
-      reviewQueue: (reviewQueue || []).map((r: any) => ({
+      reviewQueue: (reviewQueue || []).slice(0, 20).map((r: any) => ({
         id: r.id,
         titleCn: r.title_cn,
         summaryCn: r.summary_cn,

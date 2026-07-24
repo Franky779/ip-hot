@@ -126,23 +126,42 @@ export default function MonitorPage() {
   const [fetchProgress, setFetchProgress] = useState<{ completed: number; total: number } | null>(null)
   const [llming, setLlming] = useState(false)
   const [llmProgress, setLlmProgress] = useState<{ processed: number; remaining: number; rounds: number } | null>(null)
+  const [pendingClassifying, setPendingClassifying] = useState(false)
   const stopLlmRef = useRef(false)
   const [logs, setLogs] = useState<CronLog[]>([])
   const [reviewing, setReviewing] = useState<Record<string, string>>({}) // articleId -> 'delete'|'select'
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
   const [qualityDays, setQualityDays] = useState<7 | 30 | 180 | 365>(7)
   const [coverageExpanded, setCoverageExpanded] = useState(false)
+  const dataRequestRef = useRef<Promise<void> | null>(null)
+  const dataRefreshQueuedRef = useRef(false)
+  const qualityDaysRef = useRef(qualityDays)
 
-  const fetchData = useCallback(async () => {
-    const pw = getPw(); if (!pw) return
-    try {
-      const res = await fetch(`/api/admin/monitor?qualityDays=${qualityDays}`, {
-        cache: 'no-store',
-        headers: { 'x-admin-password': pw },
-      })
-      if (res.ok) setData(await res.json())
-    } catch {} finally { setLoading(false) }
-  }, [qualityDays])
+  useEffect(() => { qualityDaysRef.current = qualityDays }, [qualityDays])
+
+  const fetchData = useCallback((): Promise<void> => {
+    const pw = getPw(); if (!pw) return Promise.resolve()
+    dataRefreshQueuedRef.current = true
+    if (dataRequestRef.current) return dataRequestRef.current
+
+    const request = (async () => {
+      do {
+        dataRefreshQueuedRef.current = false
+        try {
+          const res = await fetch(`/api/admin/monitor?qualityDays=${qualityDaysRef.current}`, {
+            cache: 'no-store',
+            headers: { 'x-admin-password': pw },
+          })
+          if (res.ok) setData(await res.json())
+        } catch {}
+      } while (dataRefreshQueuedRef.current)
+    })().finally(() => {
+      dataRequestRef.current = null
+      setLoading(false)
+    })
+    dataRequestRef.current = request
+    return request
+  }, [])
 
   const loadLogs = useCallback(async () => {
     const pw = getPw() || ''
@@ -154,17 +173,18 @@ export default function MonitorPage() {
   }, [])
 
   useEffect(() => {
-    if (loaded) {
-      fetchData()
-      loadLogs()
+    if (!loaded) return
+    const initialTimer = setTimeout(() => {
+      void fetchData()
+      void loadLogs()
+    }, 0)
+    const logsTimer = setInterval(() => { void loadLogs() }, 5000)
+    const dataTimer = setInterval(() => { void fetchData() }, 30000)
+    return () => {
+      clearTimeout(initialTimer)
+      clearInterval(logsTimer)
+      clearInterval(dataTimer)
     }
-    const t = setInterval(() => {
-      if (loaded) {
-        fetchData()
-        loadLogs()
-      }
-    }, 5000)
-    return () => clearInterval(t)
   }, [loaded, fetchData, loadLogs])
 
   const handleManualFetch = async () => {
@@ -392,6 +412,33 @@ export default function MonitorPage() {
     fetchData()
   }
 
+  const handlePendingClassification = async () => {
+    const pendingCount = data?.categoryStats.find((item) => item.category === '待分类')?.count ?? 0
+    if (pendingCount === 0) { alert('暂无待分类资讯'); return }
+    if (!confirm(`确定处理下一批待分类资讯吗？本次最多 50 条：0-3 分删除，4-5 分或敏感内容保留人工复核，6 分及以上自动归类。当前待分类 ${pendingCount} 条。`)) return
+
+    setPendingClassifying(true)
+    const pw = getPw() || ''
+    try {
+      const res = await fetch('/api/admin/process-pending-classification', {
+        method: 'POST',
+        headers: { 'x-admin-password': pw },
+      })
+      const result = await res.json()
+      if (!res.ok || !result.ok) {
+        alert(`待分类处理失败：${result.error || '未知错误'}`)
+        return
+      }
+      alert(`本批完成：自动归类 ${result.classified} 条，保留人工复核 ${result.reviewed} 条，删除 ${result.deleted} 条，失败 ${result.failed} 条；剩余待分类 ${result.remaining} 条。`)
+      void fetchData()
+      void loadLogs()
+    } catch (error) {
+      alert(`请求失败：${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setPendingClassifying(false)
+    }
+  }
+
   const task = data?.todayTask
   const coverage = data?.sourceCoverage
   const missedCloudRows = coverage?.rows
@@ -462,6 +509,15 @@ export default function MonitorPage() {
                       </span>
                     </>
                   )}
+                </div>
+              </div>
+              <div className="monitor-stat-card">
+                <div className="monitor-stat-value" style={{ color: '#f59e0b' }}>{catMap.get('待分类') ?? 0}</div>
+                <div className="monitor-stat-label">待分类</div>
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+                  <button className="monitor-action-btn" onClick={handlePendingClassification} disabled={pendingClassifying}>
+                    {pendingClassifying ? '分类中…' : '手动分类'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -592,7 +648,7 @@ export default function MonitorPage() {
               <div>
                 <h2 className="monitor-section-title" style={{ color: '#f59e0b' }}>待人工复核 · {data.reviewQueue.length}</h2>
                 <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                  评分 4-6 且仍为待分类的边界资讯。系统会先按约束条件自动处理；这里只保留少量需要人工裁决的异常项。
+                  评分 4-5 的边界资讯，以及敏感或未能自动归类的内容。这里只保留需要人工裁决的异常项。
                 </p>
                 {/* 批量操作工具栏 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>

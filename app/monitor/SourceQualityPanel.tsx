@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 
 export type SourceQualityItem = {
@@ -41,6 +41,9 @@ type Props = {
   onDaysChange: (days: 7 | 30 | 180 | 365) => void
   onRefresh: () => Promise<void>
 }
+
+type SourceAction = 'observe' | 'reduce' | 'normal' | 'pause' | 'resume' | 'delete'
+type ActionNotice = { type: 'success' | 'error'; message: string }
 
 const STATUS_LABELS = {
   insufficient: '样本不足',
@@ -90,8 +93,29 @@ function trendLabel(trend: number | null) {
 export default function SourceQualityPanel({ items, days, onDaysChange, onRefresh }: Props) {
   const [filter, setFilter] = useState<'all' | SourceQualityItem['managementStatus']>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [busy, setBusy] = useState<string | null>(null)
+  const [busySources, setBusySources] = useState<Record<string, SourceAction>>({})
+  const [notice, setNotice] = useState<ActionNotice | null>(null)
   const [deletedSourceIds, setDeletedSourceIds] = useState<Set<string>>(new Set())
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+  }, [])
+
+  const showNotice = (type: ActionNotice['type'], message: string) => {
+    setNotice({ type, message })
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+    noticeTimerRef.current = setTimeout(() => setNotice(null), 4000)
+  }
+
+  const setSourceBusy = (sourceId: string, action: SourceAction | null) => {
+    setBusySources((current) => {
+      const next = { ...current }
+      if (action) next[sourceId] = action
+      else delete next[sourceId]
+      return next
+    })
+  }
 
   const availableItems = useMemo(
     () => items.filter((item) => !item.sourceId || !deletedSourceIds.has(item.sourceId)),
@@ -121,9 +145,10 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
     action: 'observe' | 'reduce' | 'normal' | 'pause' | 'resume',
   ) => {
     if (!item.sourceId) {
-      alert('该统计名称尚未匹配到信息源管理记录，请前往信息源管理页处理。')
+      showNotice('error', '该统计名称尚未匹配到信息源管理记录，请前往信息源管理页处理。')
       return
     }
+    if (busySources[item.sourceId]) return
     const confirmations = {
       observe: `将“${item.name}”标记为继续观察？这不会改变抓取状态。`,
       reduce: `将“${item.name}”改为降频抓取？后续只参加一半的定时轮次。`,
@@ -132,7 +157,7 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
       resume: `确认恢复启用“${item.name}”？只有最近测试成功的来源才能恢复。`,
     }
     if (!confirm(confirmations[action])) return
-    setBusy(`${item.sourceId}:${action}`)
+    setSourceBusy(item.sourceId, action)
     try {
       const response = await fetch('/api/admin/source-quality/action', {
         method: 'POST',
@@ -141,23 +166,25 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || '操作失败')
-      alert(result.message)
-      await onRefresh()
+      showNotice('success', `${item.name}：${result.message}`)
+      void onRefresh()
+        .catch((error) => showNotice('error', `操作已完成，但刷新数据失败：${error instanceof Error ? error.message : String(error)}`))
+        .finally(() => setSourceBusy(item.sourceId!, null))
     } catch (error) {
-      alert(error instanceof Error ? error.message : String(error))
-    } finally {
-      setBusy(null)
+      showNotice('error', error instanceof Error ? error.message : String(error))
+      setSourceBusy(item.sourceId, null)
     }
   }
 
   const deleteSource = async (item: SourceQualityItem) => {
     if (!item.sourceId) {
-      alert('该统计名称尚未匹配到信息源管理记录，无法删除。')
+      showNotice('error', '该统计名称尚未匹配到信息源管理记录，无法删除。')
       return
     }
+    if (busySources[item.sourceId]) return
     if (!confirm(`确认删除“${item.name}”吗？该来源会立即退出管理页和后续抓取队列，历史资讯与审计日志会保留。`)) return
 
-    setBusy(`${item.sourceId}:delete`)
+    setSourceBusy(item.sourceId, 'delete')
     try {
       const response = await fetch('/api/admin/sources/delete', {
         method: 'POST',
@@ -172,16 +199,23 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
         return next
       })
       setExpanded(null)
-      await onRefresh()
+      showNotice('success', `${item.name}：信息源已删除。`)
+      void onRefresh()
+        .catch((error) => showNotice('error', `删除已完成，但刷新数据失败：${error instanceof Error ? error.message : String(error)}`))
+        .finally(() => setSourceBusy(item.sourceId!, null))
     } catch (error) {
-      alert(error instanceof Error ? error.message : String(error))
-    } finally {
-      setBusy(null)
+      showNotice('error', error instanceof Error ? error.message : String(error))
+      setSourceBusy(item.sourceId, null)
     }
   }
 
   return (
     <section className="source-efficiency-section">
+      {notice && (
+        <div className={`source-action-notice is-${notice.type}`} role="status" aria-live="polite">
+          {notice.message}
+        </div>
+      )}
       <div className="source-efficiency-heading">
         <div>
           <h2 className="monitor-section-title">信源命中效率</h2>
@@ -229,6 +263,8 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
         <div className="source-quality-grid">
           {visibleItems.map((item) => {
             const isExpanded = expanded === item.name
+            const busyAction = item.sourceId ? busySources[item.sourceId] : undefined
+            const isBusy = Boolean(busyAction)
             return (
               <article
                 key={item.name}
@@ -304,22 +340,22 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
 
                     <div className="source-quality-actions">
                       <span>人工决策：</span>
-                      <button disabled={busy !== null} onClick={() => runAction(item, 'observe')}>继续观察</button>
+                      <button disabled={isBusy} onClick={() => runAction(item, 'observe')}>{busyAction === 'observe' ? '处理中…' : '继续观察'}</button>
                       {item.mode === 'reduced'
-                        ? <button disabled={busy !== null} onClick={() => runAction(item, 'normal')}>恢复正常频率</button>
-                        : <button disabled={busy !== null || !item.enabled} onClick={() => runAction(item, 'reduce')}>降低频率</button>}
+                        ? <button disabled={isBusy} onClick={() => runAction(item, 'normal')}>{busyAction === 'normal' ? '处理中…' : '恢复正常频率'}</button>
+                        : <button disabled={isBusy || !item.enabled} onClick={() => runAction(item, 'reduce')}>{busyAction === 'reduce' ? '处理中…' : '降低频率'}</button>}
                       {item.enabled
-                        ? <button className="is-danger" disabled={busy !== null} onClick={() => runAction(item, 'pause')}>停用来源</button>
-                        : <button disabled={busy !== null} onClick={() => runAction(item, 'resume')}>恢复启用</button>}
+                        ? <button className="is-danger" disabled={isBusy} onClick={() => runAction(item, 'pause')}>{busyAction === 'pause' ? '处理中…' : '停用来源'}</button>
+                        : <button disabled={isBusy} onClick={() => runAction(item, 'resume')}>{busyAction === 'resume' ? '处理中…' : '恢复启用'}</button>}
                       <Link href="/sources">修改栏目/抓取规则</Link>
                       <button
                         className="is-normalize"
-                        disabled={busy !== null || item.managementStatus === 'normal'}
+                        disabled={isBusy || item.managementStatus === 'normal'}
                         onClick={() => runAction(item, item.enabled ? 'normal' : 'resume')}
                       >
-                        转为正常信源
+                        {busyAction === 'normal' || busyAction === 'resume' ? '处理中…' : '转为正常信源'}
                       </button>
-                      <button className="is-delete-source" disabled={busy !== null} onClick={() => deleteSource(item)}>删除信源</button>
+                      <button className="is-delete-source" disabled={isBusy} onClick={() => deleteSource(item)}>{busyAction === 'delete' ? '删除中…' : '删除信源'}</button>
                     </div>
                   </div>
                 )}
