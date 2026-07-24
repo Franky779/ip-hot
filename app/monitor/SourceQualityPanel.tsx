@@ -65,6 +65,18 @@ const MANAGEMENT_STATUS_LABELS = {
   paused: '停用来源',
 }
 
+const MANAGEMENT_STATUS_OPTIONS: Array<{
+  value: SourceQualityItem['managementStatus']
+  label: string
+}> = [
+  { value: 'normal', label: '启动中 · 正常信源' },
+  { value: 'reduced', label: '启动中 · 降低频率' },
+  { value: 'insufficient', label: '启动中 · 样本不足' },
+  { value: 'observe', label: '启动中 · 继续观察' },
+  { value: 'review', label: '暂停中 · 需人工复核' },
+  { value: 'paused', label: '暂停中 · 停用来源' },
+]
+
 function adminPassword() {
   return typeof window === 'undefined' ? '' : localStorage.getItem('ip-hot-admin-pw') || ''
 }
@@ -191,8 +203,8 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
             <span>信息源状态</span>
             <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
               <option value="all">{availableItems.length} 条 · 全部</option>
-              {Object.entries(MANAGEMENT_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{statusCounts[value as SourceQualityItem['managementStatus']]} 条 · {label}</option>
+              {MANAGEMENT_STATUS_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{statusCounts[value]} 条 · {label}</option>
               ))}
             </select>
           </label>
