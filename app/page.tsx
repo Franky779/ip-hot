@@ -79,7 +79,7 @@ async function getArticles(category: string, q: string, page: number): Promise<A
           .not('commentary', 'is', null)
           .neq('commentary', '')
           .neq('category', '待分类')
-          .gte('relevance_score', 7)
+          .gte('relevance_score', 6)
           .order('published_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false, nullsFirst: false })
           .order('id', { ascending: false })

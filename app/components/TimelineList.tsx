@@ -89,7 +89,7 @@ export function TimelineList({
     let filtered = isAdmin || category === '版权保护'
       ? articles
       : articles.filter((a) =>
-          (a.relevance_score ?? 10) >= 7
+          (a.relevance_score ?? 10) >= 6
           && a.category !== '待分类'
           && a.commentary
           && !isClearlyIndirectTechTitle(a.title, a.category)
