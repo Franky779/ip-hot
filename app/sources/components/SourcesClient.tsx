@@ -1,9 +1,16 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAdmin } from '@/app/components/AdminToggle'
 import { SourceModal } from './SourceModal'
 import { EXECUTION_MODE_LABELS, getNextScheduledAt, getSourceSchedule, SCHEDULE_TIER_LABELS } from '@/lib/source-schedule'
+import {
+  ATTENTION_HEALTH_STATUSES,
+  SOURCE_HEALTH_OPTIONS,
+  type SourceHealth,
+  type SourceHealthRun,
+  type SourceHealthStatus,
+} from '@/lib/source-health'
 
 interface Source {
   id: string
@@ -36,6 +43,15 @@ type SourceFetchNotice = {
   status: 'success' | 'failed'
   message: string
 }
+
+type SourceHealthRow = SourceHealth & {
+  sourceId: string
+  latestRun: SourceHealthRun | null
+}
+
+const SOURCE_HEALTH_LABELS = Object.fromEntries(
+  SOURCE_HEALTH_OPTIONS.map((option) => [option.value, option.label])
+) as Record<SourceHealthStatus, string>
 
 function buildChatGptRepairPrompt(source: Source, testResult?: TestResult): string {
   return `请作为信息源抓取调试工程师，专门排查下面这个信息源，持续调试直到给出可执行的修复方案。
@@ -148,6 +164,36 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [healthBySource, setHealthBySource] = useState<Record<string, SourceHealthRow>>({})
+
+  const refreshHealth = useCallback(async () => {
+    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+    if (!pw) return
+    try {
+      const res = await fetch('/api/admin/source-health', {
+        cache: 'no-store',
+        headers: { 'x-admin-password': pw },
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      const rows = (data.health || []) as SourceHealthRow[]
+      setHealthBySource(Object.fromEntries(rows.map((row) => [row.sourceId, row])))
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (!loaded || !isAdmin) return
+    void refreshHealth()
+    const interval = window.setInterval(refreshHealth, 30_000)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void refreshHealth()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isAdmin, loaded, refreshHealth])
 
   const sectionOptions = Array.from(
     sources.reduce((options, source) => {
@@ -160,6 +206,17 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     }, new Map<string, { title: string; count: number }>()).entries()
   )
   const normalizedKeyword = keyword.trim().toLowerCase()
+  const healthCounts = Object.fromEntries(
+    SOURCE_HEALTH_OPTIONS.map((option) => [option.value, 0])
+  ) as Record<SourceHealthStatus, number>
+  for (const source of sources) {
+    const status = healthBySource[source.id]?.status
+    if (status) healthCounts[status] += 1
+  }
+  const attentionCount = sources.filter((source) => {
+    const status = healthBySource[source.id]?.status
+    return status ? ATTENTION_HEALTH_STATUSES.has(status) : false
+  }).length
   const filteredSources = sources.filter((source) => {
     const matchesKeyword = !normalizedKeyword || [
       source.name, source.url, source.type, source.description, source.method,
@@ -167,15 +224,10 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     const matchesRegion = regionFilter === 'all' || source.region === regionFilter
     const matchesFetchType = fetchTypeFilter === 'all' || getFetchType(source) === fetchTypeFilter
     const matchesSection = sectionFilter === 'all' || source.section_id === sectionFilter
+    const healthStatus = healthBySource[source.id]?.status
     const matchesStatus = statusFilter === 'all'
-      || (statusFilter === 'enabled' && source.enabled)
-      || (statusFilter === 'disabled' && !source.enabled)
-      || (statusFilter === 'success' && source.last_test_status === 'success')
-      || (statusFilter === 'failed' && source.last_test_status === 'failed')
-      || (statusFilter === 'untested' && (!source.last_test_status || source.last_test_status === 'untested'))
-      || (statusFilter === 'cloud' && getSourceSchedule(source).executionMode === 'cloud')
-      || (statusFilter === 'local' && getSourceSchedule(source).executionMode === 'local')
-      || (statusFilter === 'manual' && getSourceSchedule(source).executionMode === 'manual')
+      || (statusFilter === 'attention' && !!healthStatus && ATTENTION_HEALTH_STATUSES.has(healthStatus))
+      || statusFilter === healthStatus
     return matchesKeyword && matchesRegion && matchesFetchType && matchesSection && matchesStatus
   })
   const hasFilters = keyword !== '' || regionFilter !== 'all' || fetchTypeFilter !== 'all'
@@ -194,14 +246,17 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   })
 
   const handleRefresh = useCallback(async () => {
-    const res = await fetch('/api/sources', { cache: 'no-store' })
+    const [res] = await Promise.all([
+      fetch('/api/sources', { cache: 'no-store' }),
+      refreshHealth(),
+    ])
     if (res.ok) {
       const data = await res.json()
       const updatedSources = data.sources || []
       setSources(updatedSources)
       window.dispatchEvent(new CustomEvent('sources-updated', { detail: updatedSources }))
     }
-  }, [])
+  }, [refreshHealth])
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定删除这条信息源？')) return
@@ -323,6 +378,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         },
       }))
     } finally {
+      await refreshHealth()
       setFetchingIds((previous) => {
         const next = new Set(previous)
         next.delete(source.id)
@@ -505,17 +561,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               </select>
             </label>
             <label>
-              <span>运行状态</span>
+              <span>抓取健康</span>
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                <option value="all">全部状态</option>
-                <option value="enabled">自动抓取已启用</option>
-                <option value="disabled">自动抓取已停用</option>
-                <option value="success">最近测试成功</option>
-                <option value="failed">最近测试失败</option>
-                <option value="untested">尚未测试</option>
-                <option value="cloud">云端抓取</option>
-                <option value="local">本地 CDP</option>
-                <option value="manual">人工处理</option>
+                <option value="all">{sources.length} 条 · 全部状态</option>
+                <option value="attention">{attentionCount} 条 · 待处理</option>
+                {SOURCE_HEALTH_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {healthCounts[option.value]} 条 · {option.label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
@@ -625,6 +679,12 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         </div>
                       )
                     })()}
+                    {healthBySource[item.id] && healthBySource[item.id].status !== 'healthy' && (
+                      <div className={`source-health-note ${healthBySource[item.id].status}`}>
+                        <strong>{SOURCE_HEALTH_LABELS[healthBySource[item.id].status]}</strong>
+                        <span>{healthBySource[item.id].reason}</span>
+                      </div>
+                    )}
                     {item.description && (
                       <p className="source-desc">{item.description}</p>
                     )}

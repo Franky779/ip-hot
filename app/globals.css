@@ -2363,6 +2363,42 @@ body {
   white-space: nowrap;
 }
 
+.source-health-note {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  color: var(--text-secondary);
+  border-left: 3px solid var(--border);
+  background: var(--background);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.source-health-note strong {
+  flex: 0 0 auto;
+}
+
+.source-health-note span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-health-note.repair,
+.source-health-note.dead_links,
+.source-health-note.no_articles,
+.source-health-note.overdue {
+  color: #a53b2b;
+  border-left-color: #d65a46;
+  background: #fff3f0;
+}
+
+.source-health-note.running {
+  color: #2066a3;
+  border-left-color: #3b82c4;
+  background: #eef7ff;
+}
+
 .source-config {
   display: -webkit-box;
   overflow: hidden;
