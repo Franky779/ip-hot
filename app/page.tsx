@@ -7,6 +7,7 @@ import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 import { AdminPendingArticles } from './components/AdminPendingArticles'
 import { paginateFilteredResults } from '@/lib/filtered-pagination'
 import { formatArticleDate, resolveArticleDisplayTime } from '@/lib/article-time'
+import { createArticleSearchPattern } from '@/lib/article-search'
 
 export const revalidate = 300
 const ARTICLES_PER_PAGE = 20
@@ -25,6 +26,8 @@ type Article = {
   relevance_score: number | null
   published_at: string | null
   created_at: string | null
+  image_url?: string | null
+  is_video?: boolean | null
 }
 
 type SearchParams = { category?: string; q?: string; page?: string }
@@ -45,6 +48,7 @@ function parsePage(value: string | undefined): number {
 async function getArticles(category: string, q: string, page: number): Promise<ArticleResult> {
   const supabase = category === '版权保护' ? createServiceClient() : getSupabase()
   const totalToShow = page * ARTICLES_PER_PAGE
+  const searchPattern = createArticleSearchPattern(q)
   try {
     const result = await paginateFilteredResults({
       targetCount: totalToShow,
@@ -55,15 +59,15 @@ async function getArticles(category: string, q: string, page: number): Promise<A
         if (category === '版权保护') {
           let copyrightQuery = supabase
             .from('articles')
-            .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+            .select('id, source, url, image_url, is_video, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
             .eq('category', category)
             .order('published_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false, nullsFirst: false })
             .order('id', { ascending: false })
             .range(from, to)
 
-          if (q) {
-            copyrightQuery = copyrightQuery.or(`title.ilike.%${q}%,title_cn.ilike.%${q}%`)
+          if (searchPattern) {
+            copyrightQuery = copyrightQuery.orIlike(['title', 'title_cn', 'summary_cn'], searchPattern)
           }
 
           const { data, error } = await copyrightQuery
@@ -73,7 +77,7 @@ async function getArticles(category: string, q: string, page: number): Promise<A
 
         let query = supabase
           .from('articles')
-          .select('id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+          .select('id, source, url, image_url, is_video, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
           .not('title_cn', 'is', null)
           .not('summary_cn', 'is', null)
           .not('category', 'is', null)
@@ -90,8 +94,8 @@ async function getArticles(category: string, q: string, page: number): Promise<A
         if (category && category !== 'all') {
           query = query.eq('category', category)
         }
-        if (q) {
-          query = query.or(`title.ilike.%${q}%,title_cn.ilike.%${q}%`)
+        if (searchPattern) {
+          query = query.orIlike(['title', 'title_cn', 'summary_cn'], searchPattern)
         }
 
         const { data, error } = await query
@@ -156,7 +160,7 @@ export default async function Home({
         <div className="home-header-top">
           <h1 className="page-title font-serif">实时快讯</h1>
           <div className="home-header-actions">
-            <SearchBox defaultValue={q} activeCategory={category} />
+            <SearchBox key={q} defaultValue={q} activeCategory={category} />
             <AdminToggle />
           </div>
         </div>

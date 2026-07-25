@@ -1,6 +1,19 @@
 import Parser from 'rss-parser'
 
-const parser = new Parser()
+export function createFeedParser(timeout?: number) {
+  return new Parser({
+    ...(timeout ? { timeout } : {}),
+    customFields: {
+      item: [
+        ['media:content', 'mediaContent', { keepArray: true }],
+        ['media:thumbnail', 'mediaThumbnail', { keepArray: true }],
+        ['content:encoded', 'contentEncoded'],
+      ],
+    },
+  })
+}
+
+const parser = createFeedParser()
 
 export async function parseFeedUrl(url: string, timeoutMs = 15_000) {
   const controller = new AbortController()

@@ -2,11 +2,14 @@ import * as cheerio from 'cheerio'
 import { constants, createCipheriv, publicEncrypt, randomInt } from 'node:crypto'
 import vm from 'node:vm'
 import type { ScrapeConfig } from '@/lib/sources'
+import { normalizeImageUrl } from '@/lib/article-image'
 
 export type ScrapedNewsItem = {
   title: string
   url: string
   publishedAt: string | null
+  imageUrl?: string | null
+  isVideo?: boolean
 }
 
 export type ScrapeResult = {
@@ -781,7 +784,15 @@ export async function scrapeNewsList(
         item.find('time').attr('datetime') ||
         item.find('time, .time, .date').first().text().trim() ||
         null
-      items.push({ title, url: normalizedUrl, publishedAt })
+      const imageElement = item.is('img') ? item : item.find('img').first()
+      const videoElement = item.is('video') ? item : item.find('video').first()
+      const imageCandidate = imageElement.attr('data-src')
+        || imageElement.attr('data-original')
+        || imageElement.attr('data-lazy-src')
+        || imageElement.attr('src')
+        || videoElement.attr('poster')
+      const imageUrl = normalizeImageUrl(imageCandidate, normalizedUrl)
+      items.push({ title, url: normalizedUrl, publishedAt, imageUrl, isVideo: videoElement.length > 0 })
     })
 
     return {

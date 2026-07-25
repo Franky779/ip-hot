@@ -4,11 +4,12 @@ import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
 import { findSourceConfiguration, RSS_SOURCES, type ScrapeConfig } from '@/lib/sources'
 import { scrapeNewsList } from '@/lib/scraper'
-import { parseFeedUrl } from '@/lib/rss'
+import { createFeedParser, parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
 import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
 import { resolveClassificationResult } from '@/lib/pending-classification'
 import { normalizePublishedAt } from '@/lib/article-time'
+import { extractFeedMedia, normalizeImageUrl } from '@/lib/article-image'
 import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -17,7 +18,7 @@ import { tmpdir } from 'os'
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-const parser = new Parser({ timeout: 15000 })
+const parser = createFeedParser(15000)
 
 type RuntimeSource = {
   id: string
@@ -302,6 +303,8 @@ export async function GET(request: Request) {
         url: string
         title: string
         published_at: string | null
+        image_url: string | null
+        is_video: boolean
       }>
 
       if (source.fetchType === 'rss') {
@@ -311,12 +314,17 @@ export async function GET(request: Request) {
           continue
         }
         rawItems = feed.items
-          .map((item) => ({
-            source: source.name,
-            url: item.link ?? '',
-            title: item.title ?? '',
-            published_at: normalizePublishedAt(item.isoDate ?? null, sourceStartedAt),
-          }))
+          .map((item) => {
+            const media = extractFeedMedia(item, source.url)
+            return {
+              source: source.name,
+              url: item.link ?? '',
+              title: item.title ?? '',
+              published_at: normalizePublishedAt(item.isoDate ?? null, sourceStartedAt),
+              image_url: media.imageUrl,
+              is_video: media.isVideo,
+            }
+          })
           .filter((item) => item.url.length > 0 && item.title.length > 0)
       } else {
         if (!source.scrapeConfig) {
@@ -333,6 +341,8 @@ export async function GET(request: Request) {
           url: item.url,
           title: item.title,
           published_at: normalizePublishedAt(item.publishedAt, sourceStartedAt),
+          image_url: normalizeImageUrl(item.imageUrl, item.url),
+          is_video: item.isVideo ?? false,
         }))
       }
 

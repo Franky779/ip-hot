@@ -185,6 +185,15 @@ class QueryBuilder implements PromiseLike<QueryResult> {
     return this
   }
 
+  orIlike(columns: string[], pattern: string): this {
+    const names = columns.map(identifier)
+    this.filters.push({
+      sql: `(${names.map((name) => `${name} ILIKE ?`).join(' OR ')})`,
+      values: names.map(() => pattern),
+    })
+    return this
+  }
+
   order(column: string, options: OrderOptions = {}): this {
     const direction = options.ascending === false ? 'DESC' : 'ASC'
     const nulls = options.nullsFirst === undefined ? '' : options.nullsFirst ? ' NULLS FIRST' : ' NULLS LAST'

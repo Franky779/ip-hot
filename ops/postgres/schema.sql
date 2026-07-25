@@ -4,6 +4,8 @@ create table if not exists articles (
   id uuid primary key default gen_random_uuid(),
   source text not null,
   url text not null,
+  image_url text,
+  is_video boolean not null default false,
   title text not null,
   title_cn text,
   summary_cn text,

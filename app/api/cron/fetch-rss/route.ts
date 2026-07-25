@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
-import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { RSS_SOURCES } from '@/lib/sources'
 import { checkLinks } from '@/lib/link-checker'
 import { normalizePublishedAt } from '@/lib/article-time'
+import { extractFeedMedia } from '@/lib/article-image'
+import { createFeedParser } from '@/lib/rss'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const parser = new Parser({ timeout: 15000 })
+const parser = createFeedParser(15000)
 
 // 过滤无 IP 商业角度的英文新闻(选角/评论/回顾)
 const BLOCK_PATTERNS: RegExp[] = [
@@ -52,12 +53,17 @@ export async function GET(request: Request) {
     try {
       const feed = await parser.parseURL(source.url)
       const rawItems = feed.items
-        .map((item) => ({
-          source: source.name,
-          url: item.link ?? '',
-          title: item.title ?? '',
-          published_at: normalizePublishedAt(item.isoDate ?? null, sourceStartedAt),
-        }))
+        .map((item) => {
+          const media = extractFeedMedia(item, source.url)
+          return {
+            source: source.name,
+            url: item.link ?? '',
+            title: item.title ?? '',
+            published_at: normalizePublishedAt(item.isoDate ?? null, sourceStartedAt),
+            image_url: media.imageUrl,
+            is_video: media.isVideo,
+          }
+        })
         .filter((x) => x.url.length > 0 && x.title.length > 0)
 
       const items = rawItems.filter((x) => !isNoise(x.title))

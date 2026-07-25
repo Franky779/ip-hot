@@ -6,7 +6,8 @@ import { useState, useCallback, useMemo, useEffect, useRef, useTransition } from
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 import { isClearlyIndirectTechTitle } from '@/lib/relevance'
-import { formatArticleDateTime, formatArticleTime, resolveArticleDisplayTime } from '@/lib/article-time'
+import { formatArticleTime, resolveArticleDisplayTime } from '@/lib/article-time'
+import { splitSearchMatches } from '@/lib/article-search'
 
 const CATEGORIES = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护']
 
@@ -22,6 +23,8 @@ interface Article {
   relevance_score: number | null
   published_at: string | null
   created_at: string | null
+  image_url?: string | null
+  is_video?: boolean | null
 }
 
 interface TimelineListProps {
@@ -38,6 +41,14 @@ function getSourceRegionLabel(source: string, sourceRegions: TimelineListProps['
   const region = sourceRegions?.[source.toLocaleLowerCase()]
   if (region === 'domestic' || (!region && /[\u3400-\u9fff]/.test(source))) return '国内资讯'
   return '国外资讯'
+}
+
+function HighlightText({ text, query }: { text: string; query: string }) {
+  return <>{splitSearchMatches(text, query).map((part, index) => (
+    part.highlighted
+      ? <mark className="search-highlight" key={index}>{part.text}</mark>
+      : <span key={index}>{part.text}</span>
+  ))}</>
 }
 
 function buildPageHref(category: string, query: string, page: number): string {
@@ -335,30 +346,62 @@ export function TimelineList({
                       href={article.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="article-card"
+                      className={`article-card${article.image_url ? ' has-image' : ''}`}
                     >
                       <div className="article-meta">
-                        {typeof article.relevance_score === 'number' && (
+                        {loaded && isAdmin && typeof article.relevance_score === 'number' && (
                           <span className={`relevance-score ${article.relevance_score <= 3 ? 'score-low' : article.relevance_score >= 7 ? 'score-high' : 'score-mid'}`}>
                             {article.relevance_score}分
                           </span>
                         )}
-                        {article.category && (isAdmin || article.category !== '待分类') && <span>{article.category}</span>}
-                        {article.source && <span className="article-source">{getSourceRegionLabel(article.source, sourceRegions)}</span>}
-                        {article.created_at && <span>收录 {formatArticleDateTime(article.created_at)}</span>}
+                        {article.is_video && <span className="article-video-label">视频</span>}
+                        {article.category && (isAdmin || article.category !== '待分类') && (
+                          <span className="article-meta-tag"># {article.category}</span>
+                        )}
+                        {article.source && (
+                          <span className="article-meta-tag"># {getSourceRegionLabel(article.source, sourceRegions)}</span>
+                        )}
                       </div>
-                      <h2 className="article-title font-serif">
-                        {article.title_cn ?? article.title}
-                      </h2>
-                      {article.summary_cn && (
-                        <p className="article-summary">{article.summary_cn}</p>
-                      )}
-                      {article.commentary && (
-                        <p className="article-commentary">
-                          <span className="commentary-label">推荐理由：</span>
-                          {article.commentary}
-                        </p>
-                      )}
+                      <div className="article-card-main">
+                        <div className="article-card-copy">
+                          <h2 className="article-title font-serif">
+                            <HighlightText text={article.title_cn ?? article.title} query={query} />
+                          </h2>
+                          {article.summary_cn && (
+                            <p className="article-summary">
+                              <HighlightText text={article.summary_cn} query={query} />
+                            </p>
+                          )}
+                          {article.commentary && (
+                            <p className="article-commentary">
+                              <span className="commentary-label">推荐理由：</span>
+                              {article.commentary}
+                            </p>
+                          )}
+                        </div>
+                        {article.image_url && (
+                          <div className="article-media">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- Source domains are dynamic and must not become an open image proxy. */}
+                            <img
+                              className="article-image"
+                              src={article.image_url}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              referrerPolicy="no-referrer"
+                              onError={(event) => {
+                                const media = event.currentTarget.parentElement
+                                if (media) media.style.display = 'none'
+                              }}
+                            />
+                            {article.is_video && (
+                              <span className="article-play-badge" aria-hidden="true">
+                                <span />
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </a>
                     <ArticleActions
                       id={article.id}
