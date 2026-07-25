@@ -20,6 +20,12 @@ const BLOCK_KEYWORDS = [
 ]
 
 const BLOCK_REGEX = new RegExp(BLOCK_KEYWORDS.join('|'), 'i')
+const LINK_CHECK_PROXY_HOSTS = new Set([
+  'www.crunchyroll.com',
+  'www.ctoy.com.cn',
+  'www.licenseglobal.com',
+  'wglt.dg.gov.cn',
+])
 
 export type LinkCheckResult = {
   ok: boolean
@@ -34,10 +40,25 @@ export async function checkLink(url: string, timeoutMs = 8000): Promise<LinkChec
     return { ok: false, url, reason: 'invalid url' }
   }
 
+  const usesProxy = LINK_CHECK_PROXY_HOSTS.has(new URL(url).hostname)
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const timer = setTimeout(() => controller.abort(), usesProxy ? Math.max(timeoutMs, 25_000) : timeoutMs)
 
   try {
+    const target = new URL(url)
+    if (usesProxy) {
+      const proxyUrl = `https://r.jina.ai/http://${target.hostname}${target.pathname}`
+      const proxyResponse = await fetch(proxyUrl, {
+        signal: controller.signal,
+        redirect: 'follow',
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      })
+      clearTimeout(timer)
+      return proxyResponse.ok
+        ? { ok: true, url, status: proxyResponse.status }
+        : { ok: false, url, status: proxyResponse.status, reason: `proxy HTTP ${proxyResponse.status}` }
+    }
+
     // 1. 先尝试 HEAD（最快）
     let res: Response | null = null
     try {

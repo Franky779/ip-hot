@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
+import { resolveClassificationResult } from '@/lib/pending-classification'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -143,14 +144,15 @@ export async function GET(request: Request) {
           }
         }
 
+        const classification = resolveClassificationResult(llmResult)
         const { error: updateError } = await supabase
           .from('articles')
           .update({
             title_cn: llmResult.title_cn,
             summary_cn: llmResult.summary_cn,
-            category: llmResult.category,
+            category: classification.category,
             relevance_score: llmResult.relevance_score,
-            is_selected: llmResult.is_selected,
+            is_selected: classification.is_selected,
             commentary: llmResult.commentary,
           })
           .eq('id', article.id)
@@ -159,7 +161,7 @@ export async function GET(request: Request) {
           id: article.id, source: article.source, title: article.title, url: article.url,
           ok: !updateError,
           score: updateError ? null : llmResult.relevance_score,
-          selected: updateError ? false : llmResult.is_selected,
+          selected: updateError ? false : classification.is_selected,
           commentary: updateError ? '' : llmResult.commentary,
           status: updateError ? 'failed' : 'scored',
           error: updateError?.message,

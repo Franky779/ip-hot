@@ -7,6 +7,7 @@ import { scrapeNewsList } from '@/lib/scraper'
 import { parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
 import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
+import { resolveClassificationResult } from '@/lib/pending-classification'
 import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -442,14 +443,15 @@ export async function GET(request: Request) {
             }
           }
 
+          const classification = resolveClassificationResult(llmResult)
           const { error: updateError } = await supabase
             .from('articles')
             .update({
               title_cn: llmResult.title_cn,
               summary_cn: llmResult.summary_cn,
-              category: llmResult.category,
+              category: classification.category,
               relevance_score: llmResult.relevance_score,
-              is_selected: llmResult.is_selected,
+              is_selected: classification.is_selected,
               commentary: llmResult.commentary,
             })
             .eq('id', article.id)
@@ -459,7 +461,7 @@ export async function GET(request: Request) {
             id: article.id, source: article.source, title: article.title, url: article.url,
             ok: !updateError,
             score: updateError ? null : llmResult.relevance_score,
-            selected: updateError ? false : llmResult.is_selected,
+            selected: updateError ? false : classification.is_selected,
             commentary: updateError ? '' : llmResult.commentary,
             status: updateError ? 'failed' : 'scored',
             error: updateError?.message,

@@ -6,6 +6,7 @@ import {
   PENDING_CATEGORY,
   REVIEW_CATEGORY,
   getPendingClassificationOutcome,
+  resolveClassificationResult,
 } from './pending-classification.ts'
 
 test('keeps ambiguous and pending model results in manual review', () => {
@@ -21,4 +22,19 @@ test('filters low-score results without deleting the article', () => {
 test('classifies direct industry results', () => {
   assert.equal(getPendingClassificationOutcome({ category: '潮玩谷子', relevance_score: 6 }), 'classified')
   assert.equal(REVIEW_CATEGORY, '待人工复核')
+})
+
+test('routes every first-pass LLM result to a terminal category', () => {
+  assert.deepEqual(
+    resolveClassificationResult({ category: PENDING_CATEGORY, relevance_score: 8, is_selected: true }),
+    { category: REVIEW_CATEGORY, is_selected: false },
+  )
+  assert.deepEqual(
+    resolveClassificationResult({ category: 'AI/新技术', relevance_score: 3, is_selected: false }),
+    { category: FILTERED_CATEGORY, is_selected: false },
+  )
+  assert.deepEqual(
+    resolveClassificationResult({ category: 'IP/品牌/授权', relevance_score: 8, is_selected: true }),
+    { category: 'IP/品牌/授权', is_selected: true },
+  )
 })

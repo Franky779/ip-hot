@@ -56,6 +56,7 @@ mv -Tf "$app_root/current.new" "$app_root/current"
 systemctl daemon-reload
 systemctl enable ip-hot.service
 systemctl enable --now ip-hot-health.timer
+systemctl enable --now ip-hot-pending-classification.timer
 systemctl reload nginx
 
 health_ok=false
