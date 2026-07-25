@@ -50,6 +50,23 @@ test('uses the Paper culture channel and ignores the former politics URL', async
   assert.equal(new Set(result.items.map((item) => item.url)).size, 10)
 })
 
+test('uses the current Chongqing culture and tourism committee site', async (t) => {
+  const html = Array.from({ length: 10 }, (_, index) => `
+    <a href="/zwxx_221/bmdt/gzdt/202607/t20260724_${15851727 + index}.html" title="重庆文旅测试标题${index}">重庆文旅测试标题${index}</a>
+  `).join('')
+  t.mock.method(globalThis, 'fetch', async () => htmlResponse(html))
+
+  const source = findSourceConfiguration('https://wlt.cq.gov.cn/', '重庆市文化和旅游发展委员会')
+  assert.equal(source?.id, 'cq-wl')
+  assert.equal(source?.url, 'https://whlyw.cq.gov.cn/')
+  assert.ok(source?.scrapeConfig)
+
+  const result = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
+  assert.equal(result.error, undefined)
+  assert.equal(result.items.length, 10)
+  assert.ok(result.items.every((item) => item.url.startsWith('https://whlyw.cq.gov.cn/zwxx_221/bmdt/')))
+})
+
 test('extracts Zhejiang Daily articles from the current official homepage links', async (t) => {
   const html = Array.from({ length: 10 }, (_, index) => `
     <a href="https://zjnews.zjol.com.cn/zjnews/202607/t20260724_${31804790 + index}.shtml">浙江日报测试标题${index}</a>
@@ -265,4 +282,32 @@ test('extracts Red Star News static article links from proxied homepage markdown
   assert.equal(result.items.length, 1)
   assert.equal(result.items[0]?.title, '成都测试标题')
   assert.equal(result.items[0]?.url, 'https://static.cdsb.com/micropub/Articles/202607/test-article.html')
+})
+
+test('retries an intermittent Jiemian account API failure and keeps only the configured account', async (t) => {
+  const source = ALL_SOURCES.find((candidate) => candidate.id === 'leibao-jiemian')
+  assert.ok(source?.scrapeConfig)
+
+  const list = Array.from({ length: 10 }, (_, index) => ({
+    object_type: 'article',
+    title: `雷报测试标题${index + 1}`,
+    url: `https://www.jiemian.com/article/${14713560 + index}.html`,
+    publish_time: String(1783392812 + index),
+    source: { official_account: { id: index === 9 ? 'other-account' : '2079', name: '雷报' } },
+  }))
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests += 1
+    if (requests === 1) throw new TypeError('fetch failed')
+    return new Response(`ipHotCallback(${JSON.stringify({ code: 0, data: { list } })})`, {
+      status: 200,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    })
+  })
+
+  const result = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
+  assert.equal(requests, 2)
+  assert.equal(result.error, undefined)
+  assert.equal(result.items.length, 9)
+  assert.ok(result.items.every((item) => item.url.includes('jiemian.com/article/')))
 })

@@ -138,6 +138,12 @@ type JiemianAccountItem = {
   url?: string
   publish_time?: string
   source_name?: string
+  source?: {
+    official_account?: {
+      id?: string
+      name?: string
+    }
+  }
 }
 
 type JiemianAccountResponse = {
@@ -492,17 +498,30 @@ async function scrapeJiemianAccount(
   apiUrl.searchParams.set('page', '1')
   apiUrl.searchParams.set('callback', 'ipHotCallback')
 
-  const response = await fetch(apiUrl, {
-    headers: {
-      'user-agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
-      accept: 'application/javascript, application/json, text/javascript',
-      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-      referer: sourceUrl,
-    },
-    redirect: 'follow',
-    signal,
-  })
+  const headers = {
+    'user-agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+    accept: 'application/javascript, application/json, text/javascript',
+    'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    referer: sourceUrl,
+  }
+  let response: Response | undefined
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      response = await fetch(apiUrl, { headers, redirect: 'follow', signal })
+      if (response.ok || response.status < 500) break
+    } catch (error) {
+      lastError = error
+    }
+
+    if (attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+    }
+  }
+
+  if (!response) throw lastError ?? new Error('雷报 API 请求失败')
 
   if (!response.ok) {
     return { items: [], rawCount: 0, error: `${sourceName}: API HTTP ${response.status}` }
