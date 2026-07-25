@@ -44,6 +44,11 @@ type SourceFetchNotice = {
   message: string
 }
 
+type CopyNotice = {
+  sourceId: string
+  status: 'success' | 'failed'
+}
+
 type SourceHealthRow = SourceHealth & {
   sourceId: string
   latestRun: SourceHealthRun | null
@@ -53,7 +58,7 @@ const SOURCE_HEALTH_LABELS = Object.fromEntries(
   SOURCE_HEALTH_OPTIONS.map((option) => [option.value, option.label])
 ) as Record<SourceHealthStatus, string>
 
-function buildChatGptRepairPrompt(source: Source, testResult?: TestResult): string {
+function buildSourceRepairDetails(source: Source, testResult?: TestResult): string {
   return `请作为信息源抓取调试工程师，专门排查下面这个信息源，持续调试直到给出可执行的修复方案。
 
 项目：Franky779/ip-hot
@@ -155,7 +160,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({})
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set())
   const [fetchNotices, setFetchNotices] = useState<Record<string, SourceFetchNotice>>({})
-  const [repairNoticeId, setRepairNoticeId] = useState<string | null>(null)
+  const [copyNotice, setCopyNotice] = useState<CopyNotice | null>(null)
   const [bulkAction, setBulkAction] = useState<'test' | 'start' | 'stop' | null>(null)
   const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 })
   const [bulkNotice, setBulkNotice] = useState('')
@@ -509,28 +514,18 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     }
   }
 
-  const handleChatGptRepair = async (source: Source) => {
-    const prompt = buildChatGptRepairPrompt(source, testResults[source.id])
-    let copied = false
+  const handleCopyRepairDetails = async (source: Source) => {
+    const details = buildSourceRepairDetails(source, testResults[source.id])
+    let status: CopyNotice['status'] = 'success'
     try {
-      await navigator.clipboard.writeText(prompt)
-      copied = true
-    } catch {}
-
-    const chatUrl = `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`
-    window.open(chatUrl, '_blank', 'noopener,noreferrer')
-    setRepairNoticeId(source.id)
-    window.setTimeout(() => setRepairNoticeId((current) => current === source.id ? null : current), 5000)
-
-    if (!copied) {
-      setTestResults((previous) => ({
-        ...previous,
-        [source.id]: {
-          status: 'failed',
-          message: '已打开 ChatGPT，但浏览器未允许复制诊断信息；如果没有自动填入，请重新点击并允许剪贴板权限。',
-        },
-      }))
+      await navigator.clipboard.writeText(details)
+    } catch {
+      status = 'failed'
     }
+
+    const notice = { sourceId: source.id, status }
+    setCopyNotice(notice)
+    window.setTimeout(() => setCopyNotice((current) => current === notice ? null : current), 5000)
   }
 
   const handleExport = () => {
@@ -757,10 +752,10 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         </button>
                         <button
                           className="article-action-btn source-repair-btn"
-                          onClick={() => handleChatGptRepair(item)}
-                          title="把该信息源的配置和错误交给 ChatGPT 调试"
+                          onClick={() => handleCopyRepairDetails(item)}
+                          title="复制该信息源的配置和最近错误"
                         >
-                          ChatGPT 修复
+                          复制配置和错误
                         </button>
                         <button
                           className="article-action-btn delete"
@@ -776,9 +771,14 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         {fetchNotices[item.id].message}
                       </div>
                     )}
-                    {repairNoticeId === item.id && (
-                      <div className="source-repair-notice">
-                        已打开 ChatGPT，并复制了该来源的诊断资料；如未自动填入，请在对话框粘贴。
+                    {copyNotice?.sourceId === item.id && (
+                      <div
+                        className={copyNotice.status === 'success' ? 'source-repair-notice' : 'source-test-result failed'}
+                        role="status"
+                      >
+                        {copyNotice.status === 'success'
+                          ? '配置和错误信息已复制，可以直接粘贴。'
+                          : '复制失败：浏览器未允许访问剪贴板，请允许剪贴板权限后重试。'}
                       </div>
                     )}
                     {testingIds.has(item.id) && (
