@@ -76,6 +76,25 @@ export function getSourceSchedule(source: ScheduleInput): SourceSchedule {
   }
 }
 
+export function countSourceExecutionModes(
+  sources: readonly ScheduleInput[],
+): Record<SourceExecutionMode, number> {
+  const counts: Record<SourceExecutionMode, number> = {
+    cloud: 0,
+    local: 0,
+    manual: 0,
+    paused: 0,
+  }
+  for (const source of sources) {
+    counts[getSourceSchedule(source).executionMode] += 1
+  }
+  return counts
+}
+
+export function getSourceToggleAction(source: ScheduleInput): 'pause' | 'resume' {
+  return getSourceSchedule(source).executionMode === 'paused' ? 'resume' : 'pause'
+}
+
 export function writeSourceSchedule(method: string | null | undefined, schedule: SourceSchedule): string {
   const current = parseMethod(method)
   return JSON.stringify({

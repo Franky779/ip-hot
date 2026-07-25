@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useAdmin } from '@/app/components/AdminToggle'
 import { SourceModal } from './SourceModal'
-import { EXECUTION_MODE_LABELS, getNextScheduledAt, getSourceSchedule, SCHEDULE_TIER_LABELS } from '@/lib/source-schedule'
+import { EXECUTION_MODE_LABELS, getNextScheduledAt, getSourceSchedule, getSourceToggleAction, SCHEDULE_TIER_LABELS } from '@/lib/source-schedule'
 import {
   ATTENTION_HEALTH_STATUSES,
   SOURCE_HEALTH_OPTIONS,
@@ -162,6 +162,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [keyword, setKeyword] = useState('')
   const [regionFilter, setRegionFilter] = useState('all')
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
+  const [executionModeFilter, setExecutionModeFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [healthBySource, setHealthBySource] = useState<Record<string, SourceHealthRow>>({})
@@ -223,15 +224,17 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     ].some((value) => value?.toLowerCase().includes(normalizedKeyword))
     const matchesRegion = regionFilter === 'all' || source.region === regionFilter
     const matchesFetchType = fetchTypeFilter === 'all' || getFetchType(source) === fetchTypeFilter
+    const matchesExecutionMode = executionModeFilter === 'all'
+      || getSourceSchedule(source).executionMode === executionModeFilter
     const matchesSection = sectionFilter === 'all' || source.section_id === sectionFilter
     const healthStatus = healthBySource[source.id]?.status
     const matchesStatus = statusFilter === 'all'
       || (statusFilter === 'attention' && !!healthStatus && ATTENTION_HEALTH_STATUSES.has(healthStatus))
       || statusFilter === healthStatus
-    return matchesKeyword && matchesRegion && matchesFetchType && matchesSection && matchesStatus
+    return matchesKeyword && matchesRegion && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus
   })
   const hasFilters = keyword !== '' || regionFilter !== 'all' || fetchTypeFilter !== 'all'
-    || sectionFilter !== 'all' || statusFilter !== 'all'
+    || executionModeFilter !== 'all' || sectionFilter !== 'all' || statusFilter !== 'all'
   const grouped = groupBySection(filteredSources)
   const sectionIds = Object.keys(grouped)
 
@@ -288,6 +291,27 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     if (!res.ok) {
       const error = await res.json().catch(() => ({}))
       alert('保存失败: ' + (error.error || '未知错误'))
+      return false
+    }
+    await handleRefresh()
+    return true
+  }
+
+  const handleToggleSource = async (source: Source) => {
+    const action = getSourceToggleAction(source)
+    if (action === 'pause') {
+      return updateSource(source.id, { enabled: false })
+    }
+
+    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+    const response = await fetch('/api/admin/source-quality/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+      body: JSON.stringify({ sourceId: source.id, action: 'resume' }),
+    })
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}))
+      alert('恢复自动失败: ' + (result.error || '未知错误'))
       return false
     }
     await handleRefresh()
@@ -413,7 +437,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         Array.from({ length: Math.min(5, targets.length) }, () => runWorker())
       )
       await handleRefresh()
-      setBulkNotice(`批量测试完成：${succeeded} 条成功，${targets.length - succeeded} 条异常。`)
+      setBulkNotice(`批量测试完成：${succeeded} 条成功，${targets.length - succeeded} 条异常；失败测试会自动停用来源。`)
     } finally {
       setBulkAction(null)
     }
@@ -421,30 +445,29 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
 
   const handleStartAll = async () => {
     if (bulkAction) return
-    const ids = sources
-      .filter((source) => !source.enabled && source.last_test_status === 'success')
-      .map((source) => source.id)
-    if (ids.length === 0) {
+    const targets = sources.filter((source) => (
+      getSourceSchedule(source).executionMode === 'paused' && source.last_test_status === 'success'
+    ))
+    if (targets.length === 0) {
       setBulkNotice('没有测试成功且待启动的信息源。')
       return
     }
+    if (!confirm(`将恢复 ${targets.length} 条最近测试成功且处于暂停状态的信息源，并修复其运行方式。确定继续吗？`)) return
 
     setBulkAction('start')
     setBulkNotice('')
     try {
       const pw = localStorage.getItem('ip-hot-admin-pw') || ''
-      const res = await fetch('/api/admin/sources', {
-        method: 'PATCH',
+      const results = await Promise.all(targets.map((source) => fetch('/api/admin/source-quality/action', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-        body: JSON.stringify({ ids, enabled: true }),
-      })
-      const result = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setBulkNotice(`一键启动失败：${result.error || '未知错误'}`)
-        return
-      }
+        body: JSON.stringify({ sourceId: source.id, action: 'resume' }),
+      })))
+      const failed = results.filter((result) => !result.ok).length
       await handleRefresh()
-      setBulkNotice(`已启动 ${ids.length} 条测试成功的信息源。`)
+      setBulkNotice(failed > 0
+        ? `已恢复 ${targets.length - failed} 条，${failed} 条恢复失败。`
+        : `已恢复 ${targets.length} 条信息源，并修复其运行方式。`)
     } catch {
       setBulkNotice('一键启动失败：网络请求失败，请稍后重试。')
     } finally {
@@ -454,11 +477,14 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
 
   const handleStopAll = async () => {
     if (bulkAction) return
-    const ids = sources.filter((source) => source.enabled).map((source) => source.id)
+    const ids = sources
+      .filter((source) => ['cloud', 'local'].includes(getSourceSchedule(source).executionMode))
+      .map((source) => source.id)
     if (ids.length === 0) {
-      setBulkNotice('当前没有已启用的信息源。')
+      setBulkNotice('当前没有云端或本地自动来源。')
       return
     }
+    if (!confirm(`将停用 ${ids.length} 条云端或本地自动来源；人工来源不会被处理。确定继续吗？`)) return
 
     setBulkAction('stop')
     setBulkNotice('')
@@ -552,6 +578,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               </select>
             </label>
             <label>
+              <span>运行方式</span>
+              <select value={executionModeFilter} onChange={(event) => setExecutionModeFilter(event.target.value)}>
+                <option value="all">全部方式</option>
+                {(Object.entries(EXECUTION_MODE_LABELS) as Array<[string, string]>).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
               <span>行业类型</span>
               <select value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}>
                 <option value="all">{sources.length} 条 · 全部行业</option>
@@ -582,6 +617,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                   setKeyword('')
                   setRegionFilter('all')
                   setFetchTypeFilter('all')
+                  setExecutionModeFilter('all')
                   setSectionFilter('all')
                   setStatusFilter('all')
                 }}
@@ -615,7 +651,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               onClick={handleTestAll}
               disabled={bulkAction !== null || testingIds.size > 0}
               style={{ background: '#2563eb' }}
-              title="测试当前筛选结果"
+              title="测试失败会自动停用来源；测试当前筛选结果"
             >
               {bulkAction === 'test'
                 ? `测试中 ${bulkProgress.completed}/${bulkProgress.total}`
@@ -626,7 +662,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               onClick={handleStartAll}
               disabled={bulkAction !== null}
               style={{ background: '#eab308', color: '#2d2200' }}
-              title="启动全部测试成功且尚未启用的信息源"
+              title="恢复测试成功且处于暂停状态的信息源，并修复运行方式"
             >
               {bulkAction === 'start' ? '启动中...' : '一键启动'}
             </button>
@@ -635,7 +671,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               onClick={handleStopAll}
               disabled={bulkAction !== null}
               style={{ background: '#dc2626' }}
-              title="停用全部已启用的信息源"
+              title="停用云端或本地自动来源，不处理人工来源"
             >
               {bulkAction === 'stop' ? '停用中...' : '一键停用'}
             </button>
@@ -672,10 +708,10 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                       const nextRun = getNextScheduledAt(item)
                       return (
                         <div className="source-schedule-grid">
-                          <span>{EXECUTION_MODE_LABELS[schedule.executionMode]}</span>
-                          <span>{schedule.executionMode === 'paused' ? '不参与自动任务' : SCHEDULE_TIER_LABELS[schedule.tier]}</span>
+                          <span>运行：{EXECUTION_MODE_LABELS[schedule.executionMode]}</span>
+                          <span>频率：{schedule.executionMode === 'paused' ? '不参与自动任务' : schedule.executionMode === 'manual' ? '按需人工处理' : SCHEDULE_TIER_LABELS[schedule.tier]}</span>
                           <span>{nextRun ? `下次：${nextRun.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}` : '下次：—'}</span>
-                          <span>{item.last_test_status === 'success' ? '最近测试成功' : item.last_test_status === 'failed' ? '最近测试失败' : '尚未测试'}</span>
+                          <span>测试：{item.last_test_status === 'success' ? '最近测试成功' : item.last_test_status === 'failed' ? '最近测试失败（失败会停用）' : '尚未测试'}</span>
                         </div>
                       )
                     })()}
@@ -692,9 +728,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                       <div className="source-actions">
                         <button
                           className="article-action-btn edit"
-                          onClick={() => updateSource(item.id, { enabled: !item.enabled })}
+                          onClick={() => handleToggleSource(item)}
                         >
-                          {item.enabled ? '停用' : '启用'}
+                          {getSourceToggleAction(item) === 'resume' ? '恢复自动' : '停用自动'}
                         </button>
                         <button
                           className="article-action-btn edit"

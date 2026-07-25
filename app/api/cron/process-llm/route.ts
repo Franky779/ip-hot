@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
-import { NEW_SOURCE_NAMES } from '@/lib/sources'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -144,19 +143,14 @@ export async function GET(request: Request) {
           }
         }
 
-        // 新增信源的文章强制归类为"待分类"，等人工审核
-        const isNewSource = NEW_SOURCE_NAMES.has(article.source)
-        const finalCategory = isNewSource ? '待分类' : llmResult.category
-        const finalIsSelected = isNewSource ? false : llmResult.is_selected
-
         const { error: updateError } = await supabase
           .from('articles')
           .update({
             title_cn: llmResult.title_cn,
             summary_cn: llmResult.summary_cn,
-            category: finalCategory,
+            category: llmResult.category,
             relevance_score: llmResult.relevance_score,
-            is_selected: finalIsSelected,
+            is_selected: llmResult.is_selected,
             commentary: llmResult.commentary,
           })
           .eq('id', article.id)
@@ -165,7 +159,7 @@ export async function GET(request: Request) {
           id: article.id, source: article.source, title: article.title, url: article.url,
           ok: !updateError,
           score: updateError ? null : llmResult.relevance_score,
-          selected: updateError ? false : finalIsSelected,
+          selected: updateError ? false : llmResult.is_selected,
           commentary: updateError ? '' : llmResult.commentary,
           status: updateError ? 'failed' : 'scored',
           error: updateError?.message,

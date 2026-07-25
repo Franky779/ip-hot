@@ -415,23 +415,43 @@ export default function MonitorPage() {
   const handlePendingClassification = async () => {
     const pendingCount = data?.categoryStats.find((item) => item.category === '待分类')?.count ?? 0
     if (pendingCount === 0) { alert('暂无待分类资讯'); return }
-    if (!confirm(`确定处理下一批待分类资讯吗？本次最多 50 条：0-3 分删除，4-5 分或敏感内容保留人工复核，6 分及以上自动归类。当前待分类 ${pendingCount} 条。`)) return
+    if (!confirm(`确定自动处理全部待分类资讯吗？系统会每批处理 50 条，直到清空或遇到连续失败。0-3 分进入已过滤，4-5 分或敏感内容保留人工复核，6 分及以上自动归类。当前待分类 ${pendingCount} 条。`)) return
 
     setPendingClassifying(true)
     const pw = getPw() || ''
+    let totalClassified = 0
+    let totalReviewed = 0
+    let totalFiltered = 0
+    let totalFailed = 0
+    let rounds = 0
+    let remaining = pendingCount
+    let staleRounds = 0
     try {
-      const res = await fetch('/api/admin/process-pending-classification', {
-        method: 'POST',
-        headers: { 'x-admin-password': pw },
-      })
-      const result = await res.json()
-      if (!res.ok || !result.ok) {
-        alert(`待分类处理失败：${result.error || '未知错误'}`)
-        return
+      while (remaining > 0 && staleRounds < 3) {
+        const res = await fetch('/api/admin/process-pending-classification', {
+          method: 'POST',
+          headers: { 'x-admin-password': pw },
+        })
+        const result = await res.json()
+        if (!res.ok || !result.ok) {
+          alert(`待分类处理失败：${result.error || '未知错误'}`)
+          return
+        }
+        rounds += 1
+        totalClassified += result.classified ?? 0
+        totalReviewed += result.reviewed ?? 0
+        totalFiltered += result.filtered ?? 0
+        totalFailed += result.failed ?? 0
+        const nextRemaining = result.remaining ?? 0
+        staleRounds = nextRemaining >= remaining ? staleRounds + 1 : 0
+        remaining = nextRemaining
+        await fetchData()
+        await loadLogs()
+        if (totalFailed > 0 || staleRounds >= 3) break
+        await new Promise((resolve) => setTimeout(resolve, 500))
       }
-      alert(`本批完成：自动归类 ${result.classified} 条，保留人工复核 ${result.reviewed} 条，删除 ${result.deleted} 条，失败 ${result.failed} 条；剩余待分类 ${result.remaining} 条。`)
-      void fetchData()
-      void loadLogs()
+      const stopped = remaining > 0
+      alert(`${stopped ? '自动处理已停止' : '全部处理完成'}：自动归类 ${totalClassified} 条，保留人工复核 ${totalReviewed} 条，进入已过滤 ${totalFiltered} 条，失败 ${totalFailed} 条，共 ${rounds} 轮；剩余待分类 ${remaining} 条。`)
     } catch (error) {
       alert(`请求失败：${error instanceof Error ? error.message : String(error)}`)
     } finally {
@@ -516,7 +536,7 @@ export default function MonitorPage() {
                 <div className="monitor-stat-label">待分类</div>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
                   <button className="monitor-action-btn" onClick={handlePendingClassification} disabled={pendingClassifying}>
-                    {pendingClassifying ? '分类中…' : '手动分类'}
+                    {pendingClassifying ? '自动分类中…' : '自动分类'}
                   </button>
                 </div>
               </div>

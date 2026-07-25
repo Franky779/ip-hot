@@ -193,6 +193,68 @@ body {
   gap: 0.5rem;
 }
 
+.about-page,
+.feedback-page,
+.research-page,
+.talks-page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding-top: 2.5rem;
+  padding-bottom: 4rem;
+}
+
+.research-tabs { display: flex; gap: 0.35rem; margin-top: 1rem; overflow-x: auto; }
+.research-tabs button { border: 0; border-radius: 999px; padding: 0.45rem 0.9rem; background: transparent; color: var(--text-secondary); cursor: pointer; white-space: nowrap; font: inherit; }
+.research-tabs button.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+.research-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.research-card, .talk-card { border: 1px solid var(--border-light); border-radius: 12px; background: var(--surface); padding: 1.25rem; box-shadow: var(--shadow); }
+.research-card-meta { display: flex; justify-content: space-between; gap: 1rem; color: var(--text-secondary); font-size: 0.78rem; }
+.research-card-meta span { color: var(--accent); }
+.research-card h2, .talk-card h2 { margin-top: 0.7rem; font-family: var(--font-noto-serif-sc), serif; font-size: 1.05rem; line-height: 1.6; }
+.research-card p { margin-top: 0.6rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; }
+.research-card a, .talk-card a { display: inline-block; margin-top: 1rem; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+.research-pending { display: inline-block; margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; }
+.talks-list { display: grid; gap: 0.9rem; max-width: 900px; margin: 0 auto; }
+.talk-card { display: grid; grid-template-columns: 100px 1fr auto; align-items: center; gap: 1rem; }
+.talk-card time { color: var(--text-secondary); font-size: 0.85rem; }
+.talk-card h2 { margin-top: 0; }
+.talk-card a { margin-top: 0; white-space: nowrap; }
+
+.about-text { margin: 0 0 1.25rem; line-height: 2; white-space: pre-wrap; }
+.about-heading { margin: 2rem 0 0.75rem; font-family: var(--font-noto-serif-sc), serif; font-size: 1.35rem; }
+.about-image-block { margin: 2rem 0; text-align: center; }
+.about-image-block img { display: block; max-width: 100%; max-height: 640px; margin: 0 auto; border-radius: 12px; object-fit: contain; }
+.about-image-block figcaption { margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.875rem; }
+.admin-action-btn,
+.feedback-submit { border: 0; border-radius: 8px; padding: 0.65rem 1rem; background: var(--accent); color: #fff; cursor: pointer; }
+.about-editor { max-width: 760px; }
+.about-editor-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 1rem; }
+.about-editor-toolbar button, .about-upload-btn, .about-editor-block-actions button { border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.65rem; background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.8rem; }
+.about-upload-btn input { display: none; }
+.about-editor-block { margin-bottom: 0.75rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
+.about-editor-block textarea, .about-editor-block input { margin-bottom: 0.5rem; }
+.about-editor-block img { display: block; max-width: 180px; max-height: 120px; margin-bottom: 0.5rem; border-radius: 6px; }
+.about-editor-block-actions { display: flex; gap: 0.35rem; justify-content: flex-end; margin-bottom: 0.5rem; }
+.feedback-header { text-align: center; }
+.feedback-intro { max-width: 680px; margin: 0 auto; }
+.eyebrow { margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.8rem; letter-spacing: 0.18em; }
+.feedback-form { position: relative; max-width: 650px; margin: 0 auto; }
+.feedback-form label { display: block; margin: 1.25rem 0 0.4rem; font-weight: 700; }
+.feedback-form label span { color: var(--text-secondary); font-size: 0.8rem; font-weight: 400; }
+.feedback-form textarea, .feedback-form input { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); padding: 0.85rem 1rem; font: inherit; outline: none; }
+.feedback-form textarea { min-height: 270px; resize: vertical; }
+.feedback-form textarea:focus, .feedback-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.feedback-count { margin-top: -1.8rem; padding-right: 0.7rem; position: relative; text-align: right; color: var(--text-secondary); font-size: 0.75rem; pointer-events: none; }
+.feedback-submit { margin-top: 1.5rem; min-width: 130px; }
+.feedback-submit:disabled { opacity: 0.65; cursor: wait; }
+.feedback-notice, .admin-notice { margin-top: 0.75rem; color: var(--text-secondary); }
+.feedback-records { max-width: 760px; margin: 4rem auto 0; padding-top: 2rem; border-top: 1px solid var(--border-light); }
+.feedback-records h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+.feedback-records h2 span { color: var(--text-secondary); font-size: 0.8rem; font-weight: 400; }
+.feedback-record { padding: 1rem 0; border-bottom: 1px solid var(--border-light); }
+.feedback-record p { white-space: pre-wrap; }
+.feedback-record div { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.8rem; }
+
 /* ====== 主内容区:页面头部(标题 + 分类 tabs + 搜索) ====== */
 
 .page-header {
@@ -2155,7 +2217,7 @@ body {
 
 .source-filter-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(130px, 1fr));
+  grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(130px, 1fr));
   gap: 0.75rem;
 }
 
@@ -2581,4 +2643,9 @@ body {
     padding-left: 1rem;
     padding-right: 1rem;
   }
+  .about-page, .feedback-page, .research-page, .talks-page { padding-top: 1.5rem; }
+  .research-grid { grid-template-columns: 1fr; }
+  .talk-card { grid-template-columns: 1fr; gap: 0.25rem; }
+  .talk-card a { margin-top: 0.5rem; }
+  .feedback-record div { flex-direction: column; gap: 0.2rem; }
 }

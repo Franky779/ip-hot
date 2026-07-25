@@ -42,7 +42,7 @@ type Props = {
   onRefresh: () => Promise<void>
 }
 
-type SourceAction = 'observe' | 'reduce' | 'normal' | 'pause' | 'resume' | 'delete'
+type SourceAction = 'observe' | 'reduce' | 'normal' | 'pause' | 'resume'
 type ActionNotice = { type: 'success' | 'error'; message: string }
 
 const STATUS_LABELS = {
@@ -95,7 +95,6 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
   const [expanded, setExpanded] = useState<string | null>(null)
   const [busySources, setBusySources] = useState<Record<string, SourceAction>>({})
   const [notice, setNotice] = useState<ActionNotice | null>(null)
-  const [deletedSourceIds, setDeletedSourceIds] = useState<Set<string>>(new Set())
   const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => {
@@ -117,10 +116,7 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
     })
   }
 
-  const availableItems = useMemo(
-    () => items.filter((item) => !item.sourceId || !deletedSourceIds.has(item.sourceId)),
-    [deletedSourceIds, items],
-  )
+  const availableItems = items
   const statusCounts = useMemo(() => {
     const counts: Record<SourceQualityItem['managementStatus'], number> = {
       normal: 0,
@@ -176,39 +172,6 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
     }
   }
 
-  const deleteSource = async (item: SourceQualityItem) => {
-    if (!item.sourceId) {
-      showNotice('error', '该统计名称尚未匹配到信息源管理记录，无法删除。')
-      return
-    }
-    if (busySources[item.sourceId]) return
-    if (!confirm(`确认删除“${item.name}”吗？该来源会立即退出管理页和后续抓取队列，历史资讯与审计日志会保留。`)) return
-
-    setSourceBusy(item.sourceId, 'delete')
-    try {
-      const response = await fetch('/api/admin/sources/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword() },
-        body: JSON.stringify({ id: item.sourceId }),
-      })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || '删除信息源失败')
-      setDeletedSourceIds((current) => {
-        const next = new Set(current)
-        next.add(item.sourceId!)
-        return next
-      })
-      setExpanded(null)
-      showNotice('success', `${item.name}：信息源已删除。`)
-      void onRefresh()
-        .catch((error) => showNotice('error', `删除已完成，但刷新数据失败：${error instanceof Error ? error.message : String(error)}`))
-        .finally(() => setSourceBusy(item.sourceId!, null))
-    } catch (error) {
-      showNotice('error', error instanceof Error ? error.message : String(error))
-      setSourceBusy(item.sourceId, null)
-    }
-  }
-
   return (
     <section className="source-efficiency-section">
       {notice && (
@@ -234,7 +197,7 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
             </select>
           </label>
           <label>
-            <span>信息源状态</span>
+            <span>运营决策</span>
             <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
               <option value="all">{availableItems.length} 条 · 全部</option>
               {MANAGEMENT_STATUS_OPTIONS.map(({ value, label }) => (
@@ -355,7 +318,6 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
                       >
                         {busyAction === 'normal' || busyAction === 'resume' ? '处理中…' : '转为正常信源'}
                       </button>
-                      <button className="is-delete-source" disabled={isBusy} onClick={() => deleteSource(item)}>{busyAction === 'delete' ? '删除中…' : '删除信源'}</button>
                     </div>
                   </div>
                 )}

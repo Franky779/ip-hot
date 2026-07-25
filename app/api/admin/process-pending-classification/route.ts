@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server'
 import { summarizeArticle } from '@/lib/llm'
 import { createServiceClient } from '@/lib/supabase'
+import {
+  FILTERED_CATEGORY,
+  getPendingClassificationOutcome,
+  PENDING_CATEGORY,
+  REVIEW_CATEGORY,
+} from '@/lib/pending-classification'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 const BATCH_SIZE = 50
 const CONCURRENCY = 5
-const PENDING_CATEGORY = '待分类'
-const REVIEW_CATEGORY = '待人工复核'
-
 type PendingArticle = {
   id: string
   title: string
 }
 
-type Outcome = 'classified' | 'reviewed' | 'deleted' | 'failed'
+type Outcome = 'classified' | 'reviewed' | 'filtered' | 'failed'
 
 async function processArticle(article: PendingArticle): Promise<Outcome> {
   const supabase = createServiceClient()
@@ -23,8 +26,10 @@ async function processArticle(article: PendingArticle): Promise<Outcome> {
 
   if (!result) return 'failed'
 
+  const outcome = getPendingClassificationOutcome(result)
+
   // Keep sensitive or ambiguous content out of the public stream and future auto-classification batches.
-  if (result.category === PENDING_CATEGORY || (result.relevance_score >= 4 && result.relevance_score <= 5)) {
+  if (outcome === 'reviewed') {
     const { error } = await supabase
       .from('articles')
       .update({
@@ -39,9 +44,15 @@ async function processArticle(article: PendingArticle): Promise<Outcome> {
     return error ? 'failed' : 'reviewed'
   }
 
-  if (result.relevance_score <= 3) {
-    const { error } = await supabase.from('articles').delete().eq('id', article.id)
-    return error ? 'failed' : 'deleted'
+  if (outcome === 'filtered') {
+    const { error } = await supabase
+      .from('articles')
+      .update({
+        category: FILTERED_CATEGORY,
+        is_selected: false,
+      })
+      .eq('id', article.id)
+    return error ? 'failed' : 'filtered'
   }
 
   const { error } = await supabase
@@ -60,7 +71,10 @@ async function processArticle(article: PendingArticle): Promise<Outcome> {
 
 export async function POST(request: Request) {
   const password = request.headers.get('x-admin-password')
-  if (!password || password !== process.env.ADMIN_PASSWORD) {
+  const authHeader = request.headers.get('authorization')
+  const acceptedSecrets = [process.env.CRON_SECRET, process.env.LLM_WORKER_SECRET].filter(Boolean)
+  const isWorker = acceptedSecrets.some((secret) => authHeader === `Bearer ${secret}`)
+  if ((!password || password !== process.env.ADMIN_PASSWORD) && !isWorker) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -69,7 +83,7 @@ export async function POST(request: Request) {
   const { data: runningTask, error: runningError } = await supabase
     .from('cron_logs')
     .select('id')
-    .eq('trigger_type', 'manual_pending_classification')
+    .in('trigger_type', ['manual_pending_classification', 'cron_pending_classification'])
     .eq('status', 'running')
     .gte('started_at', lockCutoff)
     .order('started_at', { ascending: false })
@@ -90,13 +104,13 @@ export async function POST(request: Request) {
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
   if (!articles?.length) {
-    return NextResponse.json({ ok: true, classified: 0, reviewed: 0, deleted: 0, failed: 0, remaining: 0 })
+    return NextResponse.json({ ok: true, classified: 0, reviewed: 0, filtered: 0, failed: 0, remaining: 0 })
   }
 
   const { data: log, error: logError } = await supabase
     .from('cron_logs')
     .insert({
-      trigger_type: 'manual_pending_classification',
+    trigger_type: isWorker ? 'cron_pending_classification' : 'manual_pending_classification',
       status: 'running',
       llm_pending: articles.length,
       details: { action: 'pending_classification', batch_total: articles.length },
@@ -106,7 +120,7 @@ export async function POST(request: Request) {
 
   if (logError || !log) return NextResponse.json({ error: logError?.message || '无法创建处理日志' }, { status: 500 })
 
-  const counts: Record<Outcome, number> = { classified: 0, reviewed: 0, deleted: 0, failed: 0 }
+  const counts: Record<Outcome, number> = { classified: 0, reviewed: 0, filtered: 0, failed: 0 }
   try {
     const pending = [...(articles as PendingArticle[])]
     while (pending.length > 0) {
@@ -132,7 +146,7 @@ export async function POST(request: Request) {
     await supabase.from('cron_logs').update({
       status: counts.failed === 0 ? 'success' : 'error',
       ended_at: new Date().toISOString(),
-      llm_processed: counts.classified + counts.reviewed + counts.deleted,
+      llm_processed: counts.classified + counts.reviewed + counts.filtered,
       llm_failed: counts.failed,
       llm_pending: remaining ?? 0,
       details: { action: 'pending_classification', batch_total: articles.length, ...counts },
@@ -144,7 +158,7 @@ export async function POST(request: Request) {
     await supabase.from('cron_logs').update({
       status: 'error',
       ended_at: new Date().toISOString(),
-      llm_processed: counts.classified + counts.reviewed + counts.deleted,
+      llm_processed: counts.classified + counts.reviewed + counts.filtered,
       llm_failed: counts.failed,
       error_message: message,
       details: { action: 'pending_classification', batch_total: articles.length, ...counts },

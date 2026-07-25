@@ -19,6 +19,8 @@ create unique index if not exists articles_source_url_unique on articles (source
 create index if not exists idx_articles_created_at on articles (created_at desc);
 create index if not exists idx_articles_published_at on articles (published_at desc);
 create index if not exists idx_articles_category on articles (category);
+create index if not exists idx_articles_pending_classification on articles (category, created_at)
+  where category = '待分类' and title_cn is not null and summary_cn is not null;
 create index if not exists idx_articles_complete on articles (published_at desc)
   where title_cn is not null and summary_cn is not null and category is not null and commentary is not null;
 
@@ -145,3 +147,18 @@ create table if not exists changelogs (
   version text
 );
 
+create table if not exists site_pages (
+  id text primary key,
+  title text not null,
+  blocks jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  content text not null,
+  email text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_feedback_created_at on feedback (created_at desc);

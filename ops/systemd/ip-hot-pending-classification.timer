@@ -1,0 +1,11 @@
+[Unit]
+Description=Drain IP Hot pending classification every 3 minutes
+
+[Timer]
+OnCalendar=*-*-* *:1/3:00
+RandomizedDelaySec=20
+Persistent=true
+Unit=ip-hot-pending-classification.service
+
+[Install]
+WantedBy=timers.target

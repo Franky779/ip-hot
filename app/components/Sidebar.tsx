@@ -54,6 +54,22 @@ export function Sidebar() {
             </Link>
           )
         })}
+        <Link href="/research" className={`sidebar-link${pathname === '/research' ? ' active' : ''}`}>
+          <span className="sidebar-icon">◈</span>
+          <span>深度研究</span>
+        </Link>
+        <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
+          <span className="sidebar-icon">✦</span>
+          <span>老贾有话说</span>
+        </Link>
+        <Link href="/about" className={`sidebar-link${pathname === '/about' ? ' active' : ''}`}>
+          <span className="sidebar-icon">◎</span>
+          <span>关于老贾</span>
+        </Link>
+        <Link href="/feedback" className={`sidebar-link${pathname === '/feedback' ? ' active' : ''}`}>
+          <span className="sidebar-icon">✎</span>
+          <span>反馈</span>
+        </Link>
         {loaded && isAdmin && (
           <>
             <Link
