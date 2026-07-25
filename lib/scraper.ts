@@ -1,8 +1,8 @@
 import * as cheerio from 'cheerio'
 import { constants, createCipheriv, publicEncrypt, randomInt } from 'node:crypto'
 import vm from 'node:vm'
-import type { ScrapeConfig } from '@/lib/sources'
-import { normalizeImageUrl } from '@/lib/article-image'
+import type { ScrapeConfig } from './sources.ts'
+import { normalizeImageUrl } from './article-image.ts'
 
 export type ScrapedNewsItem = {
   title: string
@@ -144,6 +144,12 @@ type JiemianAccountItem = {
       name?: string
     }
   }
+}
+
+type ZhihuHotApiResponse = {
+  data?: Array<{
+    target?: { title?: string; url?: string; type?: string; created?: number }
+  }>
 }
 
 type JiemianAccountResponse = {
@@ -544,6 +550,7 @@ async function scrapeJiemianAccount(
       entry.object_type === 'article'
       && Boolean(entry.title)
       && Boolean(entry.url)
+      && entry.source?.official_account?.id === config.accountId
     )
     .slice(0, maxItems)
     .map((entry) => ({
@@ -559,6 +566,32 @@ async function scrapeJiemianAccount(
     rawCount: list.length,
     error: items.length === 0 ? `${sourceName}: API 未返回该账号的有效资讯` : undefined,
   }
+}
+
+async function scrapeZhihuHotApi(
+  sourceName: string,
+  config: Extract<ScrapeConfig, { adapter: 'zhihu-hot-api' }>,
+  signal: AbortSignal
+): Promise<ScrapeResult> {
+  const response = await fetch(config.apiUrl, {
+    headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36', accept: 'application/json' },
+    redirect: 'follow',
+    signal,
+  })
+  if (!response.ok) return { items: [], rawCount: 0, error: `${sourceName}: API HTTP ${response.status}` }
+
+  const payload = await response.json() as ZhihuHotApiResponse
+  const list = Array.isArray(payload.data) ? payload.data : []
+  const items = list
+    .filter((entry) => entry.target?.type === 'question' && entry.target.title && entry.target.url)
+    .slice(0, config.maxItems ?? 10)
+    .map((entry) => ({
+      title: entry.target!.title!.replace(/\s+/g, ' ').trim(),
+      url: entry.target!.url!.replace('https://api.zhihu.com/questions/', 'https://www.zhihu.com/question/'),
+      publishedAt: entry.target!.created ? new Date(entry.target!.created * 1000).toISOString() : null,
+    }))
+
+  return { items, rawCount: list.length, error: items.length === 0 ? `${sourceName}: API 未返回有效资讯` : undefined }
 }
 
 async function scrape17173Search(
@@ -711,6 +744,9 @@ export async function scrapeNewsList(
     }
     if (config.adapter === 'jiemian-account') {
       return await scrapeJiemianAccount(sourceName, sourceUrl, config, controller.signal)
+    }
+    if (config.adapter === 'zhihu-hot-api') {
+      return await scrapeZhihuHotApi(sourceName, config, controller.signal)
     }
     if (config.adapter === 'huxiu-api') {
       return await scrapeHuxiuApi(sourceName, sourceUrl, config, controller.signal)

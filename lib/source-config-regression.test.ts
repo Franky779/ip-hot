@@ -50,6 +50,22 @@ test('uses the Paper culture channel and ignores the former politics URL', async
   assert.equal(new Set(result.items.map((item) => item.url)).size, 10)
 })
 
+test('extracts Zhihu hot list items from the public API', async (t) => {
+  const data = Array.from({ length: 12 }, (_, index) => ({
+    target: { type: 'question', title: `知乎热榜测试标题${index}`, url: `https://api.zhihu.com/questions/${2064000000000000000 + index}`, created: 1784908486 + index },
+  }))
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ data }), { status: 200, headers: { 'content-type': 'application/json' } }))
+
+  const source = findSourceConfiguration('https://www.zhihu.com/hot', '知乎热榜')
+  assert.equal(source?.id, 'zhihu-hot-web')
+  assert.equal(source?.scrapeConfig?.adapter, 'zhihu-hot-api')
+  assert.ok(source?.scrapeConfig)
+  const result = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
+  assert.equal(result.error, undefined)
+  assert.equal(result.items.length, 10)
+  assert.ok(result.items.every((item) => item.url.startsWith('https://www.zhihu.com/question/')))
+})
+
 test('uses the current Chongqing culture and tourism committee site', async (t) => {
   const html = Array.from({ length: 10 }, (_, index) => `
     <a href="/zwxx_221/bmdt/gzdt/202607/t20260724_${15851727 + index}.html" title="重庆文旅测试标题${index}">重庆文旅测试标题${index}</a>

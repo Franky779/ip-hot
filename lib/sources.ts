@@ -60,6 +60,12 @@ export type JinaMarkdownLinksConfig = {
   maxItems?: number
 }
 
+export type ZhihuHotApiConfig = {
+  adapter: 'zhihu-hot-api'
+  apiUrl: string
+  maxItems?: number
+}
+
 export type SitemapArticleLinksConfig = {
   adapter: 'sitemap-article-links'
   sitemapUrl: string
@@ -70,6 +76,7 @@ export type SitemapArticleLinksConfig = {
 export type ScrapeConfig =
   | HtmlScrapeConfig
   | BilibiliTimelineConfig
+  | ZhihuHotApiConfig
   | AutoNewsConfig
   | HuxiuApiConfig
   | News17173SearchConfig
@@ -493,7 +500,7 @@ const WEB_SOURCES: NewsSource[] = [
   {
     id: 'zhihu-hot-web', name: '知乎热榜', url: 'https://www.zhihu.com/hot',
     language: 'zh', priority: 'P2', type: 'web',
-    scrapeConfig: { itemSelector: 'a[href*="/question/"]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.zhihu.com', maxItems: 15 },
+    scrapeConfig: { adapter: 'zhihu-hot-api', apiUrl: 'https://api.zhihu.com/topstory/hot-lists/total?limit=50', maxItems: 10 },
   },
   {
     id: 'thepaper-cdp', name: '澎湃新闻 文化频道', aliases: ['澎湃新闻文化频道'], url: 'https://www.thepaper.cn/list_25450',
