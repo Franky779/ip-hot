@@ -3,6 +3,7 @@ import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { RSS_SOURCES } from '@/lib/sources'
 import { checkLinks } from '@/lib/link-checker'
+import { normalizePublishedAt } from '@/lib/article-time'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
 
   for (const source of RSS_SOURCES) {
     const result: FetchResult = { source: source.name, ok: false, fetched: 0, blocked: 0, dead: 0, inserted: 0 }
+    const sourceStartedAt = new Date().toISOString()
 
     try {
       const feed = await parser.parseURL(source.url)
@@ -54,7 +56,7 @@ export async function GET(request: Request) {
           source: source.name,
           url: item.link ?? '',
           title: item.title ?? '',
-          published_at: item.isoDate ?? null,
+          published_at: normalizePublishedAt(item.isoDate ?? null, sourceStartedAt),
         }))
         .filter((x) => x.url.length > 0 && x.title.length > 0)
 

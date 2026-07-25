@@ -8,6 +8,7 @@ import { parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
 import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
 import { resolveClassificationResult } from '@/lib/pending-classification'
+import { normalizePublishedAt } from '@/lib/article-time'
 import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -314,7 +315,7 @@ export async function GET(request: Request) {
             source: source.name,
             url: item.link ?? '',
             title: item.title ?? '',
-            published_at: item.isoDate ?? null,
+            published_at: normalizePublishedAt(item.isoDate ?? null, sourceStartedAt),
           }))
           .filter((item) => item.url.length > 0 && item.title.length > 0)
       } else {
@@ -331,7 +332,7 @@ export async function GET(request: Request) {
           source: source.name,
           url: item.url,
           title: item.title,
-          published_at: item.publishedAt,
+          published_at: normalizePublishedAt(item.publishedAt, sourceStartedAt),
         }))
       }
 

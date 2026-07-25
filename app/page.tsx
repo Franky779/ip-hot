@@ -6,6 +6,7 @@ import { TimelineList } from './components/TimelineList'
 import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 import { AdminPendingArticles } from './components/AdminPendingArticles'
 import { paginateFilteredResults } from '@/lib/filtered-pagination'
+import { formatArticleDate, resolveArticleDisplayTime } from '@/lib/article-time'
 
 export const revalidate = 300
 const ARTICLES_PER_PAGE = 20
@@ -106,18 +107,9 @@ async function getArticles(category: string, q: string, page: number): Promise<A
   }
 }
 
-function formatDateLabel(iso: string | null): string {
-  if (!iso) return ''
-  try {
-    const d = new Date(iso)
-    return `${d.getMonth() + 1}月${d.getDate()}日`
-  } catch {
-    return ''
-  }
-}
-
 function getDisplayDate(article: Article): string {
-  return formatDateLabel(article.published_at || article.created_at)
+  const displayTime = resolveArticleDisplayTime(article.published_at, article.created_at)
+  return formatArticleDate(displayTime.iso)
 }
 
 function groupByDate(articles: Article[]): Record<string, Article[]> {

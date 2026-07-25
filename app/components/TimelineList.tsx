@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo, useEffect, useRef, useTransition } from
 import { useAdmin, ADMIN_PW_KEY } from './AdminToggle'
 import { ArticleActions } from './ArticleActions'
 import { isClearlyIndirectTechTitle } from '@/lib/relevance'
+import { formatArticleDateTime, formatArticleTime, resolveArticleDisplayTime } from '@/lib/article-time'
 
 const CATEGORIES = ['创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道', '影视综艺', '游戏/体育', 'AI/新技术', '展会活动', '文旅及商品', '艺术/亚文化', '政策规则', '版权保护']
 
@@ -20,6 +21,7 @@ interface Article {
   category: string | null
   relevance_score: number | null
   published_at: string | null
+  created_at: string | null
 }
 
 interface TimelineListProps {
@@ -36,22 +38,6 @@ function getSourceRegionLabel(source: string, sourceRegions: TimelineListProps['
   const region = sourceRegions?.[source.toLocaleLowerCase()]
   if (region === 'domestic' || (!region && /[\u3400-\u9fff]/.test(source))) return '国内资讯'
   return '国外资讯'
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return ''
-  try {
-    const d = new Date(iso)
-    // 固定用 UTC 时区，避免服务端/客户端 hydrate mismatch
-    return d.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'UTC',
-    })
-  } catch {
-    return ''
-  }
 }
 
 function buildPageHref(category: string, query: string, page: number): string {
@@ -321,8 +307,9 @@ export function TimelineList({
               <div className="timeline-date-line" />
             </div>
             <div className="timeline-entries">
-              {filterArticles(dateGroups[date]).map((article) => (
-                <div
+              {filterArticles(dateGroups[date]).map((article) => {
+                const displayTime = resolveArticleDisplayTime(article.published_at, article.created_at)
+                return <div
                   key={article.id}
                   id={`article-${article.id}`}
                   className={`timeline-entry ${selectedIds.has(article.id) ? 'selected' : ''}`}
@@ -334,7 +321,12 @@ export function TimelineList({
                   }}
                 >
                   <div className="timeline-time-col">
-                    <span className="timeline-time">{formatTime(article.published_at)}</span>
+                    <span
+                      className="timeline-time"
+                      title={displayTime.kind === 'published' ? '原文发布时间' : '收录时间'}
+                    >
+                      {formatArticleTime(displayTime.iso)}
+                    </span>
                     <div className="timeline-dot" />
                     <div className="timeline-line" />
                   </div>
@@ -353,6 +345,7 @@ export function TimelineList({
                         )}
                         {article.category && (isAdmin || article.category !== '待分类') && <span>{article.category}</span>}
                         {article.source && <span className="article-source">{getSourceRegionLabel(article.source, sourceRegions)}</span>}
+                        {article.created_at && <span>收录 {formatArticleDateTime(article.created_at)}</span>}
                       </div>
                       <h2 className="article-title font-serif">
                         {article.title_cn ?? article.title}
@@ -379,7 +372,7 @@ export function TimelineList({
                     />
                   </div>
                 </div>
-              ))}
+              })}
             </div>
           </div>
         ))}
