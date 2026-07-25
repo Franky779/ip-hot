@@ -91,6 +91,7 @@ body {
 
 .app-layout {
   display: flex;
+  flex-wrap: wrap;
   min-height: 100vh;
 }
 
@@ -2670,12 +2671,17 @@ body {
 /* ====== 移动端响应式(< 768px 暂时简化) ====== */
 
 @media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
   .sidebar {
     position: static;
     width: 100%;
     height: auto;
   }
   .app-main {
+    flex: 0 0 100%;
+    width: 100%;
     margin-left: 0;
   }
   .page-toolbar {
