@@ -15,11 +15,13 @@
   },
   "dependencies": {
     "cheerio": "^1.1.2",
+    "marked": "^18.0.7",
     "next": "^16.2.11",
     "pg": "^8.16.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "sanitize-html": "^2.17.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -27,9 +29,13 @@
     "@types/pg": "^8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
+    "@types/turndown": "^5.0.6",
     "eslint": "^9",
     "eslint-config-next": "^16.2.11",
     "tailwindcss": "^4",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^5"
   }
 }

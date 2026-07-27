@@ -164,3 +164,22 @@ create table if not exists feedback (
 );
 
 create index if not exists idx_feedback_created_at on feedback (created_at desc);
+
+create table if not exists research_reports (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  category text not null,
+  title text not null,
+  published_at date not null,
+  markdown_content text not null,
+  github_backup_status text not null default 'pending',
+  github_backup_path text,
+  github_backup_error text,
+  github_backed_up_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint research_reports_category_check check (category in ('品类研究', '品牌/IP分析', '授权与营销研究')),
+  constraint research_reports_backup_status_check check (github_backup_status in ('pending', 'backed_up', 'failed'))
+);
+
+create index if not exists idx_research_reports_category_date on research_reports (category, published_at desc, created_at desc);
