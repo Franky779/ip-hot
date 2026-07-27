@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase'
-import { renderResearchMarkdown, type ResearchReport } from '@/lib/research'
+import { formatResearchDate, renderResearchMarkdown, type ResearchReport } from '@/lib/research'
 import { previewReports, researchPreviewEnabled } from '@/lib/research-preview'
 
 export const dynamic = 'force-dynamic'
@@ -19,5 +19,6 @@ export default async function ResearchReportPage({ params }: { params: Promise<{
 }
 
 function ReportPage({ report }: { report: ResearchReport }) {
+  report = { ...report, published_at: formatResearchDate(report.published_at) }
   return <><header className="page-header"><div className="research-report-header"><div><Link className="research-back-link" href="/research">← 返回深度研究</Link><p className="eyebrow">{report.category} · {report.published_at}</p><h1 className="page-title font-serif">{report.title}</h1></div></div></header><article className="research-report-page"><div className="research-report-content" dangerouslySetInnerHTML={{ __html: renderResearchMarkdown(report.markdown_content) }} /></article></>
 }

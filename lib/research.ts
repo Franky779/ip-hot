@@ -19,6 +19,13 @@ export type ResearchReport = {
   updated_at: string
 }
 
+export function formatResearchDate(value: string | Date): string {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+}
+
 export const MAX_RESEARCH_TITLE_LENGTH = 160
 export const MAX_RESEARCH_MARKDOWN_LENGTH = 1_000_000
 

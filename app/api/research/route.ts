@@ -1,7 +1,7 @@
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase'
 import { backupResearchToGithub } from '@/lib/research-backup'
-import { currentShanghaiDate, slugFromTitle, validateResearchInput } from '@/lib/research'
+import { currentShanghaiDate, formatResearchDate, slugFromTitle, validateResearchInput } from '@/lib/research'
 import { addPreviewReport, previewReports, researchPreviewEnabled, updatePreviewReport } from '@/lib/research-preview'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export async function GET() {
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   if (error) return Response.json({ error: error.message }, { status: 500 })
-  return Response.json({ reports: data ?? [] })
+  return Response.json({ reports: (data ?? []).map((report) => ({ ...report, published_at: formatResearchDate(report.published_at) })) })
 }
 
 export async function POST(request: Request) {
@@ -47,10 +47,10 @@ export async function POST(request: Request) {
     const backup = await backupResearchToGithub({ ...value, published_at: publishedAt, slug })
     await client.from('research_reports').update({ github_backup_status: 'backed_up', github_backup_path: backup.path, github_backup_error: null, github_backed_up_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', report.id)
     updatePreviewReport(report.id, { github_backup_status: 'backed_up', github_backup_path: backup.path, github_backup_error: null })
-    return Response.json({ report: { ...report, github_backup_status: 'backed_up', github_backup_path: backup.path, github_backup_error: null } }, { status: 201 })
+    return Response.json({ report: { ...report, published_at: formatResearchDate(report.published_at), github_backup_status: 'backed_up', github_backup_path: backup.path, github_backup_error: null } }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'GitHub 备份失败'
     await client.from('research_reports').update({ github_backup_status: 'failed', github_backup_error: message, updated_at: new Date().toISOString() }).eq('id', report.id)
-    return Response.json({ report: { ...report, github_backup_status: 'failed', github_backup_error: message }, warning: message }, { status: 201 })
+    return Response.json({ report: { ...report, published_at: formatResearchDate(report.published_at), github_backup_status: 'failed', github_backup_error: message }, warning: message }, { status: 201 })
   }
 }
