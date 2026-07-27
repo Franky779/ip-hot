@@ -1,7 +1,11 @@
 export const ABOUT_PAGE_ID = 'about-laojia'
 export const MAX_ABOUT_BLOCKS = 40
 export const MAX_IMAGE_DATA_URL_LENGTH = 2_800_000
+export const MAX_TOTAL_IMAGE_DATA_URL_LENGTH = 8_400_000
 export const MAX_FEEDBACK_LENGTH = 2000
+
+export type AboutImageWidth = 50 | 75 | 100
+export type AboutImageAlign = 'left' | 'center' | 'right'
 
 export type AboutTextBlock = {
   id: string
@@ -15,6 +19,8 @@ export type AboutImageBlock = {
   dataUrl: string
   alt: string
   caption: string
+  width?: AboutImageWidth
+  align?: AboutImageAlign
 }
 
 export type AboutBlock = AboutTextBlock | AboutImageBlock
@@ -40,6 +46,7 @@ export function validateAboutPageInput(input: unknown): ValidationResult<AboutPa
   }
 
   const blocks: AboutBlock[] = []
+  let totalImageLength = 0
   for (const item of raw.blocks) {
     if (!item || typeof item !== 'object') return { ok: false, error: '内容格式不正确' }
     const rawBlock = item as Record<string, unknown>
@@ -54,7 +61,11 @@ export function validateAboutPageInput(input: unknown): ValidationResult<AboutPa
         return { ok: false, error: '图片格式不支持' }
       }
       if (dataUrl.length > MAX_IMAGE_DATA_URL_LENGTH) return { ok: false, error: '单张图片不能超过 2 MB' }
-      blocks.push({ id, type, dataUrl, alt: textValue(rawBlock.alt).slice(0, 200), caption: textValue(rawBlock.caption).slice(0, 200) })
+      totalImageLength += dataUrl.length
+      if (totalImageLength > MAX_TOTAL_IMAGE_DATA_URL_LENGTH) return { ok: false, error: '全部图片合计不能超过 6 MB' }
+      const width = rawBlock.width === 50 || rawBlock.width === 75 ? rawBlock.width : 100
+      const align = rawBlock.align === 'left' || rawBlock.align === 'right' ? rawBlock.align : 'center'
+      blocks.push({ id, type, dataUrl, alt: textValue(rawBlock.alt).slice(0, 200), caption: textValue(rawBlock.caption).slice(0, 200), width, align })
       continue
     }
     const text = textValue(rawBlock.text)

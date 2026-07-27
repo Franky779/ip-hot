@@ -38,3 +38,10 @@ test('deployment shell scripts have a Linux-compatible shebang', async () => {
     )
   }
 })
+
+test('health check covers the editable site page storage', async () => {
+  const healthCheck = await readFile(join(opsRoot, 'scripts', 'health-check'), 'utf8')
+
+  assert.match(healthCheck, /\/api\/site-pages/)
+  assert.match(healthCheck, /site_pages_status == 200/)
+})

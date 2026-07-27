@@ -223,19 +223,64 @@ body {
 
 .about-text { margin: 0 0 1.25rem; line-height: 2; white-space: pre-wrap; }
 .about-heading { margin: 2rem 0 0.75rem; font-family: var(--font-noto-serif-sc), serif; font-size: 1.35rem; }
-.about-image-block { margin: 2rem 0; text-align: center; }
+.about-image-block { margin-top: 2rem; margin-bottom: 2rem; text-align: center; }
 .about-image-block img { display: block; max-width: 100%; max-height: 640px; margin: 0 auto; border-radius: 12px; object-fit: contain; }
 .about-image-block figcaption { margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.875rem; }
+.about-image-width-50 { width: 50%; }
+.about-image-width-75 { width: 75%; }
+.about-image-width-100 { width: 100%; }
+.about-image-align-left { margin-left: 0; margin-right: auto; }
+.about-image-align-center { margin-left: auto; margin-right: auto; }
+.about-image-align-right { margin-left: auto; margin-right: 0; }
 .admin-action-btn,
 .feedback-submit { border: 0; border-radius: 8px; padding: 0.65rem 1rem; background: var(--accent); color: #fff; cursor: pointer; }
-.about-editor { max-width: 760px; }
-.about-editor-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 1rem; }
-.about-editor-toolbar button, .about-upload-btn, .about-editor-block-actions button { border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.65rem; background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.8rem; }
+.admin-modal.about-editor { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; width: min(1400px, calc(100vw - 3rem)); max-width: none; height: min(900px, calc(100vh - 3rem)); max-height: none; overflow: hidden; }
+.about-editor-header, .about-editor-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.about-editor-header h3 { margin-bottom: 0; }
+.about-editor-close { width: 36px; height: 36px; flex: 0 0 36px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font: 1.5rem/1 inherit; }
+.about-editor-close:hover { background: var(--surface-hover); color: var(--text); }
+.about-editor-page-title { display: grid !important; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.75rem; margin: 0.75rem 0 !important; }
+.about-editor-page-title input { margin: 0 !important; }
+.about-editor-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; min-height: 0; }
+.about-editor-panel, .about-editor-preview { min-width: 0; min-height: 0; overflow-y: auto; }
+.about-editor-panel { padding-right: 0.25rem; }
+.about-editor-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.about-editor-toolbar button, .about-upload-btn, .about-editor-block-actions button, .about-editor-image-actions button { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 6px; padding: 0.45rem 0.7rem; background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.8rem; line-height: 1.25; }
 .about-upload-btn input { display: none; }
-.about-editor-block { margin-bottom: 0.75rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
-.about-editor-block textarea, .about-editor-block input { margin-bottom: 0.5rem; }
-.about-editor-block img { display: block; max-width: 180px; max-height: 120px; margin-bottom: 0.5rem; border-radius: 6px; }
-.about-editor-block-actions { display: flex; gap: 0.35rem; justify-content: flex-end; margin-bottom: 0.5rem; }
+.about-upload-btn.disabled, .about-editor button:disabled { opacity: 0.5; cursor: not-allowed; }
+.about-editor-block { margin-bottom: 0.75rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.about-editor-block textarea, .about-editor-block input, .about-editor-block select { margin-bottom: 0; }
+.about-editor-block > textarea { min-height: 0; resize: vertical; }
+.about-editor-block-actions { display: flex; align-items: center; gap: 0.35rem; justify-content: flex-end; margin-bottom: 0.5rem; }
+.about-editor-block-actions span { margin-right: auto; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
+.about-editor-image-row { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 0.75rem; }
+.about-editor-image-row > img { display: block; width: 100%; height: 160px; border-radius: 6px; background: var(--bg); object-fit: contain; }
+.about-editor-image-controls { display: grid; align-content: start; gap: 0.5rem; min-width: 0; }
+.about-editor-image-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.about-editor-image-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.about-editor-image-settings label { margin: 0 !important; }
+.about-editor-image-settings select { margin-top: 0.25rem; }
+.about-editor-preview { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+.about-editor-preview > span { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
+.about-editor-preview-content { max-width: 720px; margin: 0 auto; }
+.about-editor-preview-content > h1 { margin: 1.25rem 0 1.5rem; font-size: 1.75rem; }
+.about-editor-preview-content .about-heading { font-size: 1.15rem; }
+.about-editor-preview-content .about-text { font-size: 0.875rem; line-height: 1.8; }
+.about-editor-preview-content .about-image-block img { max-height: 420px; }
+.about-editor-footer { min-height: 52px; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.about-editor-footer .admin-notice, .about-editor-footer .admin-modal-btns { margin-top: 0; }
+.about-editor-empty { padding: 2rem; color: var(--text-muted); text-align: center; }
+@media (max-width: 900px) {
+  .about-editor-workspace { grid-template-columns: 1fr; }
+  .about-editor-preview { display: none; }
+}
+@media (max-width: 640px) {
+  .admin-modal.about-editor { width: calc(100vw - 1rem); height: calc(100vh - 1rem); padding: 1rem; }
+  .about-editor-image-row { grid-template-columns: 1fr; }
+  .about-editor-image-row > img { height: 220px; }
+  .about-editor-footer { align-items: flex-end; }
+  .about-editor-footer .admin-notice { min-width: 0; }
+}
 .feedback-header { text-align: center; }
 .feedback-intro { max-width: 680px; margin: 0 auto; }
 .eyebrow { margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.8rem; letter-spacing: 0.18em; }
