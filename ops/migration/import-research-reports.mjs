@@ -22,7 +22,7 @@ try {
         published_at = excluded.published_at,
         markdown_content = excluded.markdown_content,
         updated_at = now()
-    `, [report.slug, report.category, report.title, report.published_at, report.markdown_content])
+    `, [report.slug, report.category === '品类研究' ? report.category : '品牌/IP与授权营销研究', report.title, report.published_at, report.markdown_content])
   }
   const result = await pool.query('select count(*)::integer as count from research_reports')
   console.log(`Imported ${reports.length} reports; database now contains ${result.rows[0].count}.`)

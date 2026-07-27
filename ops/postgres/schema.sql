@@ -178,8 +178,12 @@ create table if not exists research_reports (
   github_backed_up_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint research_reports_category_check check (category in ('品类研究', '品牌/IP分析', '授权与营销研究')),
+  constraint research_reports_category_check check (category in ('品类研究', '品牌/IP与授权营销研究')),
   constraint research_reports_backup_status_check check (github_backup_status in ('pending', 'backed_up', 'failed'))
 );
+
+alter table research_reports drop constraint if exists research_reports_category_check;
+update research_reports set category = '品牌/IP与授权营销研究' where category in ('品牌/IP分析', '授权与营销研究');
+alter table research_reports add constraint research_reports_category_check check (category in ('品类研究', '品牌/IP与授权营销研究'));
 
 create index if not exists idx_research_reports_category_date on research_reports (category, published_at desc, created_at desc);

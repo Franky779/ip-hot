@@ -1,8 +1,22 @@
 import { marked } from 'marked'
 import sanitizeHtml from 'sanitize-html'
 
-export const RESEARCH_CATEGORIES = ['品类研究', '品牌/IP分析', '授权与营销研究'] as const
+export const RESEARCH_CATEGORIES = ['品类研究', '品牌/IP与授权营销研究'] as const
 export type ResearchCategory = (typeof RESEARCH_CATEGORIES)[number]
+export const LEGACY_RESEARCH_CATEGORIES = ['品牌/IP分析', '授权与营销研究'] as const
+
+export function normalizeResearchCategory(value: string): ResearchCategory {
+  return value === '品类研究' ? '品类研究' : '品牌/IP与授权营销研究'
+}
+
+export function researchTags(report: Pick<ResearchReport, 'title' | 'category'>): string[] {
+  const keyword = report.title
+    .replace(/^【[^】]*(?:报告|分析)[^】]*】|^\[[^\]]*(?:报告|分析)[^\]]*\]/, '')
+    .replace(/(?:品类|品牌|IP评估|授权与营销)?深度研究报告.*$|(?:行业|产业)?分析.*$|拆解.*$/, '')
+    .replace(/[（）()].*$/, '')
+    .trim()
+  return ['研究报告', keyword || normalizeResearchCategory(report.category)]
+}
 
 export type ResearchReport = {
   id: string
@@ -192,7 +206,8 @@ function renderPieChart(chart: ResearchChart): string {
   const data = chart.datasets[0].data.map((value) => Math.max(0, value))
   const total = data.reduce((sum, value) => sum + value, 0) || 1
   const centerX = 380
-  const centerY = 180
+  // Keep the pie clear of the legend below the fixed-height plot.
+  const centerY = 125
   let angle = -Math.PI / 2
   const slices = data.map((value, index) => {
     const next = angle + (value / total) * Math.PI * 2
@@ -270,6 +285,6 @@ export function renderResearchMarkdown(markdown: string): string {
 }
 
 export function githubResearchPath(category: ResearchCategory, slug: string): string {
-  const folder = category === '品牌/IP分析' ? '品牌-IP分析' : category
+  const folder = category === '品牌/IP与授权营销研究' ? '品牌-IP与授权营销研究' : category
   return `数据分析/${folder}/${slug}.md`
 }

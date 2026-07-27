@@ -1,5 +1,5 @@
 import migratedReports from '@/ops/migration/research-reports.json'
-import type { ResearchReport } from './research'
+import { normalizeResearchCategory, type ResearchReport } from './research'
 
 declare global {
   var __ipHotResearchPreview: ResearchReport[] | undefined
@@ -14,7 +14,7 @@ function initialReports(): ResearchReport[] {
   return migratedReports.map((report) => ({
     id: report.slug,
     slug: report.slug,
-    category: report.category as ResearchReport['category'],
+    category: normalizeResearchCategory(report.category),
     title: report.title,
     published_at: report.published_at,
     markdown_content: report.markdown_content,

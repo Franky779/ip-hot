@@ -1,7 +1,7 @@
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase'
 import { backupResearchToGithub } from '@/lib/research-backup'
-import { currentShanghaiDate, formatResearchDate, slugFromTitle, validateResearchInput } from '@/lib/research'
+import { currentShanghaiDate, formatResearchDate, normalizeResearchCategory, slugFromTitle, validateResearchInput } from '@/lib/research'
 import { addPreviewReport, previewReports, researchPreviewEnabled, updatePreviewReport } from '@/lib/research-preview'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export async function GET() {
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   if (error) return Response.json({ error: error.message }, { status: 500 })
-  return Response.json({ reports: (data ?? []).map((report) => ({ ...report, published_at: formatResearchDate(report.published_at) })) })
+  return Response.json({ reports: (data ?? []).map((report) => ({ ...report, category: normalizeResearchCategory(report.category), published_at: formatResearchDate(report.published_at) })) })
 }
 
 export async function POST(request: Request) {

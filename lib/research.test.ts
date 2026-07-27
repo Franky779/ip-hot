@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { currentShanghaiDate, githubResearchPath, renderResearchMarkdown, slugFromTitle, validateResearchInput } from './research.ts'
+import { currentShanghaiDate, githubResearchPath, renderResearchMarkdown, researchTags, slugFromTitle, validateResearchInput } from './research.ts'
 
 test('validates report metadata and markdown size', () => {
   const result = validateResearchInput({ title: '报告', category: '品类研究', published_at: '1999-01-01', markdown_content: '# 正文' })
@@ -16,7 +16,12 @@ test('creates stable readable slugs', () => {
 })
 
 test('maps the slash-containing category to one GitHub backup folder', () => {
-  assert.equal(githubResearchPath('品牌/IP分析', 'report-1'), '数据分析/品牌-IP分析/report-1.md')
+  assert.equal(githubResearchPath('品牌/IP与授权营销研究', 'report-1'), '数据分析/品牌-IP与授权营销研究/report-1.md')
+})
+
+test('extracts report keyword tags from title templates', () => {
+  assert.deepEqual(researchTags({ title: '【品类报告】棉花娃娃产业深度研究报告', category: '品类研究' }), ['研究报告', '棉花娃娃产业'])
+  assert.deepEqual(researchTags({ title: '【IP评估报告】初音未来', category: '品牌/IP与授权营销研究' }), ['研究报告', '初音未来'])
 })
 
 test('sanitizes executable markdown HTML while retaining report content', () => {
@@ -39,7 +44,7 @@ test('renders markdown tables and controlled chart blocks', () => {
 
 test('centers pie charts in the SVG viewport', () => {
   const html = renderResearchMarkdown('```chart\n{"type":"pie","title":"饼图","labels":["A","B"],"datasets":[{"data":[40,60]}]}\n```')
-  assert.match(html, /M 380 180 L/)
+  assert.match(html, /M 380 125 L/)
 })
 
 test('retains whitelisted report cards and highlight boxes', () => {
