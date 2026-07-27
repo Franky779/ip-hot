@@ -191,10 +191,12 @@ function pieSlice(cx: number, cy: number, radius: number, start: number, end: nu
 function renderPieChart(chart: ResearchChart): string {
   const data = chart.datasets[0].data.map((value) => Math.max(0, value))
   const total = data.reduce((sum, value) => sum + value, 0) || 1
+  const centerX = 380
+  const centerY = 180
   let angle = -Math.PI / 2
   const slices = data.map((value, index) => {
     const next = angle + (value / total) * Math.PI * 2
-    const path = `<path class="chart-fill-${(index % CHART_COLORS.length) + 1}" d="${pieSlice(250, 174, 128, angle, next)}"></path>`
+    const path = `<path class="chart-fill-${(index % CHART_COLORS.length) + 1}" d="${pieSlice(centerX, centerY, 128, angle, next)}"></path>`
     angle = next
     return path
   }).join('')

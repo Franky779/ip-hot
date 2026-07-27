@@ -37,6 +37,11 @@ test('renders markdown tables and controlled chart blocks', () => {
   assert.doesNotMatch(html, /<script/)
 })
 
+test('centers pie charts in the SVG viewport', () => {
+  const html = renderResearchMarkdown('```chart\n{"type":"pie","title":"饼图","labels":["A","B"],"datasets":[{"data":[40,60]}]}\n```')
+  assert.match(html, /M 380 180 L/)
+})
+
 test('retains whitelisted report cards and highlight boxes', () => {
   const html = renderResearchMarkdown('<div class="research-kpi-grid"><div class="research-kpi-card"><strong>100</strong><span>样本量</span></div></div>\n\n<div class="research-callout research-callout-highlight">核心发现</div>')
   assert.match(html, /class="research-kpi-grid"/)
