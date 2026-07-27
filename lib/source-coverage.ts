@@ -5,7 +5,7 @@ import {
   isLocalSourceDue,
   type SourceExecutionMode,
   type SourceScheduleTier,
-} from './source-schedule'
+} from './source-schedule.ts'
 
 export type CoverageSource = {
   id: string
@@ -77,6 +77,28 @@ export type SourceCoverage = {
   }
   rows: SourceCoverageRow[]
   nextBatches: Array<{ scheduledAt: string; sources: string[]; total: number }>
+}
+
+export function selectCoverageRecoverySourceIds(
+  coverage: SourceCoverage,
+  runs: SourceFetchRun[],
+  maxRetriesPerDay = 2,
+  maxSources = 24,
+): string[] {
+  const recoveryAttempts = new Map<string, number>()
+  for (const run of runs) {
+    if (run.trigger_type !== 'coverage_repair' || !run.source_id) continue
+    recoveryAttempts.set(run.source_id, (recoveryAttempts.get(run.source_id) ?? 0) + 1)
+  }
+
+  const priority = { failed: 0, overdue: 1, skipped: 2 }
+  return coverage.rows
+    .filter((row) => row.executionMode === 'cloud' && row.status in priority)
+    .filter((row) => (recoveryAttempts.get(row.sourceId) ?? 0) < maxRetriesPerDay)
+    .sort((left, right) => priority[left.status as keyof typeof priority] - priority[right.status as keyof typeof priority]
+      || (left.scheduledAt ?? '').localeCompare(right.scheduledAt ?? ''))
+    .slice(0, maxSources)
+    .map((row) => row.sourceId)
 }
 
 export function getBeijingDayRange(now = new Date()): { start: Date; end: Date } {

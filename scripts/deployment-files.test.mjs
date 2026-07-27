@@ -45,3 +45,11 @@ test('health check covers the editable site page storage', async () => {
   assert.match(healthCheck, /\/api\/site-pages/)
   assert.match(healthCheck, /site_pages_status == 200/)
 })
+
+test('coverage repair timer calls the targeted recovery mode', async () => {
+  const service = await readFile(join(opsRoot, 'systemd', 'ip-hot-coverage-repair.service'), 'utf8')
+  const timer = await readFile(join(opsRoot, 'systemd', 'ip-hot-coverage-repair.timer'), 'utf8')
+
+  assert.match(service, /fetch-and-process\?coverageRepair=1/)
+  assert.match(timer, /OnCalendar=\*-\*-\* \*:10,30:00/)
+})

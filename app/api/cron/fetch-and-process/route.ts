@@ -10,6 +10,7 @@ import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-ru
 import { resolveClassificationResult } from '@/lib/pending-classification'
 import { normalizePublishedAt } from '@/lib/article-time'
 import { extractFeedMedia, normalizeImageUrl } from '@/lib/article-image'
+import { buildSourceCoverage, getBeijingDayRange, selectCoverageRecoverySourceIds, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
 import { execFileSync } from 'child_process'
 import { readFileSync, unlinkSync } from 'fs'
 import { join } from 'path'
@@ -178,14 +179,54 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 400 })
   }
+  const coverageRepair = requestUrl.searchParams.get('coverageRepair') === '1'
+  if (coverageRepair && requestedSourceIds.length > 0) {
+    return NextResponse.json({ error: 'coverageRepair cannot be combined with sourceId' }, { status: 400 })
+  }
   if (requestedSourceIds.length > 0 && !isAdminAuth) {
     return NextResponse.json({ error: '只有管理员可以手动指定信息源。' }, { status: 403 })
   }
   const enqueueOnly = requestedSourceIds.length > 0 && requestUrl.searchParams.get('enqueueOnly') === '1'
 
   const supabase = createServiceClient()
+  if (coverageRepair) {
+    const now = new Date()
+    const { start, end } = getBeijingDayRange(now)
+    const [sourcesResult, runsResult] = await Promise.all([
+      supabase
+        .from('info_sources')
+        .select('id, name, url, method, type, enabled')
+        .eq('enabled', true),
+      supabase
+        .from('source_fetch_runs')
+        .select('source_id, source_name, source_url, trigger_type, execution_mode, status, started_at, ended_at, discovered_count, fetched_count, blocked_count, dead_count, duplicate_count, inserted_count, error_message')
+        .gte('started_at', start.toISOString())
+        .lte('started_at', end.toISOString()),
+    ])
+    if (sourcesResult.error || runsResult.error) {
+      return NextResponse.json({ error: sourcesResult.error?.message || runsResult.error?.message || 'Failed to load source coverage' }, { status: 500 })
+    }
+    const runs = (runsResult.data ?? []) as SourceFetchRun[]
+    const coverage = buildSourceCoverage(
+      (sourcesResult.data ?? []).map((source) => {
+        const configured = findSourceConfiguration(source.url, source.name)
+        return {
+          ...source,
+          priority: configured?.priority,
+          needsLocalCdp: configured?.needsLocalCdp,
+          loginRequired: configured?.loginRequired,
+        } satisfies CoverageSource
+      }),
+      runs,
+      now,
+    )
+    requestedSourceIds = selectCoverageRecoverySourceIds(coverage, runs)
+    if (requestedSourceIds.length === 0) {
+      return NextResponse.json({ ok: true, mode: 'coverage_repair', repairedSources: [], message: 'No missed cloud sources require recovery.' })
+    }
+  }
   const startTime = Date.now()
-  const triggerType = requestedSourceIds.length > 0 ? 'manual_source' : isAdminAuth ? 'manual' : 'cron'
+  const triggerType = coverageRepair ? 'coverage_repair' : requestedSourceIds.length > 0 ? 'manual_source' : isAdminAuth ? 'manual' : 'cron'
   let logId: string | null = null
 
   try {

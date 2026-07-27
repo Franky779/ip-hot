@@ -1,0 +1,11 @@
+[Unit]
+Description=Recover missed IP Hot cloud source fetches every 30 minutes
+
+[Timer]
+OnCalendar=*-*-* *:10,30:00
+RandomizedDelaySec=45
+Persistent=true
+Unit=ip-hot-coverage-repair.service
+
+[Install]
+WantedBy=timers.target
