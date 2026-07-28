@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import Parser from 'rss-parser'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
@@ -8,6 +8,11 @@ import { createFeedParser, parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
 import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
 import { resolveClassificationResult } from '@/lib/pending-classification'
+import {
+  MANUAL_FETCH_ASYNC_QUERY,
+  MANUAL_FETCH_BACKGROUND_QUERY,
+  buildManualFetchBackgroundRequest,
+} from '@/lib/manual-fetch-background'
 import { normalizePublishedAt } from '@/lib/article-time'
 import { extractFeedMedia, normalizeImageUrl } from '@/lib/article-image'
 import { buildSourceCoverage, getBeijingDayRange, selectCoverageRecoverySourceIds, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
@@ -160,8 +165,11 @@ type ProcessResult = {
   error?: string
 }
 
+let manualFetchQueued = false
+
 export async function GET(request: Request) {
   // 支持两种验证方式：Vercel Cron (Bearer CRON_SECRET) 或 管理员手动触发 (x-admin-password)
+  const requestUrl = new URL(request.url)
   const authHeader = request.headers.get('authorization')
   const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
   const adminPw = request.headers.get('x-admin-password')
@@ -172,7 +180,38 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const requestUrl = new URL(request.url)
+  const isBackgroundManualFetch = requestUrl.searchParams.get(MANUAL_FETCH_BACKGROUND_QUERY) === '1'
+  if (requestUrl.searchParams.get(MANUAL_FETCH_ASYNC_QUERY) === '1' && !isBackgroundManualFetch) {
+    if (!isAdminAuth) return NextResponse.json({ error: '只有管理员可以手动触发后台抓取。' }, { status: 403 })
+    if (manualFetchQueued) return NextResponse.json({ error: '已有手动抓取任务正在启动或运行，请查看实时任务日志。' }, { status: 409 })
+
+    const supabase = createServiceClient()
+    const { data: runningLogs, error: runningLogsError } = await supabase
+      .from('cron_logs')
+      .select('id')
+      .eq('trigger_type', 'manual')
+      .eq('status', 'running')
+      .gte('started_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .limit(1)
+    if (runningLogsError) return NextResponse.json({ error: runningLogsError.message }, { status: 500 })
+    if ((runningLogs ?? []).length > 0) {
+      return NextResponse.json({ error: '已有手动抓取任务正在运行，请查看实时任务日志。' }, { status: 409 })
+    }
+
+    manualFetchQueued = true
+    const backgroundRequest = buildManualFetchBackgroundRequest(request)
+    after(async () => {
+      try {
+        await GET(backgroundRequest)
+      } catch (error) {
+        console.error('[fetch-and-process] 后台手动抓取启动失败:', error)
+      } finally {
+        manualFetchQueued = false
+      }
+    })
+    return NextResponse.json({ ok: true, queued: true, message: '手动抓取已在后台启动，请查看实时任务日志。' }, { status: 202 })
+  }
+
   let requestedSourceIds: string[]
   try {
     requestedSourceIds = parseRequestedSourceIds(request.url)

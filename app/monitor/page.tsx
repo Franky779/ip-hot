@@ -192,10 +192,11 @@ export default function MonitorPage() {
     setFetching(true)
     const pw = getPw() || ''
     try {
-      const res = await fetch('/api/cron/fetch-and-process', { method: 'GET', headers: { 'x-admin-password': pw } })
+      const res = await fetch('/api/cron/fetch-and-process?async=1', { method: 'GET', headers: { 'x-admin-password': pw } })
       const resp = await res.json()
-      alert(res.ok ? `抓取触发成功！` : '抓取失败: ' + (resp.error || '未知错误'))
-      fetchData()
+      alert(res.ok ? '已在后台启动抓取，实时任务日志会自动刷新。' : '抓取失败: ' + (resp.error || '未知错误'))
+      void fetchData()
+      void loadLogs()
     } catch (e) { alert('请求失败: ' + (e instanceof Error ? e.message : String(e))) } finally { setFetching(false) }
   }
 
