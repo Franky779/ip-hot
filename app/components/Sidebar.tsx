@@ -8,7 +8,7 @@ import { AdminToggle, useAdmin } from './AdminToggle'
 const NAV_ITEMS = [
   {
     href: '/',
-    label: '实时快讯',
+    label: '全球快讯',
     icon: (
       <svg
         viewBox="0 0 24 24"
