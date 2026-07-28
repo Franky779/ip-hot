@@ -1,20 +1,24 @@
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase'
 import { backupResearchToGithub } from '@/lib/research-backup'
-import { currentShanghaiDate, formatResearchDate, normalizeResearchCategory, slugFromTitle, validateResearchInput } from '@/lib/research'
+import { currentShanghaiDate, formatResearchDate, normalizeResearchCategory, slugFromTitle, type ResearchReport, validateResearchInput } from '@/lib/research'
 import { addPreviewReport, previewReports, researchPreviewEnabled, updatePreviewReport } from '@/lib/research-preview'
 
 export const dynamic = 'force-dynamic'
 
+function researchListReport(report: ResearchReport) {
+  return { ...report, markdown_content: '', category: normalizeResearchCategory(report.category), published_at: formatResearchDate(report.published_at) }
+}
+
 export async function GET() {
-  if (researchPreviewEnabled()) return Response.json({ reports: previewReports() })
+  if (researchPreviewEnabled()) return Response.json({ reports: previewReports().map(researchListReport) })
   const { data, error } = await createServiceClient()
     .from('research_reports')
-    .select('id, slug, category, title, published_at, markdown_content, github_backup_status, github_backup_path, github_backup_error, github_backed_up_at, created_at, updated_at')
+    .select('id, slug, category, title, published_at, content_format, github_backup_status, github_backup_path, github_backup_error, github_backed_up_at, created_at, updated_at')
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
   if (error) return Response.json({ error: error.message }, { status: 500 })
-  return Response.json({ reports: (data ?? []).map((report) => ({ ...report, category: normalizeResearchCategory(report.category), published_at: formatResearchDate(report.published_at) })) })
+  return Response.json({ reports: (data ?? []).map((report) => researchListReport({ ...report, markdown_content: '' } as ResearchReport)) })
 }
 
 export async function POST(request: Request) {
@@ -38,8 +42,9 @@ export async function POST(request: Request) {
     title: value.title,
     published_at: publishedAt,
     markdown_content: value.markdown_content,
+    content_format: value.content_format,
     github_backup_status: 'pending',
-  }).select('id, slug, category, title, published_at, markdown_content, github_backup_status, github_backup_path, github_backup_error, github_backed_up_at, created_at, updated_at')
+  }).select('id, slug, category, title, published_at, markdown_content, content_format, github_backup_status, github_backup_path, github_backup_error, github_backed_up_at, created_at, updated_at')
   if (inserted.error || !inserted.data) return Response.json({ error: inserted.error?.message || '报告保存失败' }, { status: 500 })
   const report = Array.isArray(inserted.data) ? inserted.data[0] : inserted.data
 

@@ -5,8 +5,9 @@ import { useAdmin } from '@/app/components/AdminToggle'
 import { SourceModal } from './SourceModal'
 import { EXECUTION_MODE_LABELS, getNextScheduledAt, getSourceSchedule, getSourceToggleAction, SCHEDULE_TIER_LABELS } from '@/lib/source-schedule'
 import {
-  ATTENTION_HEALTH_STATUSES,
+  SOURCE_HEALTH_FILTER_OPTIONS,
   SOURCE_HEALTH_OPTIONS,
+  matchesSourceHealthFilter,
   type SourceHealth,
   type SourceHealthRun,
   type SourceHealthStatus,
@@ -212,17 +213,16 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     }, new Map<string, { title: string; count: number }>()).entries()
   )
   const normalizedKeyword = keyword.trim().toLowerCase()
-  const healthCounts = Object.fromEntries(
-    SOURCE_HEALTH_OPTIONS.map((option) => [option.value, 0])
-  ) as Record<SourceHealthStatus, number>
+  const healthFilterCounts = Object.fromEntries(
+    SOURCE_HEALTH_FILTER_OPTIONS.map((option) => [option.value, 0])
+  ) as Record<string, number>
   for (const source of sources) {
     const status = healthBySource[source.id]?.status
-    if (status) healthCounts[status] += 1
+    const option = SOURCE_HEALTH_FILTER_OPTIONS.find((candidate) => (
+      matchesSourceHealthFilter(source, status, candidate)
+    ))
+    if (option) healthFilterCounts[option.value] += 1
   }
-  const attentionCount = sources.filter((source) => {
-    const status = healthBySource[source.id]?.status
-    return status ? ATTENTION_HEALTH_STATUSES.has(status) : false
-  }).length
   const filteredSources = sources.filter((source) => {
     const matchesKeyword = !normalizedKeyword || [
       source.name, source.url, source.type, source.description, source.method,
@@ -233,9 +233,10 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       || getSourceSchedule(source).executionMode === executionModeFilter
     const matchesSection = sectionFilter === 'all' || source.section_id === sectionFilter
     const healthStatus = healthBySource[source.id]?.status
+    const selectedHealthFilter = SOURCE_HEALTH_FILTER_OPTIONS.find((option) => option.value === statusFilter)
     const matchesStatus = statusFilter === 'all'
-      || (statusFilter === 'attention' && !!healthStatus && ATTENTION_HEALTH_STATUSES.has(healthStatus))
-      || statusFilter === healthStatus
+      || (!!selectedHealthFilter
+        && matchesSourceHealthFilter(source, healthStatus, selectedHealthFilter))
     return matchesKeyword && matchesRegion && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus
   })
   const hasFilters = keyword !== '' || regionFilter !== 'all' || fetchTypeFilter !== 'all'
@@ -594,10 +595,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               <span>抓取健康</span>
               <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
                 <option value="all">{sources.length} 条 · 全部状态</option>
-                <option value="attention">{attentionCount} 条 · 待处理</option>
-                {SOURCE_HEALTH_OPTIONS.map((option) => (
+                {SOURCE_HEALTH_FILTER_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {healthCounts[option.value]} 条 · {option.label}
+                    {healthFilterCounts[option.value]} 条 · {option.label}
                   </option>
                 ))}
               </select>

@@ -1,0 +1,28 @@
+services:
+  rsshub:
+    image: diygod/rsshub@sha256:827b1a4eaab50caf318e87143f9a2d3d92e898f07cd82a9bcbf2ca053a80684e
+    container_name: rsshub
+    restart: unless-stopped
+    init: true
+    ports:
+      - '127.0.0.1:1200:1200'
+    environment:
+      NODE_ENV: production
+      TWITTER_AUTH_TOKEN: ${TWITTER_AUTH_TOKEN:?TWITTER_AUTH_TOKEN is required}
+    cpus: 0.75
+    mem_limit: 768m
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:1200/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    stop_grace_period: 20s

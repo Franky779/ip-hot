@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { currentShanghaiDate, githubResearchPath, renderResearchMarkdown, researchTags, slugFromTitle, validateResearchInput } from './research.ts'
+import { currentShanghaiDate, githubResearchPath, renderResearchMarkdown, researchCategoryLink, researchTags, slugFromTitle, validateResearchInput } from './research.ts'
 
 test('validates report metadata and markdown size', () => {
   const result = validateResearchInput({ title: '报告', category: '品类研究', published_at: '1999-01-01', markdown_content: '# 正文' })
   assert.equal(result.ok, true)
-  if (result.ok) assert.equal('published_at' in result.value, false)
+  if (result.ok) {
+    assert.equal('published_at' in result.value, false)
+    assert.equal(result.value.content_format, 'markdown')
+  }
   assert.equal(validateResearchInput({ title: '', category: '品类研究', markdown_content: '# 正文' }).ok, false)
   assert.equal(validateResearchInput({ title: '报告', category: '未知', markdown_content: '# 正文' }).ok, false)
 })
@@ -17,6 +20,21 @@ test('creates stable readable slugs', () => {
 
 test('maps the slash-containing category to one GitHub backup folder', () => {
   assert.equal(githubResearchPath('品牌/IP与授权营销研究', 'report-1'), '数据分析/品牌-IP与授权营销研究/report-1.md')
+  assert.equal(
+    githubResearchPath('品类研究', 'ignored', 'html', '【品类报告】包挂产业深度研究报告-2026年7月'),
+    '数据分析/品类研究/【品类报告】包挂产业深度研究报告-2026年7月.html',
+  )
+})
+
+test('links report details back to their selected research category', () => {
+  assert.deepEqual(researchCategoryLink('品牌/IP分析'), {
+    href: '/research?category=%E5%93%81%E7%89%8C%2FIP%E4%B8%8E%E6%8E%88%E6%9D%83%E8%90%A5%E9%94%80%E7%A0%94%E7%A9%B6',
+    label: '← 返回品牌/IP与授权营销研究',
+  })
+  assert.deepEqual(researchCategoryLink('品类研究'), {
+    href: '/research?category=%E5%93%81%E7%B1%BB%E7%A0%94%E7%A9%B6',
+    label: '← 返回品类研究',
+  })
 })
 
 test('extracts report keyword tags from title templates', () => {

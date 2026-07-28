@@ -170,6 +170,26 @@ test('excludes historical metrics for a source removed from information source m
   assert.deepEqual(metrics, [])
 })
 
+test('keeps same-name information sources as separate monitoring records', () => {
+  const metrics = aggregateSourceQuality({
+    logs: [],
+    legacyRows: [],
+    sources: [
+      source,
+      { id: 'source-b', name: source.name, enabled: false, last_test_status: 'failed' },
+    ],
+    actions: [],
+    periodDays: 7,
+    healthBySource: { 'source-a': 'healthy', 'source-b': 'repair' },
+    healthFilterBySource: { 'source-a': 'active:healthy', 'source-b': 'paused:repair' },
+    now,
+  })
+
+  assert.equal(metrics.length, 2)
+  assert.deepEqual(metrics.map((metric) => metric.sourceId), ['source-a', 'source-b'])
+  assert.deepEqual(metrics.map((metric) => metric.healthFilter), ['active:healthy', 'paused:repair'])
+})
+
 test('uses an explicit normal decision as the management status', () => {
   const [metric] = aggregateSourceQuality({
     logs: [{

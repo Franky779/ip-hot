@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { useAdmin } from '../components/AdminToggle'
+import { AdminToggle, useAdmin } from '../components/AdminToggle'
 import SourceQualityPanel, { type SourceQualityItem } from './SourceQualityPanel'
 
 type SourceCoverageStatus = 'success' | 'empty' | 'failed' | 'running' | 'skipped' | 'pending' | 'overdue' | 'not_due' | 'manual' | 'paused'
@@ -49,6 +49,7 @@ type MonitorData = {
     id: string; titleCn: string; summaryCn: string; commentary: string
     relevanceScore: number; source: string; createdAt: string
   }>
+  selectionThreshold: number
 }
 
 type CronLog = {
@@ -119,7 +120,7 @@ function getLogLine(log: CronLog): string {
 }
 
 export default function MonitorPage() {
-  const { loaded } = useAdmin()
+  const { isAdmin, loaded } = useAdmin()
   const [data, setData] = useState<MonitorData | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetching, setFetching] = useState(false)
@@ -133,6 +134,7 @@ export default function MonitorPage() {
   const [selectedReviews, setSelectedReviews] = useState<Set<string>>(new Set())
   const [qualityDays, setQualityDays] = useState<7 | 30 | 180 | 365>(7)
   const [coverageExpanded, setCoverageExpanded] = useState(false)
+  const [thresholdSaving, setThresholdSaving] = useState(false)
   const dataRequestRef = useRef<Promise<void> | null>(null)
   const dataRefreshQueuedRef = useRef(false)
   const qualityDaysRef = useRef(qualityDays)
@@ -140,7 +142,11 @@ export default function MonitorPage() {
   useEffect(() => { qualityDaysRef.current = qualityDays }, [qualityDays])
 
   const fetchData = useCallback((): Promise<void> => {
-    const pw = getPw(); if (!pw) return Promise.resolve()
+    const pw = getPw()
+    if (!pw) {
+      setLoading(false)
+      return Promise.resolve()
+    }
     dataRefreshQueuedRef.current = true
     if (dataRequestRef.current) return dataRequestRef.current
 
@@ -179,7 +185,7 @@ export default function MonitorPage() {
       void loadLogs()
     }, 0)
     const logsTimer = setInterval(() => { void loadLogs() }, 5000)
-    const dataTimer = setInterval(() => { void fetchData() }, 30000)
+    const dataTimer = setInterval(() => { void fetchData() }, 15000)
     return () => {
       clearTimeout(initialTimer)
       clearInterval(logsTimer)
@@ -460,6 +466,28 @@ export default function MonitorPage() {
     }
   }
 
+  const handleThresholdChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = Number(event.target.value)
+    if (!Number.isInteger(value) || value < 4 || value > 10) return
+    if (!confirm(`确认将新资讯公开筛选基准改为 ${value} 分？只影响调整时间之后完成分类的新资讯，历史文章不变。`)) return
+    setThresholdSaving(true)
+    try {
+      const res = await fetch('/api/admin/selection-threshold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': getPw() || '' },
+        body: JSON.stringify({ value }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || '保存失败')
+      setData((current) => current ? { ...current, selectionThreshold: result.value } : current)
+      alert(`筛选基准已更新为 ${result.value} 分。`)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '保存失败')
+    } finally {
+      setThresholdSaving(false)
+    }
+  }
+
   const task = data?.todayTask
   const coverage = data?.sourceCoverage
   const missedCloudRows = coverage?.rows
@@ -477,11 +505,14 @@ export default function MonitorPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           </Link>
           <h1 className="page-title font-serif" style={{ margin: 0 }}>运营监控</h1>
+          <div style={{ marginLeft: 'auto' }}>
+            <AdminToggle />
+          </div>
         </div>
       </header>
 
       <section className="article-section">
-        {loading ? <p className="empty-state">加载中…</p> : !data ? <p className="empty-state">加载失败，请确认已登录管理员。</p> : (
+        {loading ? <p className="empty-state">加载中…</p> : !isAdmin ? <p className="empty-state">请先返回首页登录管理员身份，再打开此页。</p> : !data ? <p className="empty-state">加载失败，请确认已登录管理员。</p> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* 统计卡片 */}
             <div className="monitor-stats-grid">
@@ -539,6 +570,12 @@ export default function MonitorPage() {
                   <button className="monitor-action-btn" onClick={handlePendingClassification} disabled={pendingClassifying}>
                     {pendingClassifying ? '自动分类中…' : '自动分类'}
                   </button>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    筛选基准
+                    <select className="monitor-action-btn" value={data.selectionThreshold} onChange={handleThresholdChange} disabled={thresholdSaving} aria-label="新资讯筛选分数基准">
+                      {[4, 5, 6, 7, 8, 9, 10].map((score) => <option key={score} value={score}>{score} 分及以上</option>)}
+                    </select>
+                  </label>
                 </div>
               </div>
             </div>

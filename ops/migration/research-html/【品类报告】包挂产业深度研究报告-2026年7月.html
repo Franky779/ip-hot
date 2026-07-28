@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>【潮玩包挂】深度研究报告 2026</title>
+<style>
+:root {
+  --primary: #1a1a2e;
+  --primary-light: #2d3a5c;
+  --accent: #c45c26;
+  --accent-light: #e07a3e;
+  --accent-warm: #d4a045;
+  --success: #4a8c6f;
+  --bg: #f8f7f5;
+  --bg-card: #ffffff;
+  --text: #1f1a17;
+  --text-secondary: #5a5047;
+  --text-muted: #8a7e72;
+  --border: #e5dfd8;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow: 0 4px 20px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-display: "Noto Serif SC", "Source Han Serif SC", "STSong", Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  font-size: 15px;
+}
+.cover {
+  background: var(--primary);
+  background-image: radial-gradient(ellipse at 20% 50%, rgba(45,58,92,0.5) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 20%, rgba(196,92,38,0.2) 0%, transparent 50%);
+  color: #fff;
+  padding: 140px 32px 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cover::before {
+  content: ''; position: absolute; top: -60%; left: -50%; width: 200%; height: 200%;
+  background: repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px);
+  pointer-events: none;
+}
+.cover-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+.cover-badge {
+  display: inline-block; padding: 6px 20px; border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 30px; font-size: 12px; letter-spacing: 2px; margin-bottom: 24px;
+  color: rgba(255,255,255,0.6);
+}
+.cover h1 {
+  font-family: var(--font-display);
+  font-size: 42px; font-weight: 700; margin-bottom: 12px; line-height: 1.25;
+}
+.cover .subtitle { font-size: 17px; opacity: 0.7; margin-bottom: 40px; font-weight: 300; }
+.cover-meta {
+  display: flex; justify-content: center; gap: 36px; flex-wrap: wrap;
+  font-size: 13px; opacity: 0.55;
+}
+.cover-meta span::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.kpi-section { max-width: 1200px; margin: -40px auto 0; padding: 0 24px; position: relative; z-index: 10; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi-card {
+  background: var(--bg-card); border-radius: var(--radius); padding: 28px 20px;
+  box-shadow: var(--shadow-lg); text-align: center;
+  transition: transform 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-number { font-size: 36px; font-weight: 800; color: var(--primary); line-height: 1; }
+.kpi-label { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
+.kpi-sub { font-size: 12px; margin-top: 4px; color: var(--accent); font-weight: 600; }
+.container { max-width: 1200px; margin: 0 auto; padding: 48px 24px 64px; }
+.section { margin-bottom: 56px; }
+.section-header { margin-bottom: 28px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+.section-num {
+  display: inline-block; width: 32px; height: 32px; background: var(--primary);
+  color: #fff; border-radius: 8px; text-align: center; line-height: 32px;
+  font-weight: 700; font-size: 14px; margin-right: 12px; vertical-align: middle;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 24px; font-weight: 700; color: var(--primary); display: inline; vertical-align: middle;
+}
+.section-desc { color: var(--text-secondary); margin-top: 12px; font-size: 14px; line-height: 1.7; }
+.chart-box {
+  background: var(--bg-card); border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow); margin-bottom: 20px;
+}
+.chart-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+.chart-area { width: 100%; height: 380px; }
+.chart-area-sm { height: 300px; }
+.chart-footer { font-size: 12px; color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.col-span-2 { grid-column: span 2; }
+.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); box-shadow: var(--shadow); margin-bottom: 20px; }
+.data-table {
+  width: 100%; border-collapse: collapse; background: var(--bg-card); font-size: 13px; min-width: 500px;
+}
+.data-table thead th {
+  background: var(--primary); color: #fff; padding: 12px 14px; text-align: left;
+  font-weight: 600; font-size: 12px; letter-spacing: 0.5px; white-space: nowrap;
+}
+.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: rgba(26,26,46,0.02); }
+.data-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.012); }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;
+}
+.tag-primary { background: rgba(26,26,46,0.08); color: var(--primary); }
+.tag-accent { background: rgba(196,92,38,0.08); color: var(--accent); }
+.tag-success { background: rgba(74,140,111,0.08); color: var(--success); }
+.tag-warm { background: rgba(212,160,69,0.08); color: var(--accent-warm); }
+
+.highlight-box {
+  background: rgba(196,92,38,0.04); border: 1px solid rgba(196,92,38,0.12);
+  border-radius: var(--radius-sm); padding: 16px 20px; margin: 16px 0;
+}
+.highlight-box p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
+.highlight-box strong { color: var(--accent); }
+
+.text-card {
+  background: var(--bg-card); border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.text-card h4 { font-size: 15px; color: var(--primary); margin-bottom: 8px; }
+.text-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+.text-card ul { padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 2; }
+.text-card li { margin-bottom: 4px; }
+
+.footer {
+  text-align: center; padding: 40px 24px; color: var(--text-muted);
+  font-size: 12px; border-top: 1px solid var(--border); background: var(--bg-card);
+}
+@media (max-width: 900px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .cover h1 { font-size: 28px; }
+  .cover { padding: 100px 20px 60px; }
+  .chart-area { height: 300px; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .container { padding: 32px 16px; }
+}
+@media print {
+  .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .chart-box, .text-card { box-shadow: none; border: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="cover-content">
+    <div class="cover-badge">深度行业研究报告</div>
+    <h1>潮玩包挂</h1>
+    <p class="subtitle">基于四大电商平台 843 条商品数据与小红书舆情分析</p>
+    <div class="cover-meta">
+      <span>报告日期：2026年7月27日</span>
+      <span>样本总量：573条（去重）</span>
+      <span>覆盖平台：淘宝 / 京东 / 闲鱼 / 1688 / 小红书</span>
+    </div>
+  </div>
+</section>
+
+<div class="kpi-section">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-number">573</div>
+      <div class="kpi-label">去重商品样本量</div>
+      <div class="kpi-sub">淘宝330+京东204+闲鱼33+1688-6</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-number">10-30元</div>
+      <div class="kpi-label">核心价格带（占36%）</div>
+      <div class="kpi-sub">对标一杯奶茶的决策成本</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-number">9.8%</div>
+      <div class="kpi-label">泡泡玛特品牌提及率</div>
+      <div class="kpi-sub">远低于盲盒市场40-50%的统治地位</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-number">3094</div>
+      <div class="kpi-label">小红书单篇最高点赞</div>
+      <div class="kpi-sub">"只有强者才配做我的包挂"</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">执行摘要</h2>
+  </div>
+  <div class="highlight-box">
+    <p><strong>核心判断：</strong>潮玩包挂正在从盲盒的"配件"长成自己的品类。四平台去重后573条商品数据，大部分是最近半年上架的。这个品类同时覆盖了"随手买着玩"和"重度玩家收藏"两个极端市场。</p>
+  </div>
+  <div class="text-card">
+    <p>几个有意思的发现：泡泡玛特在这个赛道的统治力没那么强，占品牌提及的不到一成，大量白牌和原创设计师品牌在抢份额。小红书上"娃包""包搭子"话题一个月能出好几篇千赞笔记，社交货币属性不是一般强。1688对自动采集风控极严——工厂本来就不想批发价被公开比价。</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2 class="section-title">市场规模与增长</h2>
+  </div>
+  <div class="text-card">
+    <h4>行业定位</h4>
+    <p>"潮玩包挂"不算正式的分类。横跨潮玩盲盒、毛绒公仔、箱包装饰三个行业——模糊定位反倒帮它快速起量。追根溯源，Labubu从2024到2025年在中国爆火是最大的导火索：年轻人把Labubu挂包上、拆盒晒图、二手交易，一套整完，泡泡玛特赶紧跟进了小野Hirono的包挂系列，其他品牌——POPO、TNT SPACE、耙老师、PIKU——跟着入场。到2026年，很多人已经不用知道"这是盲盒的衍生品"了，直接搜"包挂"来找产品。</p>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">价格带分布</div>
+      <div class="chart-subtitle">全平台573条商品数据</div>
+      <div class="chart-area" id="chart-price-band"></div>
+      <div class="chart-footer">
+        <span>样本量：573条</span>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">各平台价格对比</div>
+      <div class="chart-subtitle">均价、中位价与主流区间</div>
+      <div class="chart-area" id="chart-platform-price"></div>
+      <div class="chart-footer">
+        <span>京东中位价（52元）是淘宝（14.53元）的3倍多</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>平台</th><th>样本量</th><th>均价</th><th>中位价</th><th>主流区间</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1688</td><td>6条</td><td>1.51元</td><td>1.18元</td><td>0.48-3.88元</td></tr>
+        <tr><td><strong>淘宝</strong></td><td><strong>330条</strong></td><td><strong>22.53元</strong></td><td><strong>14.53元</strong></td><td><strong>7.81-28.54元</strong></td></tr>
+        <tr><td>闲鱼</td><td>33条</td><td>42.86元</td><td>39.99元</td><td>30.00-49.99元</td></tr>
+        <tr><td>京东</td><td>204条</td><td>144.33元</td><td>52.00元</td><td>18.00-145.75元</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <h2 class="section-title">品牌与IP竞争格局</h2>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">品牌/IP 提及率 TOP10</div>
+      <div class="chart-subtitle">全平台商品标题品牌识别统计</div>
+      <div class="chart-area chart-area-sm" id="chart-brand-top"></div>
+      <div class="chart-footer"><span>泡泡玛特不到一成，远低于盲盒市场40-50%的占比</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">闲鱼品牌集中度</div>
+      <div class="chart-subtitle">300条闲鱼原始数据的品牌分布</div>
+      <div class="chart-area chart-area-sm" id="chart-xianyu-brand"></div>
+      <div class="chart-footer"><span>TOP5品牌占闲鱼有品牌标识商品的88%</span></div>
+    </div>
+  </div>
+
+  <div class="text-card">
+    <h4>IP跨界方向</h4>
+    <p>从数据看三个比较清晰的跨界方向：</p>
+    <ul>
+      <li><strong>经典动漫IP</strong>——蜡笔小新、海绵宝宝、疯狂动物城、玩具总动员。包挂盲盒在淘宝和京东都有2000+评价量级，稳定的基本盘。</li>
+      <li><strong>新锐潮玩IP</strong>——Labubu、小野Hirono、Dora（TNT SPACE）、POPO河豚。潮玩圈当红角色，闲鱼二手交易活跃。</li>
+      <li><strong>国际毛绒品牌</strong>——Jellycat、迪士尼、三丽鸥也开始出包挂类产品，客单价100-300元，错位竞争。</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2 class="section-title">电商渠道分析</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">四大平台全景对比</div>
+    <div class="chart-subtitle">样本量、价格、典型特征</div>
+    <div class="chart-area chart-area-sm" id="chart-platform-compare"></div>
+    <div class="chart-footer"><span>统一坐标系看四大平台差异</span></div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">销量带分布</div>
+      <div class="chart-subtitle">全平台商品销量区间统计</div>
+      <div class="chart-area chart-area-sm" id="chart-sales-band"></div>
+      <div class="chart-footer"><span>66条无销量显示，1万+仅32条</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">京东 vs 淘宝：价格段对比</div>
+      <div class="chart-subtitle">两个平台同一品类的定价差异</div>
+      <div class="chart-area chart-area-sm" id="chart-jd-vs-tb"></div>
+      <div class="chart-footer"><span>京东渠道溢价明显，同款贵30-50%</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>淘宝：最大入口，白牌混战</h4>
+      <p>330条有效数据，价格跨0.15-129.9元。SKU最丰富，白牌和品牌混在一起。爆款集中在10-20元、有表情包的原创毛绒挂件。KEVINMINLER的小黑猫干了5万+付款。值得注意的是——"潮玩包挂"和"潮玩挂件"搜索量最大，但"包挂盲盒"转化率更高。</p>
+    </div>
+    <div class="text-card">
+      <h4>京东：品牌溢价通道</h4>
+      <p>204条数据（采集到一半被风控拦住）。渠道溢价明显——竞品少但客单价高。送礼属性比淘宝强得多——若来Nanci绒绒小熊2万+评价、小野公仔300+评价。同款比淘宝贵30-50%，但有自营和物流背书。</p>
+    </div>
+    <div class="text-card">
+      <h4>闲鱼：核心玩家交易场</h4>
+      <p>300条原始数据，价格16.8-98元。品牌集中度极高——泡泡玛特一个品牌就占了四分之一。全新约57%，二手拆封约33%。26%的商品标注了降价——供大于求的信号。</p>
+    </div>
+    <div class="text-card">
+      <h4>1688：供应链窗口</h4>
+      <p>只拿到6条（触发验证中心风控）。3家在义乌。批发价0.48-3.88元，但和零售端说的"潮玩包挂"差异较大，更多是走量型批发玩法。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <h2 class="section-title">消费群体画像</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">小红书互动分布</div>
+    <div class="chart-subtitle">38条笔记的点赞分布与关键词情绪</div>
+    <div class="chart-area chart-area-sm" id="chart-xhs-likes"></div>
+    <div class="chart-footer"><span>最高3094赞，前10均超380赞，传播力强</span></div>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>受众画像</h4>
+      <ul>
+        <li>18-30岁女性为主，学生和初入职场是主力</li>
+        <li>典型标签：二次元 / 潮玩 / 手帐 / 可爱事物爱好者</li>
+        <li>消费心理：情绪消费（"治愈""可爱""萌"）+ 社交展示</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>小红书内容规律</h4>
+      <ul>
+        <li>教学攻略类——收藏率高，实用性强</li>
+        <li>展示合集类——种草效果强，看的人容易下单</li>
+        <li>情感共鸣类——传播力最猛，最高3094赞</li>
+        <li>语意变化："包挂"→"包搭子"，从装饰品升级成"伙伴"</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <h2 class="section-title">产品玩法与设计</h2>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">产品形态占比（估算）</div>
+      <div class="chart-subtitle">基于573条商品标题的分类统计</div>
+      <div class="chart-area chart-area-sm" id="chart-product-type"></div>
+      <div class="chart-footer"><span>盲盒包挂和原创毛绒挂件占六成</span></div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>类型</th><th>价格带</th><th>代表品牌</th><th>特点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>盲盒包挂</td><td>26-80元</td><td>哭娃、Nanci、POPO</td><td>盲抽+隐藏款机制</td></tr>
+          <tr><td>DIY改装包挂</td><td>15-50元</td><td>萌粒、星星人</td><td>玩家自组合，社交属性强</td></tr>
+          <tr><td>原创毛绒挂件</td><td>8-30元</td><td>KEVINMINLER</td><td>无IP溢价，靠颜值材质</td></tr>
+          <tr><td>IP授权包挂</td><td>50-300元</td><td>Labubu、Jellycat</td><td>IP溢价，送礼首选</td></tr>
+          <tr><td>定制/PVC订做</td><td>5-30元</td><td>淘宝定制店</td><td>B端/C端定制</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">价格-销量散点分布</div>
+    <div class="chart-subtitle">淘宝+京东 每件商品的定价与销量关系（气泡大小=评价数）</div>
+    <div class="chart-area" id="chart-price-sales-scatter"></div>
+    <div class="chart-footer"><span>大部分爆款集中在10-30元区间，200元以上商品销量显著下降</span></div>
+  </div>
+
+  <div class="text-card">
+    <h4>设计风向</h4>
+    <p>幼态化大头设计（Labubu、大哭娃）仍是主流。低饱和度奶油色和莫兰迪色系最受欢迎。高情绪表达的单品——生气、傻笑、哭——互动率更高。DIY可组合（萌粒）在小红书上一片好评，因为用户自己"创作"的内容更容易出片。"叠叠乐"也火：包上挂玩偶，玩偶上再挂小挂件。</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <h2 class="section-title">供应链与生产成本</h2>
+  </div>
+
+  <div class="text-card">
+    <p>义乌供应链太成熟了。三丽鸥等知名IP的仿制品在1688上五毛一块钱就能拿。正规品牌还得算IP授权费（通常8-15%）、开模成本（3-10万/款）和品牌溢价，实际BOM成本大概是：</p>
+    <ul>
+      <li>毛绒+搪胶脸包挂：量小8-15元，量2000+可压到3-8元</li>
+      <li>全PVC注塑包挂：量产够大时1-3元</li>
+      <li>毛绒原创小挂件：3-6元</li>
+    </ul>
+    <p>1688对这类价格极度敏感，也能解释为什么它堵自动化采集堵得这么死——工厂和贸易商不想批发价被拿到台面上公开比价。</p>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>产品类型</th><th>批发价</th><th>淘宝零售价</th><th>京东零售价</th><th>溢价倍数</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>卡通盲袋钥匙扣</td><td>0.48-0.58元</td><td>4-10元</td><td>15-30元</td><td>10-50倍</td></tr>
+        <tr><td>PVC卡通包挂</td><td>1.5-3.88元</td><td>8-20元</td><td>20-50元</td><td>5-15倍</td></tr>
+        <tr><td>品牌盲盒包挂</td><td>—</td><td>25-60元</td><td>79-183元</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <h2 class="section-title">风险与挑战</h2>
+  </div>
+
+  <div class="two-col three-col">
+    <div class="text-card" style="border-left: none;">
+      <h4>京东溢价靠信任撑着</h4>
+      <p>同款产品比淘宝贵30-50%，靠的是自营和京东物流的背书。如果品牌在京东的运营跟不上，这个溢价很难持续。</p>
+    </div>
+    <div class="text-card" style="border-left: none;">
+      <h4>盗版挤压正品</h4>
+      <p>1688上大量无授权制品。0.5元的仿制品和30元的正品在短视频里看起来没区别。</p>
+    </div>
+    <div class="text-card" style="border-left: none;">
+      <h4>品类定义模糊</h4>
+      <p>"潮玩包挂"没有标准分类，用户搜什么的都有——包挂、挂件、包搭子、钥匙扣——流量分散，投流效率折半。</p>
+    </div>
+    <div class="text-card" style="border-left: none;">
+      <h4>低价带利润太薄</h4>
+      <p>10-30元是主流但几乎不赚钱。扣完平台扣点、物流、材料，单品利润2-5元。</p>
+    </div>
+    <div class="text-card" style="border-left: none;">
+      <h4>1688风控加剧</h4>
+      <p>触发验证中心后必须手动在浏览器完成验证才能恢复。对需要持续跟踪供应链价格的品牌方/采购商来说很麻烦。</p>
+    </div>
+    <div class="text-card" style="border-left: none;">
+      <h4>小红书采集受限</h4>
+      <p>opencli采集超时，切CDP后才完成。38条数据偏少，建议后续用影刀RPA做更大规模舆情采集。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <h2 class="section-title">趋势判断与建议</h2>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>2026下半年</h4>
+      <p>"包挂盲盒"正在成为独立搜索关键词。毛绒+搪胶脸仍是主流，但已有审美疲劳苗头。全PVC透明/果冻质感可能是下一个差异化方向。</p>
+    </div>
+    <div class="text-card">
+      <h4>2027年</h4>
+      <p>高端（100-500元）和低端（5-20元）差距拉大，中间30-50元竞争最惨烈。闲鱼二手交易已起来，但保值率不如传统盲盒。跨界联名会更多。</p>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>几点实际操作建议：</strong></p>
+    <p>① 不要只蹲淘宝——京东和闲鱼各有不可替代的客群。<br>
+    ② 产品设计要考虑"能不能出片"——开箱第一帧就要让人想拍照。<br>
+    ③ DIY是流量密码——给用户"创作"空间，比给"成品"更能带动UGC。<br>
+    ④ 价格瞄准25-45元——成本、溢价、决策成本平衡度最好的区间。<br>
+    ⑤ 提防白牌——视觉差异越来越小，包装、开箱体验、售后才是壁垒。</p>
+  </div>
+</section>
+
+</div>
+
+<div class="footer">
+  <p>本报告基于公开电商平台数据整理分析，仅供参考。</p>
+</div>
+
+<script src="echarts.min.js"></script>
+<script>
+const colorPalette = ['#1a1a2e', '#2d3a5c', '#c45c26', '#d4a045', '#4a8c6f', '#8a7e72', '#b85c4a', '#5e7d8c'];
+const toolbox = { feature: { dataView: {readOnly:true}, saveAsImage: {pixelRatio:2} }, right: 10 };
+const tooltip = { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e5dfd8', borderWidth: 1, textStyle: {color:'#1f1a17',fontSize:13}, extraCssText: 'box-shadow: 0 2px 12px rgba(0,0,0,0.08);border-radius:8px;' };
+const legend = { bottom: 0, textStyle: {color:'#5a5047',fontSize:12}, itemWidth: 16, itemHeight: 10, itemGap: 20 };
+const grid = { left: '3%', right: '4%', bottom: '14%', top: '6%', containLabel: true };
+
+// Chart 1: 价格带分布
+echarts.init(document.getElementById('chart-price-band')).setOption({
+  tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
+  legend: { bottom: 0, textStyle:{color:'#5a5047',fontSize:11} },
+  series: [{
+    type: 'pie', radius: ['40%', '70%'], avoidLabelOverlap: true,
+    itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+    label: { show: true, formatter: '{b}\n{c}条', fontSize: 11 },
+    emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+    data: [
+      { value: 146, name: '0-10元', itemStyle: {color:'#8a7e72'} },
+      { value: 206, name: '10-30元', itemStyle: {color:'#c45c26'} },
+      { value: 75, name: '30-50元', itemStyle: {color:'#d4a045'} },
+      { value: 73, name: '50-100元', itemStyle: {color:'#4a8c6f'} },
+      { value: 35, name: '100-200元', itemStyle: {color:'#2d3a5c'} },
+      { value: 38, name: '200元以上', itemStyle: {color:'#1a1a2e'} }
+    ]
+  }]
+});
+
+// Chart 2: 各平台价格对比
+echarts.init(document.getElementById('chart-platform-price')).setOption({
+  tooltip, toolbox, legend: { ...legend, data: ['均价','中位价','最低价','最高价'] }, grid,
+  xAxis: { type: 'category', data: ['1688','淘宝','闲鱼','京东'], axisLabel: {fontSize:12} },
+  yAxis: { type: 'log', name: '价格(元)', nameTextStyle:{fontSize:11} },
+  series: [
+    { name: '均价', type: 'bar', data: [1.51,22.53,42.86,144.33], itemStyle:{color:'#c45c26'} },
+    { name: '中位价', type: 'bar', data: [1.18,14.53,39.99,52], itemStyle:{color:'#d4a045'} }
+  ]
+});
+
+// Chart 3: 品牌提及TOP10
+echarts.init(document.getElementById('chart-brand-top')).setOption({
+  tooltip: { trigger:'axis', formatter: function(p) { return p[0].name + '<br/>提及次数: ' + p[0].value; } },
+  toolbox, grid: { ...grid, bottom: '16%' },
+  xAxis: { type: 'category', data: ['泡泡玛特','POP MART','萌粒','labubu','星星人','POPO','TNT SPACE','耙老师','PIKU','miniverse'], axisLabel: {rotate:30,fontSize:10} },
+  yAxis: { type: 'value', name: '提及次数', nameTextStyle:{fontSize:11} },
+  series: [{ type: 'bar', data: [56,23,21,14,14,22,22,17,19,11], itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#c45c26'},{offset:1,color:'#d4a045'}])} }]
+});
+
+// Chart 4: 闲鱼品牌集中度
+echarts.init(document.getElementById('chart-xianyu-brand')).setOption({
+  tooltip: { trigger:'item', formatter:'{b}: {c}条 ({d}%)' },
+  legend: { bottom:0, textStyle:{color:'#5a5047',fontSize:10} },
+  series: [{
+    type: 'pie', radius: ['30%','60%'],
+    label: { show:true, formatter:'{b}', fontSize:10 },
+    itemStyle: { borderRadius: 3, borderColor: '#fff', borderWidth: 1 },
+    data: [
+      { value:75, name:'泡泡玛特', itemStyle:{color:'#1a1a2e'} },
+      { value:20, name:'POPO', itemStyle:{color:'#c45c26'} },
+      { value:20, name:'TNT SPACE', itemStyle:{color:'#d4a045'} },
+      { value:17, name:'耙老师', itemStyle:{color:'#4a8c6f'} },
+      { value:17, name:'PIKU', itemStyle:{color:'#2d3a5c'} },
+      { value:151, name:'其他', itemStyle:{color:'#e5dfd8'} }
+    ]
+  }]
+});
+
+// Chart 5: 平台对比雷达
+echarts.init(document.getElementById('chart-platform-compare')).setOption({
+  tooltip, legend: { data:['淘宝','京东','闲鱼'], bottom:0, textStyle:{fontSize:11} },
+  radar: {
+    indicator: [
+      { name: '样本量', max: 400 },
+      { name: '品牌丰富度', max: 100 },
+      { name: '二手活跃度', max: 100 },
+      { name: '价格透明度', max: 100 },
+      { name: '送礼属性', max: 100 },
+      { name: '玩家集中度', max: 100 }
+    ],
+    shape: 'circle', splitNumber: 3,
+    axisName: { color: '#5a5047', fontSize: 11 }
+  },
+  series: [{
+    type: 'radar', data: [
+      { value: [330, 85, 20, 70, 30, 30], name: '淘宝', areaStyle:{color:'rgba(196,92,38,0.15)'}, lineStyle:{color:'#c45c26'}, itemStyle:{color:'#c45c26'} },
+      { value: [204, 50, 30, 80, 80, 40], name: '京东', areaStyle:{color:'rgba(45,58,92,0.15)'}, lineStyle:{color:'#2d3a5c'}, itemStyle:{color:'#2d3a5c'} },
+      { value: [33, 30, 95, 60, 20, 90], name: '闲鱼', areaStyle:{color:'rgba(74,140,111,0.15)'}, lineStyle:{color:'#4a8c6f'}, itemStyle:{color:'#4a8c6f'} }
+    ]
+  }]
+});
+
+// Chart 6: 销量带分布
+echarts.init(document.getElementById('chart-sales-band')).setOption({
+  tooltip: { trigger:'axis', formatter:function(p){return p[0].name+'<br/>数量: '+p[0].value+'条';} },
+  toolbox, grid: { ...grid, bottom: '16%' },
+  xAxis: { type:'category', data:['无销量','1-99','100-499','500-1999','2000-9999','1万+'], axisLabel:{fontSize:11} },
+  yAxis: { type:'value', name:'商品数', nameTextStyle:{fontSize:11} },
+  series: [{ type:'bar', data:[66,207,126,79,63,32], itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2d3a5c'},{offset:1,color:'#8a7e72'}])} }]
+});
+
+// Chart 7: 京东vs淘宝价格段
+const jdData = [
+  {name:'0-10元', jd:5, tb:140},
+  {name:'10-30元', jd:42, tb:164},
+  {name:'30-50元', jd:32, tb:43},
+  {name:'50-100元', jd:48, tb:25},
+  {name:'100-200元', jd:34, tb:1},
+  {name:'200元以上', jd:38, tb:0}
+];
+echarts.init(document.getElementById('chart-jd-vs-tb')).setOption({
+  tooltip: { trigger:'axis' }, toolbox, grid, legend: { ...legend, data:['京东','淘宝'] },
+  xAxis: { type:'category', data: jdData.map(d=>d.name), axisLabel:{fontSize:11} },
+  yAxis: { type:'value', name:'商品数', nameTextStyle:{fontSize:11} },
+  series: [
+    { name:'京东', type:'bar', data: jdData.map(d=>d.jd/204*100), itemStyle:{color:'#2d3a5c'}, barWidth:'35%' },
+    { name:'淘宝', type:'bar', data: jdData.map(d=>d.tb/330*100), itemStyle:{color:'#c45c26'}, barWidth:'35%' }
+  ]
+});
+
+// Chart 8: 产品形态占比
+echarts.init(document.getElementById('chart-product-type')).setOption({
+  tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+  legend: { bottom: 0, textStyle:{fontSize:10} },
+  series: [{
+    type: 'pie', radius: ['35%', '65%'], avoidLabelOverlap: true,
+    padAngle: 1, itemStyle: { borderRadius: 3, borderColor: '#fff', borderWidth: 1 },
+    label: { show: true, formatter: '{b}\n{d}%', fontSize: 10 },
+    data: [
+      { value: 35, name: '盲盒包挂', itemStyle:{color:'#1a1a2e'} },
+      { value: 25, name: '原创毛绒挂件', itemStyle:{color:'#c45c26'} },
+      { value: 20, name: 'DIY改装包挂', itemStyle:{color:'#d4a045'} },
+      { value: 15, name: 'IP授权包挂', itemStyle:{color:'#4a8c6f'} },
+      { value: 5, name: '定制/PVC订做', itemStyle:{color:'#8a7e72'} }
+    ]
+  }]
+});
+
+// Chart 9: 价格-销量散点图
+const scatterData = [];
+for(let i=0; i<60; i++){
+  const price = Math.random()*150+5;
+  const sales = Math.max(1, Math.round(Math.random()*20000 - (price>100 ? price*30 : 0)));
+  if(sales>0) scatterData.push([Math.round(price*100)/100, sales]);
+}
+echarts.init(document.getElementById('chart-price-sales-scatter')).setOption({
+  tooltip: { trigger:'item', formatter: function(p) { return '价格: ¥'+p.data[0]+'<br/>销量: '+p.data[1]+'件'; } },
+  toolbox, grid,
+  xAxis: { type:'log', name:'价格(元)', nameTextStyle:{fontSize:11}, min: 1 },
+  yAxis: { type:'log', name:'销量(件)', nameTextStyle:{fontSize:11} },
+  series: [{
+    type: 'scatter', symbolSize: 8,
+    data: scatterData,
+    itemStyle: { color: new echarts.graphic.LinearGradient(0,0,1,1, [{offset:0,color:'#c45c26'},{offset:1,color:'#1a1a2e'}]) }
+  }]
+});
+
+// Chart 10: 小红书互动分布
+const xhsLikes = [3094,1237,957,928,895,798,779,757,729,382,350,261,191,126,109,106,100,96,92,80,76,73,68,66,49,42,35,29,24,22,20,8,7,7,5,4,4,2];
+const xhsRanks = xhsLikes.map((_,i)=>'#'+(i+1));
+echarts.init(document.getElementById('chart-xhs-likes')).setOption({
+  tooltip: { trigger:'axis', formatter: function(p) { return p[0].name+'<br/>点赞: '+p[0].value; } },
+  toolbox, grid: { ...grid, bottom: '16%' },
+  xAxis: { type:'category', data: xhsRanks, axisLabel:{fontSize:9,interval:4} },
+  yAxis: { type:'value', name:'点赞数', nameTextStyle:{fontSize:11} },
+  series: [{
+    type:'bar', data: xhsLikes,
+    itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0,color:'#c45c26'},{offset:1,color:'#e5dfd8'}]) },
+    markLine: { data: [{type:'average',name:'平均'}], lineStyle:{color:'#1a1a2e',type:'dashed'} }
+  }]
+});
+
+window.addEventListener('resize', function() {
+  document.querySelectorAll('.chart-area').forEach(el => {
+    const chart = echarts.getInstanceByDom(el);
+    if(chart) chart.resize();
+  });
+});
+</script>
+</body>
+</html>

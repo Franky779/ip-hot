@@ -1,5 +1,16 @@
 create extension if not exists pgcrypto;
 
+create table if not exists app_settings (
+  key text primary key,
+  value integer not null,
+  updated_at timestamptz not null default now(),
+  constraint app_settings_value_check check (value between 4 and 10)
+);
+
+insert into app_settings (key, value)
+values ('article_selection_threshold', 6)
+on conflict (key) do nothing;
+
 create table if not exists articles (
   id uuid primary key default gen_random_uuid(),
   source text not null,
@@ -12,10 +23,16 @@ create table if not exists articles (
   category text,
   relevance_score smallint,
   is_selected boolean default false,
+  selection_threshold smallint default 6,
   published_at timestamptz,
   created_at timestamptz not null default now(),
   commentary text
 );
+
+alter table articles add column if not exists selection_threshold smallint default 6;
+update articles set selection_threshold = 6 where selection_threshold is null;
+alter table articles drop constraint if exists articles_selection_threshold_check;
+alter table articles add constraint articles_selection_threshold_check check (selection_threshold between 4 and 10);
 
 create unique index if not exists articles_source_url_unique on articles (source, url);
 create index if not exists idx_articles_created_at on articles (created_at desc);
@@ -42,8 +59,30 @@ create table if not exists info_sources (
   enabled boolean not null default false,
   last_test_status text not null default 'untested',
   last_tested_at timestamptz,
-  last_test_message text not null default ''
+  last_test_message text not null default '',
+  platform text not null default '',
+  x_handle text not null default '',
+  x_user_id text not null default '',
+  x_profile_url text not null default '',
+  official_evidence_url text not null default '',
+  verification_status text not null default 'unverified',
+  verified_by text not null default '',
+  verified_at timestamptz,
+  last_reviewed_at timestamptz,
+  verification_notes text not null default '',
+  constraint info_sources_verification_status_check check (verification_status in ('unverified', 'verified', 'revoked'))
 );
+
+alter table info_sources add column if not exists platform text not null default '';
+alter table info_sources add column if not exists x_handle text not null default '';
+alter table info_sources add column if not exists x_user_id text not null default '';
+alter table info_sources add column if not exists x_profile_url text not null default '';
+alter table info_sources add column if not exists official_evidence_url text not null default '';
+alter table info_sources add column if not exists verification_status text not null default 'unverified';
+alter table info_sources add column if not exists verified_by text not null default '';
+alter table info_sources add column if not exists verified_at timestamptz;
+alter table info_sources add column if not exists last_reviewed_at timestamptz;
+alter table info_sources add column if not exists verification_notes text not null default '';
 
 create index if not exists idx_info_sources_section_id on info_sources (section_id);
 create index if not exists idx_info_sources_region on info_sources (region);
@@ -172,6 +211,7 @@ create table if not exists research_reports (
   title text not null,
   published_at date not null,
   markdown_content text not null,
+  content_format text not null default 'markdown',
   github_backup_status text not null default 'pending',
   github_backup_path text,
   github_backup_error text,
@@ -179,11 +219,15 @@ create table if not exists research_reports (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint research_reports_category_check check (category in ('品类研究', '品牌/IP与授权营销研究')),
-  constraint research_reports_backup_status_check check (github_backup_status in ('pending', 'backed_up', 'failed'))
+  constraint research_reports_backup_status_check check (github_backup_status in ('pending', 'backed_up', 'failed')),
+  constraint research_reports_content_format_check check (content_format in ('markdown', 'html'))
 );
 
+alter table research_reports add column if not exists content_format text not null default 'markdown';
 alter table research_reports drop constraint if exists research_reports_category_check;
 update research_reports set category = '品牌/IP与授权营销研究' where category in ('品牌/IP分析', '授权与营销研究');
 alter table research_reports add constraint research_reports_category_check check (category in ('品类研究', '品牌/IP与授权营销研究'));
+alter table research_reports drop constraint if exists research_reports_content_format_check;
+alter table research_reports add constraint research_reports_content_format_check check (content_format in ('markdown', 'html'));
 
 create index if not exists idx_research_reports_category_date on research_reports (category, published_at desc, created_at desc);

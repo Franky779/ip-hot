@@ -3,24 +3,56 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ADMIN_PW_KEY, useAdmin } from '../components/AdminToggle'
-import { RESEARCH_CATEGORIES, renderResearchMarkdown, researchTags, type ResearchCategory, type ResearchReport } from '@/lib/research'
+import { normalizeResearchCategory, RESEARCH_CATEGORIES, renderResearchMarkdown, researchTags, type ResearchCategory, type ResearchReport } from '@/lib/research'
 
 function password() { return localStorage.getItem(ADMIN_PW_KEY) || '' }
+let researchMemoryCache: ResearchReport[] = []
+
+function readResearchCache(): ResearchReport[] {
+  if (researchMemoryCache.length > 0) return researchMemoryCache
+  try {
+    const cached = JSON.parse(sessionStorage.getItem('ip-hot-research-reports') || '[]')
+    if (!Array.isArray(cached)) return []
+    researchMemoryCache = cached.map((report) => ({ ...report, category: normalizeResearchCategory(String(report.category || '')) }))
+    return researchMemoryCache
+  } catch {
+    return []
+  }
+}
 
 export default function ResearchPage() {
   const [category, setCategory] = useState<ResearchCategory>('品类研究')
-  const [reports, setReports] = useState<ResearchReport[]>(() => { try { return JSON.parse(sessionStorage.getItem('ip-hot-research-reports') || '[]') } catch { return [] } })
-  const [loaded, setLoaded] = useState(() => reports.length > 0)
+  const [reports, setReports] = useState<ResearchReport[]>([])
+  const [loaded, setLoaded] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const { isAdmin, loaded: adminLoaded } = useAdmin()
   useEffect(() => {
-    fetch('/api/research', { cache: 'no-store' }).then((response) => response.json()).then((result) => { const next = result.reports || []; setReports(next); setLoaded(true); sessionStorage.setItem('ip-hot-research-reports', JSON.stringify(next)) }).catch(() => setLoaded(true))
+    const requestedCategory = new URLSearchParams(window.location.search).get('category')
+    const cached = readResearchCache()
+    const initialFrame = requestAnimationFrame(() => {
+      if (requestedCategory) setCategory(normalizeResearchCategory(requestedCategory))
+      if (cached.length > 0) { setReports(cached); setLoaded(true) }
+    })
+    let cancelled = false
+    const loadingTimeout = window.setTimeout(() => { if (!cancelled) setLoaded(true) }, 12_000)
+    fetch('/api/research', { cache: 'no-store' }).then((response) => {
+      if (!response.ok) throw new Error('报告加载失败')
+      return response.json()
+    }).then((result) => {
+      if (cancelled) return
+      const next = (result.reports || []).map((report: ResearchReport) => ({ ...report, category: normalizeResearchCategory(report.category) }))
+      researchMemoryCache = next
+      setReports(next)
+      setLoaded(true)
+      try { sessionStorage.setItem('ip-hot-research-reports', JSON.stringify(next)) } catch { /* storage may be unavailable */ }
+    }).catch(() => { if (!cancelled) setLoaded(true) })
+    return () => { cancelled = true; cancelAnimationFrame(initialFrame); clearTimeout(loadingTimeout) }
   }, [])
   const items = useMemo(() => reports.filter((item) => item.category === category), [category, reports])
   return <>
     <header className="page-header"><div className="home-header-top"><div><h1 className="page-title font-serif">深度研究</h1><p className="page-sub">从品类趋势、品牌/IP 到授权营销，沉淀可复用的行业观察。</p></div>{adminLoaded && isAdmin && <button className="admin-action-btn research-upload-btn" onClick={() => setShowUpload(true)}>＋ 上传研究报告</button>}</div><div className="research-tabs" role="tablist" aria-label="深度研究分类">{RESEARCH_CATEGORIES.map((item) => <button key={item} className={item === category ? 'active' : ''} onClick={() => setCategory(item)} role="tab" aria-selected={item === category}>{item}</button>)}</div></header>
     <section className="research-page article-section"><div className="research-grid">{!loaded ? <p className="empty-state">正在加载报告…</p> : items.length === 0 ? <p className="empty-state">该分类暂无报告。</p> : items.map((item) => <Link href={`/research/${item.slug}`} className="research-card" key={item.id}><div className="research-card-meta"><span>{item.category}</span><time dateTime={item.published_at}>{item.published_at}</time></div><h2>{item.title}</h2><div className="research-card-tags">{researchTags(item).map((tag) => <span className="research-tag" key={tag}>#{tag}</span>)}</div>{adminLoaded && isAdmin && <div className={`research-backup-status ${item.github_backup_status}`}><span>{item.github_backup_status === 'backed_up' ? 'GitHub 已备份' : item.github_backup_status === 'failed' ? 'GitHub 备份失败' : 'GitHub 待备份'}</span>{item.github_backup_status === 'failed' && <button className="research-retry" onClick={async (event) => { event.preventDefault(); event.stopPropagation(); const response = await fetch(`/api/research/${item.id}/backup`, { method: 'POST', headers: { 'x-admin-password': password() } }); if (response.ok) setReports((value) => value.map((report) => report.id === item.id ? { ...report, github_backup_status: 'backed_up' } : report)) }}>重试</button>}</div>}</Link>)}</div></section>
-    {showUpload && <ResearchUploadDialog onClose={() => setShowUpload(false)} onCreated={(report) => { setReports((value) => [report, ...value]); setCategory(report.category); setShowUpload(false) }} />}
+    {showUpload && <ResearchUploadDialog onClose={() => setShowUpload(false)} onCreated={(report) => { setReports((value) => { const next = [report, ...value]; researchMemoryCache = next; try { sessionStorage.setItem('ip-hot-research-reports', JSON.stringify(next)) } catch {} return next }); setCategory(report.category); setShowUpload(false) }} />}
   </>
 }
 

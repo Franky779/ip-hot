@@ -24,6 +24,8 @@ turndown.addRule('research-chart', {
 const researchBoxVariants = new Map([
   ['insight-box', 'highlight'],
   ['highlight', 'highlight'],
+  ['highlight-box', 'highlight'],
+  ['verdict-box', 'highlight'],
   ['info-card', 'info'],
   ['key-point', 'key'],
   ['risk-item', 'warning'],
@@ -43,12 +45,12 @@ function nodeClassList(node) {
 }
 
 turndown.addRule('research-kpi-grid', {
-  filter: (node) => node.nodeName === 'DIV' && nodeClassList(node).some((className) => ['kpi-row', 'kpi-grid', 'metrics-grid'].includes(className)),
+  filter: (node) => node.nodeName === 'DIV' && nodeClassList(node).some((className) => ['kpi-row', 'kpi-grid', 'metrics-grid', 'summary-grid', 'stats-grid'].includes(className)),
   replacement: (_content, node) => {
     const cards = Array.from(node.childNodes).filter((child) => child.nodeType === 1).map((card) => {
-      const value = card.querySelector?.('.kpi-number, .kpi-value, .metric-value, .summary-card-value')?.textContent?.trim() || ''
-      const label = card.querySelector?.('.kpi-label, .metric-label, .summary-card-label')?.textContent?.trim() || ''
-      const sub = card.querySelector?.('.kpi-sub, .metric-sub, .summary-card-sub')?.textContent?.trim() || ''
+      const value = card.querySelector?.('.kpi-number, .kpi-value, .metric-value, .summary-card-value, .stat-value')?.textContent?.trim() || ''
+      const label = card.querySelector?.('.kpi-label, .metric-label, .summary-card-label, .stat-label')?.textContent?.trim() || ''
+      const sub = card.querySelector?.('.kpi-sub, .metric-sub, .summary-card-sub, .summary-card-note, .stat-note')?.textContent?.trim() || ''
       if (!value && !label) return ''
       return `<div class="research-kpi-card"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span>${sub ? `<small>${escapeHtml(sub)}</small>` : ''}</div>`
     }).filter(Boolean).join('')
@@ -160,12 +162,157 @@ function findCall(script, functionName, canvasId) {
   return null
 }
 
+function findChartConstructor(script, canvasId) {
+  const markers = [`new Chart(document.getElementById('${canvasId}')`, `new Chart(document.getElementById("${canvasId}")`]
+  const start = markers.map((marker) => script.indexOf(marker)).find((index) => index >= 0)
+  if (start === undefined) return null
+  const open = script.indexOf('(', start)
+  let quote = ''
+  let escaped = false
+  let depth = 0
+  for (let index = open; index < script.length; index += 1) {
+    const character = script[index]
+    if (quote) {
+      if (escaped) escaped = false
+      else if (character === '\\') escaped = true
+      else if (character === quote) quote = ''
+      continue
+    }
+    if (character === "'" || character === '"' || character === '`') quote = character
+    else if (character === '(') depth += 1
+    else if (character === ')' && --depth === 0) return splitArguments(script.slice(open + 1, index))[1] || null
+  }
+  return null
+}
+
 function parseArray(source) {
   if (!source) return null
   try {
     return JSON.parse(source.replace(/'/g, '"').replace(/,\s*]/g, ']'))
   } catch {
     return null
+  }
+}
+
+function chartForChartJs(script, canvasId, metadata) {
+  const source = findChartConstructor(script, canvasId)
+  if (!source) return null
+  const sourceType = source.match(/\btype\s*:\s*['"](bar|line|pie|doughnut|radar)['"]/)?.[1]
+  const labels = parseArray(source.match(/\blabels\s*:\s*(\[[^\]]*])/)?.[1])
+  if (!sourceType || !labels) return null
+  const datasets = [...source.matchAll(/\bdata\s*:\s*(\[[^\]]*])/g)].flatMap((match) => {
+    const data = parseArray(match[1])
+    if (!data) return []
+    const labelMatches = [...source.slice(0, match.index).matchAll(/\blabel\s*:\s*['"]([^'"]*)['"]/g)]
+    return [{ label: labelMatches.at(-1)?.[1] || '', data }]
+  })
+  if (datasets.length === 0) return null
+  return { type: sourceType === 'doughnut' ? 'pie' : sourceType, ...metadata, labels, datasets }
+}
+
+function chartMarkup(chart) {
+  return `<pre data-research-chart="true">${JSON.stringify(chart).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`
+}
+
+function numericValue(value) {
+  const number = Number(String(value || '').replace(/,/g, '').match(/-?[\d.]+/)?.[0])
+  return Number.isFinite(number) ? number : null
+}
+
+function chartMetadata(container, fallback = '数据图表') {
+  const chartBox = container.closest('.chart-box, .chart-card, .chart-container, .section')
+  return {
+    title: chartBox.find('.chart-title, h4, h3').first().text().trim() || fallback,
+    subtitle: chartBox.find('.chart-subtitle, .section-desc').first().text().trim(),
+    source: '',
+    note: chartBox.find('.chart-note').first().text().trim(),
+  }
+}
+
+function removeOriginalChartHeading(container) {
+  const parent = container.parent('.chart-box, .chart-card')
+  const wrapper = parent.length ? parent : container.closest('.chart-container')
+  wrapper.children('.chart-title, h4, h3').first().remove()
+}
+
+function replaceBarCharts($) {
+  $('.bar-chart').each((_index, element) => {
+    const container = $(element)
+    const labels = []
+    const data = []
+    container.find('.bar-row').each((_rowIndex, row) => {
+      const label = $(row).find('.bar-label').text().replace(/\s+/g, ' ').trim()
+      const value = numericValue($(row).find('.bar-val').text())
+      if (!label || value === null) return
+      labels.push(label)
+      data.push(value)
+    })
+    if (labels.length < 2) return
+    const metadata = chartMetadata(container)
+    removeOriginalChartHeading(container)
+    container.replaceWith(chartMarkup({ type: 'bar', ...metadata, labels, data }))
+  })
+}
+
+function replaceDataCharts($, script) {
+  const dataSource = script.match(/\bconst\s+DATA\s*=\s*(\{[\s\S]*?\});/)?.[1]
+  if (!dataSource) return
+  try {
+    const notes = JSON.parse(dataSource).notes
+    if (!Array.isArray(notes)) return
+    for (const [id, field, title] of [['chart-ct', 'contentType', '内容类型分布'], ['chart-mt', 'marketingTactic', '营销手法分布']]) {
+      const container = $(`#${id}`)
+      if (!container.length) continue
+      const counts = new Map()
+      for (const note of notes) {
+        const label = String(note?.[field] || '').trim()
+        if (label) counts.set(label, (counts.get(label) || 0) + 1)
+      }
+      const entries = [...counts.entries()].sort((left, right) => right[1] - left[1])
+      if (entries.length < 2) continue
+      const metadata = chartMetadata(container, title)
+      removeOriginalChartHeading(container)
+      container.replaceWith(chartMarkup({ type: 'bar', ...metadata, title, labels: entries.map(([label]) => label), data: entries.map(([, value]) => value) }))
+    }
+  } catch {
+    // Leave malformed embedded datasets as readable source text.
+  }
+}
+
+function assignedObject(script, name) {
+  const marker = new RegExp(`\\bconst\\s+${name}\\s*=\\s*\\{`).exec(script)
+  if (!marker) return ''
+  const start = script.indexOf('{', marker.index)
+  let depth = 0
+  for (let index = start; index < script.length; index += 1) {
+    if (script[index] === '{') depth += 1
+    else if (script[index] === '}' && --depth === 0) return script.slice(start + 1, index)
+  }
+  return ''
+}
+
+function numberMap(source) {
+  return [...source.matchAll(/['"]([^'"]+)['"]\s*:\s*(-?[\d.]+)/g)].map((match) => [match[1], Number(match[2])])
+}
+
+function replaceCustomSvgCharts($, script) {
+  const monthly = numberMap(assignedObject(script, 'monthly'))
+  const distribution = numberMap(assignedObject(script, 'distribution'))
+  const categories = [...assignedObject(script, 'categories').matchAll(/['"]([^'"]+)['"]\s*:\s*\{\s*count:\s*([\d.]+),\s*avg:\s*([\d.]+)/g)]
+  const topNotes = [...(script.match(/\bconst\s+topNotes\s*=\s*\[([\s\S]*?)\];/)?.[1] || '').matchAll(/\{\s*title:\s*['"]([^'"]+)['"],\s*count:\s*([\d.]+)\s*\}/g)]
+  const charts = [
+    ['trend-chart', 'line', monthly, '月度发布趋势'],
+    ['category-pie', 'pie', categories.map((match) => [match[1], Number(match[2])]), '笔记分类占比'],
+    ['category-bar', 'bar', categories.map((match) => [match[1], Number(match[3])]), '分类平均互动'],
+    ['distribution-chart', 'bar', distribution, '互动量分布'],
+    ['topnotes-chart', 'bar', topNotes.map((match) => [match[1], Number(match[2])]), 'Top 12 爆款笔记'],
+  ]
+  for (const [id, type, entries, fallbackTitle] of charts) {
+    const container = $(`#${id}`)
+    if (!container.length || entries.length < 2) continue
+    const metadata = chartMetadata(container, fallbackTitle)
+    removeOriginalChartHeading(container)
+    container.replaceWith(chartMarkup({ type, ...metadata, labels: entries.map(([label]) => label), data: entries.map(([, value]) => value) }))
   }
 }
 
@@ -201,6 +348,9 @@ function chartForCanvas(script, canvasId, metadata) {
     if (labels && datasets.length > 0) return { type: 'line', ...metadata, labels, datasets }
   }
 
+  const chartJs = chartForChartJs(script, canvasId, metadata)
+  if (chartJs) return chartJs
+
   const marker = `getElementById('${canvasId}')`
   const start = script.indexOf(marker)
   if (start >= 0) {
@@ -221,10 +371,12 @@ function markdownFromHtml(html) {
   const $ = cheerio.load(html)
   const embeddedMarkdown = $('#md-source').text().trim()
   const chartScript = $('script').map((_index, element) => $(element).html() || '').get().join('\n')
+  replaceDataCharts($, chartScript)
+  replaceCustomSvgCharts($, chartScript)
   $('canvas[id]').each((_index, element) => {
     const canvas = $(element)
-    const chartBox = canvas.closest('.chart-box')
-    const title = chartBox.find('.chart-title').first().text().trim()
+    const chartBox = canvas.closest('.chart-box, .chart-container')
+    const title = chartBox.find('.chart-title, h4, h3').first().text().trim()
       || canvas.prevAll('.chart-title').first().text().trim()
       || canvas.attr('aria-label')
       || '数据图表'
@@ -233,12 +385,14 @@ function markdownFromHtml(html) {
       title,
       subtitle: chartBox.find('.chart-subtitle').first().text().trim(),
       source: footerItems[0] || '',
-      note: footerItems[1] || '',
+      note: footerItems[1] || chartBox.find('.chart-note').first().text().trim(),
     })
     if (!chart) return
-    chartBox.find('.chart-header, .chart-footer').remove()
-    canvas.replaceWith(`<pre data-research-chart="true">${JSON.stringify(chart).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`)
+    removeOriginalChartHeading(canvas)
+    chartBox.find('.chart-header, .chart-footer, .chart-note').remove()
+    canvas.replaceWith(chartMarkup(chart))
   })
+  replaceBarCharts($)
   $('script, style, noscript, iframe, nav, .back-to-list, .header, .toc-sidebar, .nav').remove()
   const body = $('body').html() || html
   const markdown = turndown.turndown(body).replace(/\n{3,}/g, '\n\n').trim()

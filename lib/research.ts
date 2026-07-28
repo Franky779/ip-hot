@@ -4,9 +4,19 @@ import sanitizeHtml from 'sanitize-html'
 export const RESEARCH_CATEGORIES = ['品类研究', '品牌/IP与授权营销研究'] as const
 export type ResearchCategory = (typeof RESEARCH_CATEGORIES)[number]
 export const LEGACY_RESEARCH_CATEGORIES = ['品牌/IP分析', '授权与营销研究'] as const
+export const RESEARCH_CONTENT_FORMATS = ['markdown', 'html'] as const
+export type ResearchContentFormat = (typeof RESEARCH_CONTENT_FORMATS)[number]
 
 export function normalizeResearchCategory(value: string): ResearchCategory {
   return value === '品类研究' ? '品类研究' : '品牌/IP与授权营销研究'
+}
+
+export function researchCategoryLink(value: string): { href: string; label: string } {
+  const category = normalizeResearchCategory(value)
+  return {
+    href: `/research?category=${encodeURIComponent(category)}`,
+    label: `← 返回${category}`,
+  }
 }
 
 export function researchTags(report: Pick<ResearchReport, 'title' | 'category'>): string[] {
@@ -25,6 +35,7 @@ export type ResearchReport = {
   title: string
   published_at: string
   markdown_content: string
+  content_format: ResearchContentFormat
   github_backup_status: 'pending' | 'backed_up' | 'failed'
   github_backup_path: string | null
   github_backup_error: string | null
@@ -71,6 +82,7 @@ export function validateResearchInput(input: unknown): ValidationResult<{
   title: string
   category: ResearchCategory
   markdown_content: string
+  content_format: 'markdown'
 }> {
   if (!input || typeof input !== 'object') return { ok: false, error: '报告内容格式不正确' }
   const raw = input as Record<string, unknown>
@@ -80,7 +92,7 @@ export function validateResearchInput(input: unknown): ValidationResult<{
   if (!title || title.length > MAX_RESEARCH_TITLE_LENGTH) return { ok: false, error: `标题不能为空且不能超过 ${MAX_RESEARCH_TITLE_LENGTH} 字` }
   if (!RESEARCH_CATEGORIES.includes(category as ResearchCategory)) return { ok: false, error: '请选择有效的报告分类' }
   if (!markdown || markdown.length > MAX_RESEARCH_MARKDOWN_LENGTH) return { ok: false, error: 'Markdown 内容不能为空且不能超过 1 MB' }
-  return { ok: true, value: { title, category: category as ResearchCategory, markdown_content: markdown } }
+  return { ok: true, value: { title, category: category as ResearchCategory, markdown_content: markdown, content_format: 'markdown' } }
 }
 
 export function currentShanghaiDate(now = new Date()): string {
@@ -284,7 +296,12 @@ export function renderResearchMarkdown(markdown: string): string {
   })
 }
 
-export function githubResearchPath(category: ResearchCategory, slug: string): string {
+function researchBackupFileName(title: string): string {
+  return title.replace(/[\\/:*?"<>|]/g, '-').trim().slice(0, 150)
+}
+
+export function githubResearchPath(category: ResearchCategory, slug: string, contentFormat: ResearchContentFormat = 'markdown', title = ''): string {
   const folder = category === '品牌/IP与授权营销研究' ? '品牌-IP与授权营销研究' : category
-  return `数据分析/${folder}/${slug}.md`
+  const fileName = contentFormat === 'html' && title ? `${researchBackupFileName(title)}.html` : `${slug}.md`
+  return `数据分析/${folder}/${fileName}`
 }

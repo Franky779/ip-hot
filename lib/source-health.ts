@@ -1,4 +1,6 @@
-import type { SourceCoverageStatus } from './source-coverage'
+import { buildSourceCoverage, getBeijingDayRange, type CoverageSource, type SourceCoverage, type SourceCoverageStatus, type SourceFetchRun } from './source-coverage.ts'
+import { findSourceConfiguration } from './sources.ts'
+import { getSourceSchedule } from './source-schedule.ts'
 
 export type SourceHealthStatus =
   | 'repair'
@@ -38,6 +40,24 @@ export type SourceHealth = {
   lastSuccessAt: string | null
 }
 
+export type SourceHealthSource = CoverageSource & {
+  last_test_status?: string | null
+  last_test_message?: string | null
+}
+
+export type SourceHealthRow = SourceHealth & {
+  sourceId: string
+  filterValue: string | null
+  latestRun: SourceHealthRun | null
+}
+
+export type SourceHealthFilterOption = {
+  value: string
+  label: string
+  status: Exclude<SourceHealthStatus, 'running'>
+  runState: 'active' | 'paused'
+}
+
 export const SOURCE_HEALTH_OPTIONS: Array<{ value: SourceHealthStatus; label: string }> = [
   { value: 'repair', label: '待修复' },
   { value: 'dead_links', label: '失效链接过多' },
@@ -56,6 +76,106 @@ export const ATTENTION_HEALTH_STATUSES = new Set<SourceHealthStatus>([
   'overdue',
   'untested',
 ])
+
+export const SOURCE_HEALTH_FILTER_OPTIONS: SourceHealthFilterOption[] = [
+  { value: 'active:healthy', label: '启动中 · 正常', status: 'healthy', runState: 'active' },
+  { value: 'active:dead_links', label: '启动中 · 失效链接过多', status: 'dead_links', runState: 'active' },
+  { value: 'paused:repair', label: '暂停中 · 待修复', status: 'repair', runState: 'paused' },
+  { value: 'paused:inactive', label: '暂停中 · 已停用/人工处理', status: 'inactive', runState: 'paused' },
+  { value: 'paused:no_articles', label: '暂停中 · 连续无资讯', status: 'no_articles', runState: 'paused' },
+  { value: 'paused:overdue', label: '暂停中 · 逾期未抓', status: 'overdue', runState: 'paused' },
+  { value: 'paused:untested', label: '暂停中 · 尚未验证', status: 'untested', runState: 'paused' },
+]
+
+function toHealthRun(run: SourceFetchRun): SourceHealthRun {
+  return {
+    status: run.status,
+    startedAt: run.started_at,
+    discovered: run.discovered_count,
+    fetched: run.fetched_count,
+    dead: run.dead_count,
+    inserted: run.inserted_count,
+    error: run.error_message,
+  }
+}
+
+export function getSourceHealthFilterOption(
+  source: Pick<CoverageSource, 'enabled' | 'method' | 'type' | 'name' | 'url' | 'id'>,
+  status: SourceHealthStatus | undefined,
+) {
+  const executionMode = getSourceSchedule(source).executionMode
+  const runState = executionMode === 'cloud' || executionMode === 'local' ? 'active' : 'paused'
+  return SOURCE_HEALTH_FILTER_OPTIONS.find((option) =>
+    option.status === status && (option.status === 'repair' || option.runState === runState)
+  )
+}
+
+export function matchesSourceHealthFilter(
+  source: Pick<CoverageSource, 'enabled' | 'method' | 'type' | 'name' | 'url' | 'id'>,
+  status: SourceHealthStatus | undefined,
+  option: SourceHealthFilterOption,
+) {
+  return getSourceHealthFilterOption(source, status)?.value === option.value
+}
+
+export function buildSourceHealthSnapshot(
+  sources: SourceHealthSource[],
+  runs: SourceFetchRun[],
+  now = new Date(),
+): { coverage: SourceCoverage; health: SourceHealthRow[] } {
+  const { start: todayStart, end: todayEnd } = getBeijingDayRange(now)
+  const todayRuns = runs.filter((run) => {
+    const startedAt = new Date(run.started_at)
+    return startedAt >= todayStart && startedAt <= todayEnd
+  })
+  const coverage = buildSourceCoverage(
+    sources.map((source) => {
+      const configured = findSourceConfiguration(source.url, source.name)
+      return {
+        ...source,
+        priority: configured?.priority,
+        needsLocalCdp: configured?.needsLocalCdp,
+        loginRequired: configured?.loginRequired,
+      }
+    }),
+    todayRuns,
+    now,
+  )
+  const coverageBySource = new Map(coverage.rows.map((row) => [row.sourceId, row]))
+  const orderedRuns = [...runs].sort((left, right) =>
+    new Date(right.started_at).getTime() - new Date(left.started_at).getTime()
+  )
+
+  return {
+    coverage,
+    health: sources.map((source) => {
+      const sourceRuns = orderedRuns.filter((run) =>
+        run.source_id === source.id
+        || (!!run.source_url && run.source_url === source.url)
+        || (!run.source_id && !run.source_url && run.source_name === source.name)
+      )
+      const recentRuns = sourceRuns.map(toHealthRun)
+      const latestRun = recentRuns[0] ?? null
+      const derived = deriveSourceHealth({
+        source: {
+          id: source.id,
+          enabled: source.enabled,
+          lastTestStatus: source.last_test_status,
+          lastTestMessage: source.last_test_message,
+        },
+        coverageStatus: coverageBySource.get(source.id)?.status ?? null,
+        latestRun,
+        recentRuns,
+      })
+      return {
+        sourceId: source.id,
+        ...derived,
+        filterValue: getSourceHealthFilterOption(source, derived.status)?.value ?? null,
+        latestRun,
+      }
+    }),
+  }
+}
 
 export function deriveSourceHealth(input: SourceHealthInput): SourceHealth {
   const { source, coverageStatus, latestRun, recentRuns } = input

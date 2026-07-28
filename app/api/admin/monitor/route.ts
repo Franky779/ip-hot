@@ -7,8 +7,9 @@ import {
   type SourceQualityAction,
   type SourceQualityLog,
 } from '@/lib/source-quality'
-import { buildSourceCoverage, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
-import { findSourceConfiguration } from '@/lib/sources'
+import type { SourceFetchRun } from '@/lib/source-coverage'
+import { buildSourceHealthSnapshot, type SourceHealthSource } from '@/lib/source-health'
+import { getSelectionThreshold } from '@/lib/selection-threshold'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,11 +50,13 @@ export async function GET(request: Request) {
     }
 
     const supabase = createServiceClient()
+    const selectionThreshold = await getSelectionThreshold(supabase)
     const { start: todayStart, end: todayEnd } = getBeijingTodayRange()
     const sevenDaysAgo = getBeijing7DaysAgo()
     const requestedQualityDays = Number(new URL(request.url).searchParams.get('qualityDays'))
     const qualityDays = [7, 30, 180, 365].includes(requestedQualityDays) ? requestedQualityDays : 7
     const qualityHistoryStart = new Date(Date.now() - qualityDays * 2 * 24 * 60 * 60 * 1000).toISOString()
+    const sourceHealthHistoryStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
     // 1. 今日任务（最新一条 cron_logs）
     const { data: todayTaskRaw, error: e1 } = await supabase
@@ -123,31 +126,29 @@ export async function GET(request: Request) {
         .limit(500),
       supabase
         .from('info_sources')
-        .select('id, name, url, method, type, enabled, last_test_status'),
+        .select('id, name, url, method, type, enabled, last_test_status, last_test_message'),
     ])
 
     const sourceRunsResult = await supabase
       .from('source_fetch_runs')
       .select('source_id, source_name, source_url, trigger_type, execution_mode, status, started_at, ended_at, discovered_count, fetched_count, blocked_count, dead_count, duplicate_count, inserted_count, error_message')
-      .gte('started_at', todayStart)
-      .lte('started_at', todayEnd)
+      .gte('started_at', sourceHealthHistoryStart)
       .order('started_at', { ascending: false })
       .limit(5000)
 
-    const sourceCoverage = sourceRunsResult.error
+    const sourceHealthSnapshot = sourceRunsResult.error
       ? null
-      : buildSourceCoverage(
-          (sourceInfoResult.data ?? []).map((source) => {
-            const configured = findSourceConfiguration(source.url, source.name)
-            return {
-              ...source,
-              priority: configured?.priority,
-              needsLocalCdp: configured?.needsLocalCdp,
-              loginRequired: configured?.loginRequired,
-            } satisfies CoverageSource
-          }),
+      : buildSourceHealthSnapshot(
+          (sourceInfoResult.data ?? []) as SourceHealthSource[],
           (sourceRunsResult.data ?? []) as SourceFetchRun[],
         )
+    const sourceCoverage = sourceHealthSnapshot?.coverage ?? null
+    const healthBySource = Object.fromEntries(
+      (sourceHealthSnapshot?.health ?? []).map((source) => [source.sourceId, source.status])
+    )
+    const healthFilterBySource = Object.fromEntries(
+      (sourceHealthSnapshot?.health ?? []).map((source) => [source.sourceId, source.filterValue])
+    )
 
     // 兼容部署前的旧数据。旧记录来自 articles，可能因低分删除而偏乐观，前端会明确标注。
     const legacyQualityRows: LegacyQualityRow[] = []
@@ -273,6 +274,8 @@ export async function GET(request: Request) {
           : [],
       ),
       periodDays: qualityDays,
+      healthBySource,
+      healthFilterBySource,
     })
 
     return NextResponse.json({
@@ -296,6 +299,7 @@ export async function GET(request: Request) {
         source: r.source,
         createdAt: r.created_at,
       })),
+      selectionThreshold,
     })
   } catch (err: any) {
     const message = err instanceof Error ? err.message : String(err)

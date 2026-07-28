@@ -62,6 +62,8 @@ export type SourceQualityMetric = {
   sourceId: string | null
   name: string
   enabled: boolean
+  healthStatus: import('./source-health').SourceHealthStatus
+  healthFilter: string | null
   mode: 'normal' | 'observe' | 'reduced' | 'paused'
   discovered: number
   inserted: number
@@ -173,6 +175,8 @@ export function aggregateSourceQuality(input: {
   sources: SourceInfo[]
   actions: SourceQualityAction[]
   periodDays: number
+  healthBySource?: Record<string, import('./source-health').SourceHealthStatus>
+  healthFilterBySource?: Record<string, string | null>
   now?: Date
 }): SourceQualityMetric[] {
   const now = input.now ?? new Date()
@@ -252,7 +256,6 @@ export function aggregateSourceQuality(input: {
     if (isCurrent) legacyNames.add(row.source)
   }
 
-  const sourceByName = new Map(input.sources.map((source) => [source.name, source]))
   const actionById = new Map<string, SourceQualityAction>()
   const actionByName = new Map<string, SourceQualityAction>()
   for (const action of input.actions) {
@@ -260,15 +263,13 @@ export function aggregateSourceQuality(input: {
     if (action.sourceName && !actionByName.has(action.sourceName)) actionByName.set(action.sourceName, action)
   }
 
-  // 运营监控以当前信息源目录为准。已从 info_sources 删除的来源可能仍有历史
-  // cron_logs，但不应作为可操作的信息源卡片继续展示。
-  const names = new Set(sourceByName.keys())
-  return Array.from(names).map((name): SourceQualityMetric => {
-    const scores = currentScores.get(name) ?? scoreStats()
-    const previous = previousScores.get(name) ?? scoreStats()
-    const fetched = currentFetch.get(name) ?? fetchStats()
-    const source = sourceByName.get(name)
-    const action = (source ? actionById.get(source.id) : undefined) ?? actionByName.get(name)
+  // 运营监控以当前信息源目录的每一条记录为准。历史日志仍按来源名称记录，
+  // 因此同名来源会共享历史质量数据，但绝不能在统计和筛选中被合并。
+  return input.sources.map((source): SourceQualityMetric => {
+    const scores = currentScores.get(source.name) ?? scoreStats()
+    const previous = previousScores.get(source.name) ?? scoreStats()
+    const fetched = currentFetch.get(source.name) ?? fetchStats()
+    const action = actionById.get(source.id) ?? actionByName.get(source.name)
     const lowRate = percentage(scores.low, scores.scored)
     const usefulRate = percentage(scores.high, scores.scored)
     const previousLowRate = previous.scored > 0 ? percentage(previous.low, previous.scored) : null
@@ -295,10 +296,12 @@ export function aggregateSourceQuality(input: {
               : 'normal'
 
     return {
-      sourceId: source?.id ?? null,
-      name,
-      enabled: source?.enabled ?? false,
-      mode: action?.mode ?? (source?.enabled === false ? 'paused' : 'normal'),
+      sourceId: source.id,
+      name: source.name,
+      enabled: source.enabled,
+      healthStatus: input.healthBySource?.[source.id] ?? (source.enabled ? 'healthy' : 'inactive'),
+      healthFilter: input.healthFilterBySource?.[source.id] ?? null,
+      mode: action?.mode ?? (source.enabled === false ? 'paused' : 'normal'),
       ...fetched,
       scored: scores.scored,
       llmUnprocessed: Math.max(0, fetched.inserted - scores.scored - scores.llmFailed),
@@ -315,7 +318,7 @@ export function aggregateSourceQuality(input: {
       status,
       managementStatus,
       recommendation: recommendation(scores.scored, lowRate),
-      legacyEstimate: legacyNames.has(name),
+      legacyEstimate: legacyNames.has(source.name),
       lowSamples: scores.lowSamples.slice(0, 5),
       midSamples: scores.midSamples.slice(0, 5),
       highSamples: scores.highSamples.slice(0, 5),

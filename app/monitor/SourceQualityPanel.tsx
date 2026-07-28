@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { SOURCE_HEALTH_FILTER_OPTIONS, type SourceHealthStatus } from '@/lib/source-health'
 
 export type SourceQualityItem = {
   sourceId: string | null
   name: string
   enabled: boolean
+  healthStatus: SourceHealthStatus
+  healthFilter: string | null
   mode: 'normal' | 'observe' | 'reduced' | 'paused'
   discovered: number
   inserted: number
@@ -68,18 +71,6 @@ const MANAGEMENT_STATUS_LABELS = {
   paused: '停用来源',
 }
 
-const MANAGEMENT_STATUS_OPTIONS: Array<{
-  value: SourceQualityItem['managementStatus']
-  label: string
-}> = [
-  { value: 'normal', label: '启动中 · 正常信源' },
-  { value: 'reduced', label: '启动中 · 降低频率' },
-  { value: 'insufficient', label: '启动中 · 样本不足' },
-  { value: 'observe', label: '启动中 · 继续观察' },
-  { value: 'review', label: '暂停中 · 需人工复核' },
-  { value: 'paused', label: '暂停中 · 停用来源' },
-]
-
 function adminPassword() {
   return typeof window === 'undefined' ? '' : localStorage.getItem('ip-hot-admin-pw') || ''
 }
@@ -91,7 +82,7 @@ function trendLabel(trend: number | null) {
 }
 
 export default function SourceQualityPanel({ items, days, onDaysChange, onRefresh }: Props) {
-  const [filter, setFilter] = useState<'all' | SourceQualityItem['managementStatus']>('all')
+  const [filter, setFilter] = useState<'all' | string>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [busySources, setBusySources] = useState<Record<string, SourceAction>>({})
   const [notice, setNotice] = useState<ActionNotice | null>(null)
@@ -117,22 +108,19 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
   }
 
   const availableItems = items
-  const statusCounts = useMemo(() => {
-    const counts: Record<SourceQualityItem['managementStatus'], number> = {
-      normal: 0,
-      review: 0,
-      insufficient: 0,
-      reduced: 0,
-      observe: 0,
-      paused: 0,
-    }
-    availableItems.forEach((item) => { counts[item.managementStatus] += 1 })
+  const healthCounts = useMemo(() => {
+    const counts = Object.fromEntries(
+      SOURCE_HEALTH_FILTER_OPTIONS.map((option) => [option.value, 0])
+    ) as Record<string, number>
+    availableItems.forEach((item) => {
+      if (item.healthFilter) counts[item.healthFilter] += 1
+    })
     return counts
   }, [availableItems])
   const attentionCount = availableItems.filter((item) => item.managementStatus === 'review').length
   const insufficientCount = availableItems.filter((item) => item.status === 'insufficient').length
   const visibleItems = useMemo(
-    () => availableItems.filter((item) => filter === 'all' || item.managementStatus === filter),
+    () => availableItems.filter((item) => filter === 'all' || item.healthFilter === filter),
     [availableItems, filter],
   )
 
@@ -197,11 +185,11 @@ export default function SourceQualityPanel({ items, days, onDaysChange, onRefres
             </select>
           </label>
           <label>
-            <span>运营决策</span>
+            <span>抓取健康</span>
             <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
               <option value="all">{availableItems.length} 条 · 全部</option>
-              {MANAGEMENT_STATUS_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>{statusCounts[value]} 条 · {label}</option>
+              {SOURCE_HEALTH_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{healthCounts[option.value]} 条 · {option.label}</option>
               ))}
             </select>
           </label>
