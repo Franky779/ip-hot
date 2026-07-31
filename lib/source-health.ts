@@ -80,6 +80,7 @@ export const ATTENTION_HEALTH_STATUSES = new Set<SourceHealthStatus>([
 export const SOURCE_HEALTH_FILTER_OPTIONS: SourceHealthFilterOption[] = [
   { value: 'active:healthy', label: '启动中 · 正常', status: 'healthy', runState: 'active' },
   { value: 'active:dead_links', label: '启动中 · 失效链接过多', status: 'dead_links', runState: 'active' },
+  { value: 'active:repair', label: '启动中 · 待修复', status: 'repair', runState: 'active' },
   { value: 'paused:repair', label: '暂停中 · 待修复', status: 'repair', runState: 'paused' },
   { value: 'paused:inactive', label: '暂停中 · 已停用/人工处理', status: 'inactive', runState: 'paused' },
   { value: 'paused:no_articles', label: '暂停中 · 连续无资讯', status: 'no_articles', runState: 'paused' },
@@ -106,7 +107,7 @@ export function getSourceHealthFilterOption(
   const executionMode = getSourceSchedule(source).executionMode
   const runState = executionMode === 'cloud' || executionMode === 'local' ? 'active' : 'paused'
   return SOURCE_HEALTH_FILTER_OPTIONS.find((option) =>
-    option.status === status && (option.status === 'repair' || option.runState === runState)
+    option.status === status && option.runState === runState
   )
 }
 
