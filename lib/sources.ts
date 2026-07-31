@@ -115,7 +115,7 @@ export type NewsSource = {
 // ============================================================
 export const RSS_SOURCES: NewsSource[] = [
   // 海外动漫/ACG
-  { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true, localCdpDisabledReason: '本地 CDP 实抓仍停在安全挑战页，未提取到资讯；保持停用。', scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
+  { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
   { id: 'ign-anime', name: 'IGN Anime', url: 'https://sea.ign.com/anime', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'h3 a[href*="/anime/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://sea.ign.com', maxItems: 10 } },
   { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.crunchyroll.com/news/latest', sourceHost: 'www.crunchyroll.com', pathPrefix: '/news/', maxItems: 10 } },
   { id: 'cartoonbrew', name: 'Cartoon Brew', url: 'https://www.cartoonbrew.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
@@ -420,7 +420,7 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'thepaper', name: '澎湃新闻', url: 'https://www.thepaper.cn',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
+    language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.news-list li, article, ul li', titleSelector: 'h3 a, h2 a, a', linkSelector: 'a', linkPrefix: 'https://www.thepaper.cn', maxItems: 10 },
   },
 
@@ -503,32 +503,32 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'thepaper-cdp', name: '澎湃新闻 文化频道', aliases: ['澎湃新闻文化频道'], url: 'https://www.thepaper.cn/list_25450',
-    language: 'zh', priority: 'P2', type: 'web', automationEnabled: true, needsLocalCdp: true,
+    language: 'zh', priority: 'P2', type: 'web', automationEnabled: true,
     scrapeConfig: { itemSelector: 'a[href^="/newsDetail_forward_"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.thepaper.cn', maxItems: 10 },
   },
   {
     id: 'screenrant-cdp', name: 'ScreenRant', aliases: ['ScreenRant Anime'], url: 'https://screenrant.com/category/anime/',
-    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    language: 'en', priority: 'P0', type: 'web',
     scrapeConfig: { itemSelector: 'h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
   },
   {
     id: 'cbr-cdp', name: 'CBR', aliases: ['Comic Book Resources (CBR)'], url: 'https://www.cbr.com/category/anime/',
-    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    language: 'en', priority: 'P0', type: 'web',
     scrapeConfig: { itemSelector: 'h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
   },
   {
     id: 'kotaku-cdp', name: 'Kotaku', url: 'https://kotaku.com',
-    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    language: 'en', priority: 'P0', type: 'web',
     scrapeConfig: { itemSelector: 'h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
   },
   {
     id: 'siliconera-cdp', name: 'Siliconera', url: 'https://www.siliconera.com',
-    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    language: 'en', priority: 'P0', type: 'web',
     scrapeConfig: { itemSelector: 'h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.siliconera.com', maxItems: 10 },
   },
   {
     id: 'giftshop-cdp', name: 'Gift Shop Magazine', url: 'https://giftshopmag.com',
-    language: 'en', priority: 'P2', type: 'web', needsLocalCdp: true,
+    language: 'en', priority: 'P2', type: 'web',
     scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://giftshopmag.com', maxItems: 10 },
   },
 
