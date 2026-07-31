@@ -249,9 +249,8 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'en', priority: 'P0', type: 'rss', isRss: true,
   },
   {
-    id: 'licenseglobal', name: 'License Global', url: 'https://www.licenseglobal.com/latest-news',
-    language: 'en', priority: 'P0', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.licenseglobal.com/latest-news', sourceHost: 'www.licenseglobal.com', pathPrefix: '/', linkPattern: '^https://www\\.licenseglobal\\.com/(?!latest-news(?:[/?]|$))[^?#]+/[^/?#]+$', maxItems: 10 },
+    id: 'licenseglobal', name: 'License Global', url: 'https://news.google.com/rss/search?q=site%3Alicenseglobal.com&hl=en-US&gl=US&ceid=US%3Aen',
+    language: 'en', priority: 'P0', type: 'rss', isRss: true,
   },
   {
     id: 'licensingint', name: 'Licensing International', aliases: ['Licensing International (RSS)'], url: 'https://licensinginternational.org/news/',
@@ -548,7 +547,7 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'tj-wl', name: '天津市文旅局', aliases: ['天津市文化和旅游局'], url: 'https://whly.tj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://whly.tj.gov.cn', maxItems: 5 } },
   { id: 'sh-wlj', name: '上海市文旅局', url: 'https://whlyj.sh.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://whlyj.sh.gov.cn', maxItems: 5 } },
   { id: 'cq-wl', name: '重庆市文旅委', aliases: ['重庆市文化和旅游发展委员会'], url: 'https://whlyw.cq.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="zwxx_221/bmdt/"][href$=".html"][title]', titleSelector: '', linkSelector: '', linkPrefix: 'https://whlyw.cq.gov.cn', maxItems: 10 } },
-  { id: 'heb-wlt', name: '河北省文旅厅', url: 'https://wlt.hebei.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.hebei.gov.cn', maxItems: 5 } },
+  { id: 'heb-wlt', name: '河北省文旅厅', aliases: ['河北省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/hb/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'sx-wlt', name: '山西省文旅厅', url: 'https://wlt.shanxi.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.shanxi.gov.cn', maxItems: 5 } },
   { id: 'ln-wlt', name: '辽宁省文旅厅', url: 'https://wlt.ln.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.ln.gov.cn', maxItems: 5 } },
   { id: 'jl-wlt', name: '吉林省文旅厅', url: 'https://wlt.jl.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.jl.gov.cn', maxItems: 5 } },
