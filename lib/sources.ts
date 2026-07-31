@@ -165,7 +165,7 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: { itemSelector: '.Mid2L_con li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.gamersky.com', maxItems: 10 },
   },
   {
-    id: 'bilibili-guochuang-api', name: '哔哩哔哩(B站)国创区', url: 'https://www.bilibili.com/v/anime/guochuang',
+    id: 'bilibili-guochuang-api', name: '哔哩哔哩(B站)国创区', aliases: ['B站国创动态'], url: 'https://www.bilibili.com/v/anime/guochuang',
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: {
       adapter: 'bilibili-guochuang-timeline',
@@ -420,7 +420,7 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'thepaper', name: '澎湃新闻', url: 'https://www.thepaper.cn',
-    language: 'zh', priority: 'P1', type: 'web',
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
     scrapeConfig: { itemSelector: '.news-list li, article, ul li', titleSelector: 'h3 a, h2 a, a', linkSelector: 'a', linkPrefix: 'https://www.thepaper.cn', maxItems: 10 },
   },
 
@@ -503,18 +503,33 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'thepaper-cdp', name: '澎湃新闻 文化频道', aliases: ['澎湃新闻文化频道'], url: 'https://www.thepaper.cn/list_25450',
-    language: 'zh', priority: 'P2', type: 'web', automationEnabled: true,
+    language: 'zh', priority: 'P2', type: 'web', automationEnabled: true, needsLocalCdp: true,
     scrapeConfig: { itemSelector: 'a[href^="/newsDetail_forward_"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.thepaper.cn', maxItems: 10 },
   },
   {
-    id: 'screenrant-cdp', name: 'ScreenRant', url: 'https://screenrant.com/category/anime/',
-    language: 'en', priority: 'P0', type: 'web',
+    id: 'screenrant-cdp', name: 'ScreenRant', aliases: ['ScreenRant Anime'], url: 'https://screenrant.com/category/anime/',
+    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
     scrapeConfig: { itemSelector: 'h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
   },
   {
-    id: 'cbr-cdp', name: 'CBR', url: 'https://www.cbr.com/category/anime/',
-    language: 'en', priority: 'P0', type: 'web',
+    id: 'cbr-cdp', name: 'CBR', aliases: ['Comic Book Resources (CBR)'], url: 'https://www.cbr.com/category/anime/',
+    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
     scrapeConfig: { itemSelector: 'h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
+  },
+  {
+    id: 'kotaku-cdp', name: 'Kotaku', url: 'https://kotaku.com',
+    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
+  },
+  {
+    id: 'siliconera-cdp', name: 'Siliconera', url: 'https://www.siliconera.com',
+    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.siliconera.com', maxItems: 10 },
+  },
+  {
+    id: 'giftshop-cdp', name: 'Gift Shop Magazine', url: 'https://giftshopmag.com',
+    language: 'en', priority: 'P2', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://giftshopmag.com', maxItems: 10 },
   },
 
   // --- 需登录（暂配置但标记跳过） ---
