@@ -8,6 +8,7 @@ import http from 'http';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { spawn } from 'child_process';
+import { platform } from 'os';
 
 // 加载 .env.local（独立脚本不自动读取）
 function loadEnvFile(filePath) {
@@ -34,8 +35,28 @@ loadEnvFile(resolve(process.cwd(), '.env.local'));
 
 const CDP_HOST = '127.0.0.1';
 const CDP_PORT = Number(process.env.CDP_PORT || 9223);
-const CHROME_PATH = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const CHROME_PROFILE = resolve(process.env.LOCALAPPDATA || process.cwd(), 'ip-hot-cdp-profile');
+function findChrome() {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  const linuxPaths = [
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/opt/google/chrome/google-chrome',
+    '/opt/google/chrome/google-chrome-stable',
+  ];
+  if (platform() === 'win32') {
+    return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  }
+  for (const p of linuxPaths) {
+    if (existsSync(p)) return p;
+  }
+  return linuxPaths[0];
+}
+const CHROME_PATH = findChrome();
+const CHROME_PROFILE = platform() === 'win32'
+  ? resolve(process.env.LOCALAPPDATA || process.cwd(), 'ip-hot-cdp-profile')
+  : resolve('/tmp', 'ip-hot-cdp-profile');
 const SUPABASE_URL = 'https://rbjygwpoxuutmxmkzkqz.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || '';
 
@@ -150,8 +171,11 @@ async function ensureCdp() {
   const chrome = spawn(CHROME_PATH, [
     `--remote-debugging-port=${CDP_PORT}`,
     '--remote-allow-origins=*',
+    '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     `--user-data-dir=${CHROME_PROFILE}`,
     '--headless=new',
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
     '--disable-gpu',
     '--no-first-run',
     '--disable-default-apps',
@@ -311,7 +335,7 @@ async function fetchAndExtract(sources) {
       }
 
       const selectorStr = JSON.stringify(src.selector);
-      const jsCode = `JSON.stringify(Array.from(document.querySelectorAll(${selectorStr})).map(el => { const a = el.tagName === 'A' ? el : el.querySelector('a'); return { title: (el.textContent || a?.textContent || '').trim().slice(0,100), url: (el.href || a?.href || '') }; }).filter(item => item.title.length > 2 && item.url).slice(0,${src.maxItems || 15}))`;
+      const jsCode = src.extractJs || `JSON.stringify(Array.from(document.querySelectorAll(${selectorStr})).map(el => { const a = el.tagName === 'A' ? el : el.querySelector('a'); return { title: (el.textContent || a?.textContent || '').trim().slice(0,100), url: (el.href || a?.href || '') }; }).filter(item => item.title.length > 2 && item.url).slice(0,${src.maxItems || 15}))`;
       log(`  targetId=${targetId}`);
       log(`  eval JS: ${jsCode.slice(0, 120)}...`);
       const extracted = await cdpApi(`/eval?target=${targetId}`, 'POST', jsCode);
@@ -576,6 +600,36 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
+  {
+    id: 'awn',
+    name: 'Animation World Network',
+    url: 'https://www.awn.com/',
+    selector: 'a[href*="/news/"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+    extractJs: "JSON.stringify(Array.from(document.querySelectorAll('a[href*=\"/news/\"]')).map(a => ({title: (a.textContent || a.querySelector('img')?.alt || a.querySelector('img')?.title || a.title || a.getAttribute('aria-label') || '').trim().slice(0,100), url: a.href})).filter(x => x.title.length > 10 && x.title.length < 150 && !['Headline','Flash','Signup','view full','Login','Register','News','Season Lineup','Anime Awards','Mikikazu Komatsu','All Entertainment','Grand Theft Auto','人气榜','榜单'].some(w => x.title.includes(w))).slice(0,10))",
+  },
+  {
+    id: 'toybook-licensing',
+    name: 'ToyBook Licensing',
+    url: 'https://toybook.com/category/news/licensing/',
+    selector: 'article a[href], h2 a[href], h3 a[href], a[href*="/2026/"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+  },
+  {
+    id: 'kidscreen-consumer-products',
+    name: 'Kidscreen Consumer Products',
+    url: 'https://kidscreen.com/category/consumer-products/',
+    selector: 'article a[href], h2 a[href], h3 a[href], a[href*="/20"][href*="kidscreen.com/20"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+  },
+
+
 ];
 
 const requestedIndex = Number(process.argv[2]);
