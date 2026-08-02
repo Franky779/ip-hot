@@ -48,3 +48,7 @@ _pipeline_state.json
 _pipeline.log
 _tmp_pipeline_sources.json
 _source_scores.json
+
+# python / browser-use
+/.venv/
+/.browser-use-config/

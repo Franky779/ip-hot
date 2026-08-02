@@ -141,6 +141,31 @@ export default async function Home({
   const category = params.category ?? 'all'
   const q = params.q ?? ''
   const page = parsePage(params.page)
+
+  if (!process.env.DATABASE_URL) {
+    return (
+      <>
+        <header className="page-header">
+          <div className="home-header-top">
+            <h1 className="page-title font-serif">实时快讯</h1>
+            <div className="home-header-actions">
+              <SearchBox key={q} defaultValue={q} activeCategory={category} />
+              <AdminToggle />
+            </div>
+          </div>
+          <div className="page-toolbar home-category-toolbar">
+            <CategoryTabs active={category} query={q} />
+          </div>
+        </header>
+        <section className="article-section timeline-section">
+          <p className="empty-state">
+            数据库未连接。请先建立 SSH 隧道：ssh -N -L 5433:127.0.0.1:5432 root@101.32.211.198
+          </p>
+        </section>
+      </>
+    )
+  }
+
   const isPendingCategory = category === '待分类'
   const { articles, hasMore } = isPendingCategory
     ? { articles: [], hasMore: false }

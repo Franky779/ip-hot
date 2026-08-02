@@ -11,6 +11,24 @@ export const metadata = {
 export const revalidate = 0
 
 export default async function SourcesPage() {
+  if (!process.env.DATABASE_URL) {
+    return (
+      <>
+        <header className="page-header">
+          <div className="sources-page-heading">
+            <div>
+              <h1 className="page-title font-serif">信息源管理</h1>
+              <p className="page-sub">
+                数据库未连接。请先建立 SSH 隧道：ssh -N -L 5433:127.0.0.1:5432 root@101.32.211.198
+              </p>
+            </div>
+            <AdminToggle />
+          </div>
+        </header>
+      </>
+    )
+  }
+
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('info_sources')
