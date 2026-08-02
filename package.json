@@ -10,6 +10,7 @@
     "test:source": "node --experimental-strip-types scripts/test-source.mjs",
     "test:quality": "node --experimental-strip-types --test lib/source-quality.test.ts",
     "test:deployment": "node --test scripts/deployment-files.test.mjs",
+    "test:source-repair": "node --experimental-strip-types --test lib/source-repair.test.ts",
     "configure:kidscreen": "node scripts/configure-kidscreen-source.mjs",
     "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs"
   },
