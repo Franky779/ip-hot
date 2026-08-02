@@ -119,8 +119,8 @@ export const RSS_SOURCES: NewsSource[] = [
   { id: 'ign-anime', name: 'IGN Anime', url: 'https://sea.ign.com/anime', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'h3 a[href*="/anime/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://sea.ign.com', maxItems: 10 } },
   { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.crunchyroll.com/news/latest', sourceHost: 'www.crunchyroll.com', pathPrefix: '/news/', maxItems: 10 } },
   { id: 'cartoonbrew', name: 'Cartoon Brew', url: 'https://www.cartoonbrew.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
-  { id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/rss.xml', language: 'en', priority: 'P0', type: 'rss', isRss: true },
-  { id: 'animationmag', name: 'Animation Magazine', url: 'https://www.animationmagazine.net/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
+{ id: 'animationmag', name: 'Animation Magazine', url: 'https://www.animationmagazine.net/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
+  { id: 'licensingsource', name: 'Licensing Source', url: 'https://www.licensingsource.net/feed/', language: 'en', priority: 'P1', type: 'rss', isRss: true },
   // cbr RSS不可达 → 改用本地CDP，见 scripts/fetch-cdp-local.mjs
   { id: 'otakuusa', name: 'Otaku USA Magazine', url: 'https://otakuusamagazine.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // screenrant RSS不可达 → 改用本地CDP，见 scripts/fetch-cdp-local.mjs
@@ -492,6 +492,22 @@ const WEB_SOURCES: NewsSource[] = [
 
   // --- CDP本地抓取源（JS渲染页面，需本地CDP，无需登录） ---
   {
+    id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/',
+    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', maxItems: 10 },
+  },
+  {
+    id: 'toybook-licensing', name: 'ToyBook Licensing', url: 'https://toybook.com/category/news/licensing/',
+    language: 'en', priority: 'P1', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href], a[href*="/2026/"]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
+  },
+  {
+    id: 'kidscreen-consumer-products', name: 'Kidscreen Consumer Products', url: 'https://kidscreen.com/category/consumer-products/',
+    language: 'en', priority: 'P1', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href], a[href*="/20"][href*="kidscreen.com/20"]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
+  },
+
+  {
     id: 'weibo-hot-web', name: '微博热搜', url: 'https://s.weibo.com/top/summary',
     language: 'zh', priority: 'P2', type: 'web',
     scrapeConfig: { itemSelector: 'td.td-02 a', titleSelector: 'a', linkSelector: 'a', maxItems: 20 },
@@ -534,7 +550,7 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'cnipa', name: '国家知识产权局', url: 'https://www.cnipa.gov.cn/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.cnipa.gov.cn', maxItems: 5 } },
   { id: 'mof', name: '财政部', url: 'https://www.mof.gov.cn/zhengwuxinxi/zhengcefabu/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   // 省级文旅厅
-  { id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/zj/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
+{ id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://ct.zj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/col/"][href*="/art/2026/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://ct.zj.gov.cn', maxItems: 5 } },
   { id: 'dg-gov', name: '东莞市人民政府', aliases: ['东莞市文化广电旅游体育局'], url: 'https://wglt.dg.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://wglt.dg.gov.cn/', sourceHost: 'wglt.dg.gov.cn', pathPrefix: '/', linkPattern: '/content/post_\\d+\\.html$', maxItems: 5 } },
   { id: 'hz-xh', name: '杭州西湖区政府', aliases: ['杭州市西湖区人民政府'], url: 'https://www.hzxh.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.hzxh.gov.cn/', sourceHost: 'www.hzxh.gov.cn', pathPrefix: '/', linkPattern: '/art/202\\d/art_[a-f0-9]+\\.html$', maxItems: 5 } },
   { id: 'xj-wlt', name: '新疆文旅厅', url: 'https://wlt.xinjiang.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.xinjiang.gov.cn', maxItems: 5 } },
