@@ -242,6 +242,11 @@ systemd timers
 /etc/systemd/system/ip-hot-health.timer
 /etc/systemd/system/ip-hot-coverage-repair.service
 /etc/systemd/system/ip-hot-coverage-repair.timer
+<<<<<<< HEAD
+/etc/systemd/system/ip-hot-source-repair.service
+/etc/systemd/system/ip-hot-source-repair.timer
+=======
+>>>>>>> codex/migration-merge-sections
 /etc/systemd/system/ip-hot-backup.service
 /etc/systemd/system/ip-hot-backup.timer
 /etc/systemd/system/we-rss.service        # we-rss Docker Compose 常驻
@@ -404,6 +409,10 @@ Nginx 配置文件：`/etc/nginx/conf.d/ip-hot.conf`。
 | `ip-hot-pending-classification.timer` | 每 3 分钟，随机延迟最多 20 秒 | 内网调用 `/api/admin/process-pending-classification` | enabled，最近一次 success/0 |
 | `ip-hot-health.timer` | 每 5 分钟，随机延迟最多 30 秒 | 检查主页、来源 API、站点页面 API、管理员监控 API | enabled，最近一次 success/0 |
 | `ip-hot-coverage-repair.timer` | 每 30 分钟（每小时 :10/:30，随机延迟最多 45 秒） | 内网调用 `/api/cron/fetch-and-process?coverageRepair=1`，补抓错过的云来源 | enabled，最近一次 success/0 |
+<<<<<<< HEAD
+| `ip-hot-source-repair.timer` | 每小时（:45，随机延迟最多 60 秒） | 内网调用 `/api/cron/source-repair`，测试因失败停用的信息源，通过则自动重新启用并同步代码配置 | enabled，随 install-release 启用 |
+=======
+>>>>>>> codex/migration-merge-sections
 | `ip-hot-backup.timer` | 每天 03:20，随机延迟最多 10 分钟 | `pg_dump` 自定义格式并保留 7 天 | enabled；下一个计划周期执行 |
 
 这些 oneshot 服务执行完成后显示 `inactive` 是正常现象，应看 `Result=success` 和 `ExecMainStatus=0`，不要把 inactive 误判为故障。`ip-hot-coverage-repair.service` 通过 `curl --config /srv/apps/ip-hot/shared/curl-auth.conf` 携带认证头调用。

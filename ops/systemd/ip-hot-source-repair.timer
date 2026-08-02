@@ -1,0 +1,11 @@
+[Unit]
+Description=Repair failed IP Hot information sources every hour
+
+[Timer]
+OnCalendar=*-*-* *:45:00
+RandomizedDelaySec=60
+Persistent=true
+Unit=ip-hot-source-repair.service
+
+[Install]
+WantedBy=timers.target

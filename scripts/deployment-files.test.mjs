@@ -53,3 +53,14 @@ test('coverage repair timer calls the targeted recovery mode', async () => {
   assert.match(service, /fetch-and-process\?coverageRepair=1/)
   assert.match(timer, /OnCalendar=\*-\*-\* \*:10,30:00/)
 })
+<<<<<<< HEAD
+
+test('source repair timer calls the hourly repair endpoint', async () => {
+  const service = await readFile(join(opsRoot, 'systemd', 'ip-hot-source-repair.service'), 'utf8')
+  const timer = await readFile(join(opsRoot, 'systemd', 'ip-hot-source-repair.timer'), 'utf8')
+
+  assert.match(service, /api\/cron\/source-repair/)
+  assert.match(timer, /OnCalendar=\*-\*-\* \*:45:00/)
+})
+=======
+>>>>>>> codex/migration-merge-sections

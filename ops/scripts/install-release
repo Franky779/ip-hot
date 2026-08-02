@@ -58,6 +58,10 @@ systemctl enable ip-hot.service
 systemctl enable --now ip-hot-health.timer
 systemctl enable --now ip-hot-pending-classification.timer
 systemctl enable --now ip-hot-coverage-repair.timer
+<<<<<<< HEAD
+systemctl enable --now ip-hot-source-repair.timer
+=======
+>>>>>>> codex/migration-merge-sections
 systemctl reload nginx
 
 health_ok=false
