@@ -66,6 +66,14 @@ test('extracts Zhihu hot list items from the public API', async (t) => {
   assert.ok(result.items.every((item) => item.url.startsWith('https://www.zhihu.com/question/')))
 })
 
+test('uses Google News RSS fallback for License Global', () => {
+  const source = findSourceConfiguration('https://www.licenseglobal.com/latest-news', 'License Global')
+  assert.equal(source?.id, 'licenseglobal')
+  assert.equal(source?.type, 'rss')
+  assert.equal(source?.isRss, true)
+  assert.match(source?.url ?? '', /^https:\/\/news\.google\.com\/rss\/search\?q=site%3Alicenseglobal\.com/)
+})
+
 test('uses the current Chongqing culture and tourism committee site', async (t) => {
   const html = Array.from({ length: 10 }, (_, index) => `
     <a href="/zwxx_221/bmdt/gzdt/202607/t20260724_${15851727 + index}.html" title="重庆文旅测试标题${index}">重庆文旅测试标题${index}</a>
@@ -280,10 +288,6 @@ test('extracts image-wrapped links and markdown link titles', async (t) => {
   assert.equal(dgResult.items.length, 1)
   assert.equal(dgResult.items[0]?.title, '东莞测试标题')
 
-  const license = ALL_SOURCES.find((candidate) => candidate.id === 'licenseglobal')
-  assert.ok(license?.scrapeConfig)
-  const licenseResult = await scrapeNewsList(license.name, license.url, license.scrapeConfig)
-  assert.equal(licenseResult.items.length, 1)
 })
 
 test('extracts Red Star News static article links from proxied homepage markdown', async (t) => {

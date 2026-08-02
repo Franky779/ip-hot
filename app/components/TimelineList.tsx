@@ -21,6 +21,7 @@ interface Article {
   commentary: string | null
   category: string | null
   relevance_score: number | null
+  selection_threshold?: number | null
   published_at: string | null
   created_at: string | null
   image_url?: string | null
@@ -86,7 +87,7 @@ export function TimelineList({
     let filtered = isAdmin || category === '版权保护'
       ? articles
       : articles.filter((a) =>
-          (a.relevance_score ?? 10) >= 6
+          (a.relevance_score ?? 10) >= (a.selection_threshold ?? 6)
           && a.category !== '待分类'
           && a.category !== '待人工复核'
           && a.commentary

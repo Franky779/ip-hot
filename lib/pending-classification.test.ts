@@ -24,6 +24,17 @@ test('classifies direct industry results', () => {
   assert.equal(REVIEW_CATEGORY, '待人工复核')
 })
 
+test('uses the configured threshold for newly classified articles', () => {
+  assert.equal(
+    getPendingClassificationOutcome({ category: 'IP/品牌/授权', relevance_score: 4 }, 4),
+    'classified',
+  )
+  assert.equal(
+    getPendingClassificationOutcome({ category: 'IP/品牌/授权', relevance_score: 5 }, 6),
+    'reviewed',
+  )
+})
+
 test('routes every first-pass LLM result to a terminal category', () => {
   assert.deepEqual(
     resolveClassificationResult({ category: PENDING_CATEGORY, relevance_score: 8, is_selected: true }),

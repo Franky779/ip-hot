@@ -12,6 +12,7 @@ import {
   type SourceHealthRun,
   type SourceHealthStatus,
 } from '@/lib/source-health'
+import { FETCH_TYPE_OPTIONS, REGION_LABELS, REGION_OPTIONS } from '@/lib/source-options'
 
 interface Source {
   id: string
@@ -84,12 +85,6 @@ function buildSourceRepairDetails(source: Source, testResult?: TestResult): stri
 如果你无法直接访问网站，请明确告诉我下一步需要提供哪一段响应、页面源码或错误日志。`
 }
 
-const REGION_LABELS: Record<string, string> = {
-  domestic: '国内',
-  overseas: '海外',
-  japan: '日本',
-}
-
 function groupBySection(sources: Source[]) {
   const groups: Record<string, { title: string; region: string; items: Source[] }> = {}
   for (const s of sources) {
@@ -134,7 +129,7 @@ function generateMarkdown(sources: Source[]): string {
   md += '## 二、海外站点\n\n'
   for (const sid of sectionIds) {
     const sec = sections[sid]
-    if (sec.region !== 'overseas' && sec.region !== 'japan') continue
+    if (sec.region === 'domestic') continue
     md += `### ${sec.title}\n\n`
     md += '| 网站名称 | 网址 | 网站定位 | 值得我收录的原因 | 对应的抓取方式及后备抓取方案 |\n'
     md += '|---------|------|---------|----------------|--------------------------|\n'
@@ -212,6 +207,10 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       return options
     }, new Map<string, { title: string; count: number }>()).entries()
   )
+  const sectionOptionList = sectionOptions.map(([id, section]) => ({
+    id,
+    title: section.title,
+  }))
   const normalizedKeyword = keyword.trim().toLowerCase()
   const healthFilterCounts = Object.fromEntries(
     SOURCE_HEALTH_FILTER_OPTIONS.map((option) => [option.value, 0])
@@ -560,17 +559,18 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               <span>来源地区</span>
               <select value={regionFilter} onChange={(event) => setRegionFilter(event.target.value)}>
                 <option value="all">全部地区</option>
-                <option value="domestic">国内</option>
-                <option value="overseas">海外</option>
-                <option value="japan">日本</option>
+                {REGION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </label>
             <label>
               <span>抓取类型</span>
               <select value={fetchTypeFilter} onChange={(event) => setFetchTypeFilter(event.target.value)}>
                 <option value="all">全部类型</option>
-                <option value="rss">RSS</option>
-                <option value="web">普通网页</option>
+                {FETCH_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </label>
             <label>
@@ -811,6 +811,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
             fetch_type: getFetchType(editingSource),
             enabled: editingSource.enabled ?? false,
           } : null}
+          sectionOptions={sectionOptionList}
           onClose={() => setShowModal(false)}
           onSaved={handleRefresh}
         />

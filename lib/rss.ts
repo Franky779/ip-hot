@@ -22,9 +22,8 @@ export async function parseFeedUrl(url: string, timeoutMs = 15_000) {
   try {
     const response = await fetch(url, {
       headers: {
-        'user-agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
-        accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+        'user-agent': 'curl/8.x (ip-hot RSS reader)',
+        accept: '*/*',
       },
       redirect: 'follow',
       signal: controller.signal,

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ====== 色板:浅色主题(默认,跟主站 laojia-ip.com 一致) ====== */
+/* ====== 閼瑰弶婢?濞村懓澹婃稉濠氼暯(姒涙顓?鐠虹喍瀵岀粩?laojia-ip.com 娑撯偓閼? ====== */
 :root {
   --bg: #f5f3f0;
   --surface: #ffffff;
@@ -24,7 +24,7 @@
   --sidebar-width: 220px;
 }
 
-/* ====== 色板:深色主题(显式 data-theme="dark") ====== */
+/* ====== 閼瑰弶婢?濞ｈ精澹婃稉濠氼暯(閺勬儳绱?data-theme="dark") ====== */
 [data-theme="dark"] {
   --bg: #0f1419;
   --surface: #151e2b;
@@ -47,7 +47,7 @@
   --sidebar-border: rgba(255,255,255,0.04);
 }
 
-/* ====== 色板:跟随系统(无 data-theme,系统是深色) ====== */
+/* ====== 閼瑰弶婢?鐠虹喖娈㈢化鑽ょ埠(閺?data-theme,缁崵绮洪弰顖涚箒閼? ====== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --bg: #0f1419;
@@ -87,7 +87,7 @@ body {
   font-family: var(--font-noto-serif-sc), "Noto Serif SC", "Songti SC", serif;
 }
 
-/* ====== 应用主布局(左 sidebar + 右内容区) ====== */
+/* ====== 鎼存梻鏁ゆ稉璇茬鐏炩偓(瀹?sidebar + 閸欏啿鍞寸€圭懓灏? ====== */
 
 .app-layout {
   display: flex;
@@ -101,7 +101,7 @@ body {
   min-width: 0;
 }
 
-/* ====== 左侧 Sidebar ====== */
+/* ====== 瀹革缚鏅?Sidebar ====== */
 
 .sidebar {
   position: fixed;
@@ -403,7 +403,7 @@ body {
 .feedback-record p { white-space: pre-wrap; }
 .feedback-record div { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.8rem; }
 
-/* ====== 主内容区:页面头部(标题 + 分类 tabs + 搜索) ====== */
+/* ====== 娑撹鍞寸€圭懓灏?妞ょ敻娼版径鎾劥(閺嶅洭顣?+ 閸掑棛琚?tabs + 閹兼粎鍌? ====== */
 
 .page-header {
   background: var(--surface);
@@ -473,7 +473,7 @@ body {
   width: 100%;
 }
 
-/* ====== 分类 tabs ====== */
+/* ====== 閸掑棛琚?tabs ====== */
 
 .category-tabs {
   display: flex;
@@ -511,7 +511,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* ====== 标题搜索框 ====== */
+/* ====== 閺嶅洭顣介幖婊呭偍濡?====== */
 
 .search-box {
   display: flex;
@@ -561,7 +561,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* ====== 文章列表 ====== */
+/* ====== 閺傚洨鐝烽崚妤勩€?====== */
 
 .article-section {
   padding: 1.5rem 2.5rem 2rem;
@@ -680,7 +680,7 @@ body {
   padding: 4rem 1.5rem;
 }
 
-/* ====== 时间线排版 ====== */
+/* ====== 閺冨爼妫跨痪鎸庡笓閻?====== */
 
 .timeline-section {
   padding: 1.5rem 2.5rem 2rem;
@@ -886,7 +886,7 @@ body {
   pointer-events: none;
 }
 
-/* ====== 主题切换器(放在 sidebar 底部,3 图标 segmented) ====== */
+/* ====== 娑撳顣介崚鍥ㄥ床閸?閺€鎯ф躬 sidebar 鎼存洟鍎?3 閸ョ偓鐖?segmented) ====== */
 
 .theme-toggle-wrap {
   display: flex;
@@ -930,7 +930,7 @@ body {
   display: block;
 }
 
-/* ====== 管理员模式 ====== */
+/* ====== 缁狅紕鎮婇崨妯荒佸?====== */
 
 .admin-toggle-btn {
   width: 36px;
@@ -1069,7 +1069,50 @@ body {
   max-width: 480px;
 }
 
-/* 文章操作按钮 */
+/* 信息源新增/编辑弹窗：加宽为双列，尽量一屏装下所有必填项 */
+.source-edit-modal {
+  max-width: none;
+  width: min(880px, calc(100vw - 2rem));
+  max-height: 92vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem 1.5rem;
+  align-content: start;
+}
+
+.source-edit-modal h3 {
+  grid-column: 1 / -1;
+  margin-bottom: 0.25rem;
+}
+
+.source-edit-modal > .source-form-hint {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.source-edit-modal .source-form-field label {
+  margin-top: 0.4rem;
+}
+
+.source-edit-modal .source-form-field input,
+.source-edit-modal .source-form-field select {
+  margin-bottom: 0.25rem;
+}
+
+.source-edit-modal .source-form-field .source-form-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: -0.15rem 0 0.35rem;
+}
+
+.source-edit-modal .admin-modal-btns {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+/* 閺傚洨鐝烽幙宥勭稊閹稿鎸?*/
 .timeline-content-col {
   position: relative;
 }
@@ -1123,7 +1166,7 @@ body {
   color: #e94560;
 }
 
-/* 产业匹配度评分 */
+/* 娴溠傜瑹閸栧綊鍘ゆ惔锕佺槑閸?*/
 .relevance-score {
   color: #dc2626;
   font-weight: 700;
@@ -1133,7 +1176,7 @@ body {
   line-height: 1;
 }
 
-/* 评分筛选按钮 */
+/* 鐠囧嫬鍨庣粵娑⑩偓澶嬪瘻闁?*/
 .score-filter-btns {
   display: flex;
   gap: 6px;
@@ -1178,7 +1221,7 @@ body {
   opacity: 0.7;
 }
 
-/* ====== 管理员工具栏 ====== */
+/* ====== 缁狅紕鎮婇崨妯轰紣閸忛攱鐖?====== */
 
 .admin-toolbar {
   display: flex;
@@ -1214,7 +1257,7 @@ body {
   color: var(--accent);
 }
 
-/* ====== 日志面板 ====== */
+/* ====== 閺冦儱绻旈棃銏℃緲 ====== */
 
 .cron-logs-panel {
   margin-bottom: 1rem;
@@ -1294,7 +1337,7 @@ body {
   white-space: pre;
 }
 
-/* ====== 运营监控面板 ====== */
+/* ====== 鏉╂劘鎯€閻╂垶甯堕棃銏℃緲 ====== */
 
 .monitor-stats-grid {
   display: grid;
@@ -1461,7 +1504,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ====== 批量删除工具栏 ====== */
+/* ====== 閹靛綊鍣洪崚鐘绘珟瀹搞儱鍙块弽?====== */
 
 .batch-actions-bar {
   display: flex;
@@ -1519,7 +1562,7 @@ body {
   cursor: not-allowed;
 }
 
-/* 批量分类 */
+/* 閹靛綊鍣洪崚鍡欒 */
 .batch-actions-right {
   display: flex;
   align-items: center;
@@ -1577,13 +1620,13 @@ body {
   cursor: not-allowed;
 }
 
-/* 选中的资讯卡片高亮 */
+/* 闁鑵戦惃鍕カ鐠侇垰宕遍悧鍥彯娴?*/
 .timeline-entry.selected .article-card {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-light);
 }
 
-/* ====== 信息源管理页面 ====== */
+/* ====== 娣団剝浼呭┃鎰吀閻炲棝銆夐棃?====== */
 
 .sources-page-heading {
   display: grid;
@@ -2786,7 +2829,7 @@ body {
   }
 }
 
-/* ====== Loading 状态 ====== */
+/* ====== Loading 閻樿埖鈧?====== */
 
 .loading-wrap {
   display: flex;
@@ -2814,63 +2857,430 @@ body {
   font-size: 0.875rem;
   color: var(--text-muted);
 }
+/* ====== Mobile navigation (bottom tab bar, shown < 768px) ====== */
 
-/* ====== 移动端响应式(< 768px 暂时简化) ====== */
+.mobile-topbar {
+  display: none;
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+.mobile-bottom-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-bottom-nav-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.mobile-bottom-nav-label {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
 
 @media (max-width: 768px) {
+  /* Layout: sidebar hidden, bottom nav replaces it */
   .app-layout {
     flex-direction: column;
   }
+
   .sidebar {
-    position: static;
-    width: 100%;
-    height: auto;
+    display: none;
   }
+
   .app-main {
-    flex: 0 0 100%;
-    width: 100%;
     margin-left: 0;
+    width: 100%;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Mobile top brand bar */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--sidebar-border);
+    z-index: 60;
+    position: sticky;
+    top: 0;
+  }
+
+  .mobile-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+  }
+
+  .mobile-topbar-brand .sidebar-brand-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+  }
+
+  .mobile-topbar-brand .sidebar-brand-text {
+    font-size: 0.8125rem;
+  }
+
+  /* Bottom tab bar */
+  .mobile-bottom-nav {
+    display: flex;
+    align-items: stretch;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    background: var(--surface);
+    border-top: 1px solid var(--border-light);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-bottom-nav-link {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 2px 6px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .mobile-bottom-nav-link:active {
+    background: var(--surface-hover);
+  }
+
+  .mobile-bottom-nav-link.active {
+    color: var(--accent);
+  }
+
+  .mobile-bottom-nav-link.active .mobile-bottom-nav-label {
+    font-weight: 600;
+  }
+
+  /* Page header */
+
+  /* Page header */
+  .page-header {
+    padding: 0.625rem 1rem;
+    position: sticky;
+    top: 0;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
   .page-toolbar {
     flex-direction: column;
     align-items: stretch;
+    margin-top: 0.5rem;
   }
+
   .home-header-top {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.625rem;
   }
+
   .home-header-actions {
     width: 100%;
     flex-basis: auto;
     align-items: stretch;
+    gap: 0.5rem;
   }
-  .home-header-actions .admin-toggle-btn {
-    align-self: flex-end;
-  }
-  .category-tabs {
+
+  .home-header-actions .search-box {
+    flex: 1 1 auto;
     width: 100%;
   }
+
+  .home-header-actions .admin-toggle-btn {
+    align-self: flex-end;
+    flex-shrink: 0;
+  }
+
+  /* Category tabs: horizontal scroll instead of wrap */
+  .category-tabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .category-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-tab {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  /* Search */
   .search-box {
     width: 100%;
   }
+
   .search-input {
     flex: 1;
     width: auto;
   }
-  .page-header,
-  .article-section {
-    padding-left: 1rem;
-    padding-right: 1rem;
+
+  .search-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
   }
+
+  /* Article section */
+  .article-section {
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .timeline-section {
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  /* Article cards */
+  .article-card {
+    padding: 0.875rem 1rem;
+  }
+
+  .article-card-main {
+    flex-direction: column;
+  }
+
+  .article-media {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    aspect-ratio: 16 / 10;
+  }
+
+  .article-title {
+    font-size: 0.9375rem;
+  }
+
+  .article-summary {
+    font-size: 0.8125rem;
+  }
+
+  .article-commentary {
+    font-size: 0.75rem;
+  }
+
+  /* Timeline */
+  .timeline-time-col {
+    width: 36px;
+    padding-top: 0.875rem;
+  }
+
+  .timeline-time {
+    font-size: 0.6875rem;
+  }
+
+  .timeline-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .timeline-entries {
+    padding-left: 0;
+  }
+
+  .timeline-entry {
+    gap: 0.5rem;
+  }
+
+  /* Batch actions bar */
+  .batch-actions-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .batch-actions-right {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  /* Admin modal */
+  .admin-modal {
+    max-width: calc(100vw - 2rem);
+    padding: 1.25rem;
+  }
+
+  .edit-modal {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .source-edit-modal {
+    grid-template-columns: 1fr;
+  }
+
+  /* Article actions: move below card on mobile */
+  .article-actions {
+    position: static;
+    justify-content: flex-end;
+    padding: 0.375rem 0 0;
+    margin-top: 0.25rem;
+  }
+
+  .article-action-btn {
+    min-height: 36px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  /* Load more */
+  .load-more-btn {
+    min-width: 140px;
+    min-height: 44px;
+  }
+
+  .load-more-wrap {
+    padding: 1rem 0 0.5rem;
+  }
+
+  /* Sidebar footer stays at bottom */
+  .sidebar-footer {
+    padding: 0.625rem 0.75rem;
+  }
+
+  /* Research & other pages */
   .research-html-toolbar { align-items: flex-start; }
-  .about-page, .feedback-page, .research-page, .talks-page { padding-top: 1.5rem; }
+  .about-page, .feedback-page, .research-page, .talks-page { padding: 1.5rem 1rem 3rem; }
   .research-grid { grid-template-columns: 1fr; }
   .research-upload-fields { grid-template-columns: 1fr; }
   .research-markdown-columns { grid-template-columns: 1fr; }
-  .research-report-page { padding-left: 1rem; padding-right: 1rem; }
+  .research-report-page { padding: 1.5rem 1rem 3rem; }
   .talk-card { grid-template-columns: 1fr; gap: 0.25rem; }
   .talk-card a { margin-top: 0.5rem; }
   .feedback-record div { flex-direction: column; gap: 0.2rem; }
-  .article-card-main { flex-direction: column; }
-  .article-media { width: 100%; height: auto; max-height: 220px; aspect-ratio: 16 / 10; }
+
+  /* Monitor page */
+  .monitor-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cron-logs-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Sources page */
+  .sources-header-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ====== Mobile: Phone (< 480px) ====== */
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 1.125rem;
+  }
+
+  .page-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .article-section,
+  .timeline-section {
+    padding: 0.75rem 0.75rem 1.25rem;
+  }
+
+  .article-card {
+    padding: 0.75rem 0.875rem;
+    border-radius: 10px;
+  }
+
+  .article-title {
+    font-size: 0.875rem;
+  }
+
+  .article-summary {
+    font-size: 0.75rem;
+    line-height: 1.55;
+  }
+
+  .article-commentary {
+    font-size: 0.6875rem;
+  }
+
+  .article-meta {
+    font-size: 0.6875rem;
+  }
+
+  .timeline-time-col {
+    width: 30px;
+  }
+
+  .timeline-time {
+    font-size: 0.625rem;
+  }
+
+  .timeline-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .category-tab {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .search-input {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .search-btn {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .timeline-date-label {
+    font-size: 0.75rem;
+  }
+
+  .timeline-entry {
+    gap: 0.375rem;
+  }
+
+  .research-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .research-kpi-card {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .research-kpi-card strong {
+    font-size: 1.35rem;
+  }
+
+  .research-chart-plot {
+    height: 200px;
+  }
+
+  .monitor-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
 }

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
 import { resolveClassificationResult } from '@/lib/pending-classification'
+import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
+import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -31,6 +33,8 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServiceClient()
+  const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
+  const selectionThreshold = await getSelectionThreshold(supabase)
 
   // 防止本地守护任务、手动处理和未来 Supabase Cron 同时领取同一批文章。
   const lockCutoff = new Date(Date.now() - LOCK_MINUTES * 60 * 1000).toISOString()
@@ -72,16 +76,18 @@ export async function GET(request: Request) {
 
   // 6 条最新资讯保证时效，2 条最旧资讯持续消化历史积压。
   const [recentResult, oldestResult] = await Promise.all([
-    supabase
-      .from('articles')
-      .select('id, title, url, source, published_at, created_at')
-      .is('title_cn', null)
+    onlyArticlesAwaitingInitialLlm(
+      supabase
+        .from('articles')
+        .select('id, title, url, source, published_at, created_at'),
+    )
       .order('created_at', { ascending: false })
       .limit(RECENT_BATCH_SIZE),
-    supabase
-      .from('articles')
-      .select('id, title, url, source, published_at, created_at')
-      .is('title_cn', null)
+    onlyArticlesAwaitingInitialLlm(
+      supabase
+        .from('articles')
+        .select('id, title, url, source, published_at, created_at'),
+    )
       .order('created_at', { ascending: true })
       .limit(BATCH_SIZE - RECENT_BATCH_SIZE),
   ])
@@ -144,14 +150,28 @@ export async function GET(request: Request) {
           }
         }
 
-        const classification = resolveClassificationResult(llmResult)
+        const policy = applyOfficialSourcePolicy({
+          relevance_score: llmResult.relevance_score,
+          is_selected: llmResult.is_selected,
+          safety_blocked: llmResult.safety_blocked,
+          trusted_official_x: verifiedOfficialXNames.has(article.source),
+        })
+        if (policy.action === 'delete') {
+          const { error: deleteError } = await supabase.from('articles').delete().eq('id', article.id)
+          if (deleteError) throw new Error(deleteError.message)
+          return { id: article.id, source: article.source, title: article.title, url: article.url, ok: true, score: 0, selected: false, commentary: '', status: 'scored' }
+        }
+        const classification = verifiedOfficialXNames.has(article.source)
+          ? { category: llmResult.category, is_selected: true }
+          : resolveClassificationResult({ ...llmResult, relevance_score: policy.relevance_score, is_selected: policy.relevance_score >= selectionThreshold }, selectionThreshold)
         const { error: updateError } = await supabase
           .from('articles')
           .update({
             title_cn: llmResult.title_cn,
             summary_cn: llmResult.summary_cn,
             category: classification.category,
-            relevance_score: llmResult.relevance_score,
+            relevance_score: policy.relevance_score,
+            selection_threshold: selectionThreshold,
             is_selected: classification.is_selected,
             commentary: llmResult.commentary,
           })
@@ -160,7 +180,7 @@ export async function GET(request: Request) {
         return {
           id: article.id, source: article.source, title: article.title, url: article.url,
           ok: !updateError,
-          score: updateError ? null : llmResult.relevance_score,
+          score: updateError ? null : policy.relevance_score,
           selected: updateError ? false : classification.is_selected,
           commentary: updateError ? '' : llmResult.commentary,
           status: updateError ? 'failed' : 'scored',
@@ -179,10 +199,11 @@ export async function GET(request: Request) {
   const okCount = results.filter((r) => r.ok).length
   const failedCount = articles.length - okCount
   const firstError = results.find((result) => result.error)?.error || null
-  const { count: remaining } = await supabase
-    .from('articles')
-    .select('*', { count: 'exact', head: true })
-    .is('title_cn', null)
+  const { count: remaining } = await onlyArticlesAwaitingInitialLlm(
+    supabase
+      .from('articles')
+      .select('*', { count: 'exact', head: true }),
+  )
 
   await supabase.from('cron_logs').update({
     status: failedCount === 0 ? 'success' : 'error',

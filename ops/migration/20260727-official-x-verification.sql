@@ -1,0 +1,12 @@
+alter table info_sources add column if not exists platform text not null default '';
+alter table info_sources add column if not exists x_handle text not null default '';
+alter table info_sources add column if not exists x_user_id text not null default '';
+alter table info_sources add column if not exists x_profile_url text not null default '';
+alter table info_sources add column if not exists official_evidence_url text not null default '';
+alter table info_sources add column if not exists verification_status text not null default 'unverified';
+alter table info_sources add column if not exists verified_by text not null default '';
+alter table info_sources add column if not exists verified_at timestamptz;
+alter table info_sources add column if not exists last_reviewed_at timestamptz;
+alter table info_sources add column if not exists verification_notes text not null default '';
+alter table info_sources drop constraint if exists info_sources_verification_status_check;
+alter table info_sources add constraint info_sources_verification_status_check check (verification_status in ('unverified', 'verified', 'revoked'));

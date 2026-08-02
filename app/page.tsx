@@ -8,8 +8,10 @@ import { AdminPendingArticles } from './components/AdminPendingArticles'
 import { paginateFilteredResults } from '@/lib/filtered-pagination'
 import { formatArticleDate, resolveArticleDisplayTime } from '@/lib/article-time'
 import { createArticleSearchPattern } from '@/lib/article-search'
+import { DEFAULT_SELECTION_THRESHOLD, getSelectionThreshold } from '@/lib/selection-threshold'
 
-export const revalidate = 300
+// The public list must observe threshold changes without waiting for ISR expiry.
+export const dynamic = 'force-dynamic'
 const ARTICLES_PER_PAGE = 20
 const MAX_PAGE = 50
 const DATABASE_BATCH_SIZE = 100
@@ -24,6 +26,7 @@ type Article = {
   commentary: string | null
   category: string | null
   relevance_score: number | null
+  selection_threshold?: number | null
   published_at: string | null
   created_at: string | null
   image_url?: string | null
@@ -47,6 +50,8 @@ function parsePage(value: string | undefined): number {
 
 async function getArticles(category: string, q: string, page: number): Promise<ArticleResult> {
   const supabase = category === '版权保护' ? createServiceClient() : getSupabase()
+  let selectionThreshold = DEFAULT_SELECTION_THRESHOLD
+  try { selectionThreshold = await getSelectionThreshold(supabase) } catch (error) { console.error('Failed to fetch selection threshold:', error) }
   const totalToShow = page * ARTICLES_PER_PAGE
   const searchPattern = createArticleSearchPattern(q)
   try {
@@ -54,12 +59,13 @@ async function getArticles(category: string, q: string, page: number): Promise<A
       targetCount: totalToShow,
       batchSize: DATABASE_BATCH_SIZE,
       include: (article: Article) =>
-        category === '版权保护' || !isClearlyIndirectTechTitle(article.title, article.category),
+        (category === '版权保护' || !isClearlyIndirectTechTitle(article.title, article.category))
+        && (article.relevance_score ?? -1) >= (article.selection_threshold ?? selectionThreshold),
       fetchRange: async (from, to) => {
         if (category === '版权保护') {
           let copyrightQuery = supabase
             .from('articles')
-            .select('id, source, url, image_url, is_video, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+            .select('id, source, url, image_url, is_video, title, title_cn, summary_cn, commentary, category, relevance_score, selection_threshold, published_at, created_at')
             .eq('category', category)
             .order('published_at', { ascending: false, nullsFirst: false })
             .order('created_at', { ascending: false, nullsFirst: false })
@@ -77,7 +83,7 @@ async function getArticles(category: string, q: string, page: number): Promise<A
 
         let query = supabase
           .from('articles')
-          .select('id, source, url, image_url, is_video, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at')
+          .select('id, source, url, image_url, is_video, title, title_cn, summary_cn, commentary, category, relevance_score, selection_threshold, published_at, created_at')
           .not('title_cn', 'is', null)
           .not('summary_cn', 'is', null)
           .not('category', 'is', null)
@@ -85,7 +91,6 @@ async function getArticles(category: string, q: string, page: number): Promise<A
           .neq('commentary', '')
           .neq('category', '待分类')
           .neq('category', '待人工复核')
-          .gte('relevance_score', 6)
           .order('published_at', { ascending: false, nullsFirst: false })
           .order('created_at', { ascending: false, nullsFirst: false })
           .order('id', { ascending: false })

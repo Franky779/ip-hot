@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { summarizeArticle } from '@/lib/llm'
+import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
 import { createServiceClient } from '@/lib/supabase'
 import {
   FILTERED_CATEGORY,
@@ -7,6 +8,7 @@ import {
   PENDING_CATEGORY,
   REVIEW_CATEGORY,
 } from '@/lib/pending-classification'
+import { getSelectionThreshold } from '@/lib/selection-threshold'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -16,17 +18,23 @@ const CONCURRENCY = 5
 type PendingArticle = {
   id: string
   title: string
+  source: string
 }
 
 type Outcome = 'classified' | 'reviewed' | 'filtered' | 'failed'
 
-async function processArticle(article: PendingArticle): Promise<Outcome> {
+async function processArticle(article: PendingArticle, verifiedOfficialXNames: Set<string>, selectionThreshold: number): Promise<Outcome> {
   const supabase = createServiceClient()
   const result = await summarizeArticle(article.title, '')
 
   if (!result) return 'failed'
 
-  const outcome = getPendingClassificationOutcome(result)
+  const policy = applyOfficialSourcePolicy({ relevance_score: result.relevance_score, is_selected: result.is_selected, safety_blocked: result.safety_blocked, trusted_official_x: verifiedOfficialXNames.has(article.source) })
+  if (policy.action === 'delete') {
+    const { error } = await supabase.from('articles').delete().eq('id', article.id)
+    return error ? 'failed' : 'filtered'
+  }
+  const outcome = getPendingClassificationOutcome({ ...result, relevance_score: policy.relevance_score }, selectionThreshold)
 
   // Keep sensitive or ambiguous content out of the public stream and future auto-classification batches.
   if (outcome === 'reviewed') {
@@ -36,7 +44,8 @@ async function processArticle(article: PendingArticle): Promise<Outcome> {
         title_cn: result.title_cn,
         summary_cn: result.summary_cn,
         category: REVIEW_CATEGORY,
-        relevance_score: result.relevance_score,
+        relevance_score: policy.relevance_score,
+        selection_threshold: selectionThreshold,
         is_selected: false,
         commentary: result.commentary,
       })
@@ -49,6 +58,7 @@ async function processArticle(article: PendingArticle): Promise<Outcome> {
       .from('articles')
       .update({
         category: FILTERED_CATEGORY,
+        selection_threshold: selectionThreshold,
         is_selected: false,
       })
       .eq('id', article.id)
@@ -61,8 +71,9 @@ async function processArticle(article: PendingArticle): Promise<Outcome> {
       title_cn: result.title_cn,
       summary_cn: result.summary_cn,
       category: result.category,
-      relevance_score: result.relevance_score,
-      is_selected: result.is_selected,
+      relevance_score: policy.relevance_score,
+      selection_threshold: selectionThreshold,
+      is_selected: policy.is_selected && policy.relevance_score >= selectionThreshold,
       commentary: result.commentary,
     })
     .eq('id', article.id)
@@ -95,7 +106,7 @@ export async function POST(request: Request) {
 
   const { data: articles, error: fetchError } = await supabase
     .from('articles')
-    .select('id, title')
+    .select('id, title, source')
     .eq('category', PENDING_CATEGORY)
     .not('title_cn', 'is', null)
     .not('summary_cn', 'is', null)
@@ -106,6 +117,9 @@ export async function POST(request: Request) {
   if (!articles?.length) {
     return NextResponse.json({ ok: true, classified: 0, reviewed: 0, filtered: 0, failed: 0, remaining: 0 })
   }
+
+  const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
+  const selectionThreshold = await getSelectionThreshold(supabase)
 
   const { data: log, error: logError } = await supabase
     .from('cron_logs')
@@ -127,7 +141,7 @@ export async function POST(request: Request) {
       const group = pending.splice(0, CONCURRENCY)
       const results = await Promise.all(group.map(async (article) => {
         try {
-          return await processArticle(article)
+          return await processArticle(article, verifiedOfficialXNames, selectionThreshold)
         } catch {
           return 'failed' as const
         }

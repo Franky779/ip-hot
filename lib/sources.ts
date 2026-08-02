@@ -507,26 +507,6 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: { itemSelector: 'a[href^="/newsDetail_forward_"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.thepaper.cn', maxItems: 10 },
   },
   {
-    id: 'screenrant-cdp', name: 'ScreenRant', aliases: ['ScreenRant Anime'], url: 'https://screenrant.com/category/anime/',
-    language: 'en', priority: 'P0', type: 'web',
-    scrapeConfig: { itemSelector: 'h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
-  },
-  {
-    id: 'cbr-cdp', name: 'CBR', aliases: ['Comic Book Resources (CBR)'], url: 'https://www.cbr.com/category/anime/',
-    language: 'en', priority: 'P0', type: 'web',
-    scrapeConfig: { itemSelector: 'h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
-  },
-  {
-    id: 'kotaku-cdp', name: 'Kotaku', url: 'https://kotaku.com',
-    language: 'en', priority: 'P0', type: 'web',
-    scrapeConfig: { itemSelector: 'h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
-  },
-  {
-    id: 'siliconera-cdp', name: 'Siliconera', url: 'https://www.siliconera.com',
-    language: 'en', priority: 'P0', type: 'web',
-    scrapeConfig: { itemSelector: 'h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.siliconera.com', maxItems: 10 },
-  },
-  {
     id: 'giftshop-cdp', name: 'Gift Shop Magazine', url: 'https://giftshopmag.com',
     language: 'en', priority: 'P2', type: 'web',
     scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href]', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://giftshopmag.com', maxItems: 10 },
@@ -635,7 +615,7 @@ export const GOV_ONLY_SOURCES = GOV_SOURCES
 // 新增信源：初次抓取的文章强制归类为"待分类"
 export const NEW_SOURCE_IDS = new Set([
   'licensingint',
-  'weibo-hot-web', 'zhihu-hot-web', 'thepaper-cdp', 'screenrant-cdp', 'cbr-cdp',
+  'weibo-hot-web', 'zhihu-hot-web', 'thepaper-cdp',
 ])
 
 export const NEW_SOURCE_NAMES = new Set(

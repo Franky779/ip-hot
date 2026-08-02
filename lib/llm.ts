@@ -4,7 +4,7 @@
 
 import { createServiceClient } from './supabase'
 import { findRelevantLearnings, formatLearningRules } from './classification-learning'
-import { enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
+import { applyDirectCategoryScoreFloor, enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
 
 type LlmProvider = {
   name: string
@@ -63,6 +63,7 @@ export type LlmResult = {
   relevance_score: number
   is_selected: boolean
   commentary: string
+  safety_blocked: boolean
 }
 
 const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位：专注动漫 / IP / 潮玩谷子 / 文创 / 文旅 / 博物馆 / 旅游纪念品 / 数字创意产业等多元资讯聚合。
@@ -102,10 +103,19 @@ AI/新技术必须同时出现明确的目标行业对象和具体应用案例�
    - 待分类：无法明确归入以上12类的资讯，等待人工复核
 4. 给出 0-10 的产业匹配度评分：
    - 9-10 核心命中：新闻主体和核心事件都直接属于目标行业，并具有明确业务信息或行业价值
-   - 7-8  直接相关：核心事件至少明确涉及一个目标行业对象、产品、项目、合作、交易或政策
-   - 4-6  边界待审：提到目标行业，但核心事件是否直接相关仍不明确；不会进入公开资讯流
+   - 7-8  强直接相关：有明确商业合作、交易、授权、重要新品、重大项目、产业数据或行业影响
+   - 6    直接相关、可公开：能明确归入一个公开分类，且核心事件直接涉及该行业对象、作品、商品、项目、活动、政策或版权事项
+   - 4-5  边界待审：只是在标题中提及目标行业，核心事件没有明确行业落点；不要把已明确归类的直接行业资讯打为4-5分
    - 0-3  间接相关或无关：只是可能影响目标行业、可被目标行业采用，或属于泛AI/科技/财经/消费/政策资讯；纯原创真人剧集、纪录片、人物传记片、传统好莱坞商业片、纯IPO/融资/财报也在此列
    - ⚠️ 如果内容与动漫/IP/潮玩/文创/文旅/博物馆/数字创意产业完全无关，评分直接给0
+
+【管理员确认的6分可公开标准】
+- 游戏/体育：游戏新作、更新、停服、发售、电竞、游戏展会、体育IP相关动态，直接讲述游戏或体育产业事件即至少6分。
+- 潮玩谷子：潮玩、玩具、盲盒、手办、卡牌、积木、收藏品及其品牌、零售、市场、监管、召回、行业活动，只要直接讲述该行业即至少6分。
+- 版权保护：侵权争议、版权/商标案件、内容保存、平台权利、盗版治理、艺术品权属、版权政策等直接版权事项至少6分。
+- 展会活动：行业展会、游戏展、非遗/博物馆活动、出版活动、行业市集、论坛或发布会，只要活动本身属于分类范围即至少6分。
+- 政策规则、文旅及商品、影视综艺、创作/上新、艺术/亚文化：明确的行业政策、文化遗产与博物馆项目、文旅项目、IP/动画/游戏影视动态、创作发布、艺术展览或亚文化活动，均至少6分。
+- 不要因为事件是预告、名单、周报、活动添加、展会统计或行业观察，就降低为4-5分；只要产业对象明确，按6分处理。
 5. 精选标记规则：评分 >= 7 标记为精选（is_selected = true）
 6. 用一句话给出你的行业解读（犀利、有洞察、带观点，20字以内），不要加署名
 
@@ -124,7 +134,7 @@ AI/新技术必须同时出现明确的目标行业对象和具体应用案例�
 - 评分0-3的文章会被系统自动删除，请谨慎评分
 
 请严格按以下JSON格式返回，不要添加任何其他文字：
-{"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true,"commentary":"..."}`
+{"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true,"safety_blocked":false,"commentary":"..."}`
 
 /** 调用单个 LLM API */
 async function callLLM(
@@ -189,7 +199,10 @@ function parseResult(parsed: Record<string, unknown>, title: string): LlmResult 
   const modelScore = Number.isFinite(parsedScore)
     ? Math.min(10, Math.max(0, parsedScore))
     : 5
-  const relevance_score = enforceDirectIndustryScore(title, category, modelScore)
+  const relevance_score = applyDirectCategoryScoreFloor(
+    category,
+    enforceDirectIndustryScore(title, category, modelScore),
+  )
 
   return {
     title_cn: String(parsed.title_cn || title).slice(0, 100),
@@ -197,6 +210,7 @@ function parseResult(parsed: Record<string, unknown>, title: string): LlmResult 
     category,
     relevance_score,
     is_selected: relevance_score >= 7,
+    safety_blocked: parsed.safety_blocked === true,
     commentary: String(parsed.commentary || '待人工编辑')
       .replace(/[\s—–-]{0,3}(贾田点评|推荐理由|编辑推荐).*$/g, '')
       .replace(/^[\s—–-]+|[\s—–-]+$/g, '')
@@ -240,6 +254,7 @@ export async function summarizeArticle(
 
   // 查询学习记录并注入 prompt
   let systemPrompt = SYSTEM_PROMPT
+  systemPrompt += '\nSafety gate: set safety_blocked=true for violence, gore, politics, ideology, China sovereignty or territorial disputes, separatism, religious extremism, racism, war, military, weapons, LGBT or gender controversy, or other content that violates mainland China political, ideological, geographic, or religious requirements. Otherwise set false.'
   try {
     if (process.env.DATABASE_URL) {
       const supabase = createServiceClient()
@@ -283,6 +298,7 @@ export async function summarizeArticle(
     category: '待分类',
     relevance_score: 5,
     is_selected: false,
+    safety_blocked: false,
     commentary: '待人工编辑',
   }
 }

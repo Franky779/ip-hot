@@ -27,3 +27,12 @@ export function enforceDirectIndustryScore(
 ): number {
   return isClearlyIndirectTechTitle(title, category) ? Math.min(score, 3) : score
 }
+
+/**
+ * 管理员确认：已经能明确归入一个公开分类的直接行业资讯，应作为可展出的
+ * 基础相关内容。4-5 分只保留给分类不明或仅间接提及目标行业的资讯。
+ */
+export function applyDirectCategoryScoreFloor(category: string, score: number): number {
+  if (category === '待分类' || score <= 3) return score
+  return Math.max(score, 6)
+}

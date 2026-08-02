@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { getSourceSchedule, writeSourceSchedule, type SourceExecutionMode, type SourceScheduleTier } from '@/lib/source-schedule'
+import { useMemo, useState } from 'react'
+import { getSourceSchedule, writeSourceSchedule, EXECUTION_MODE_LABELS, SCHEDULE_TIER_LABELS, type SourceExecutionMode, type SourceScheduleTier } from '@/lib/source-schedule'
+import { FETCH_TYPE_OPTIONS, REGION_OPTIONS } from '@/lib/source-options'
 
 interface Source {
   id?: string
@@ -16,21 +17,24 @@ interface Source {
   fetch_type: 'rss' | 'web'
   enabled: boolean
   sort_order: number
+  platform?: string
+  x_handle?: string
+  x_user_id?: string
+  x_profile_url?: string
+  official_evidence_url?: string
+  verification_status?: 'unverified' | 'verified' | 'revoked'
+  verified_by?: string
+  verification_notes?: string
 }
 
 interface SourceModalProps {
   source?: Source | null
+  sectionOptions: Array<{ id: string; title: string }>
   onClose: () => void
   onSaved: () => void
 }
 
-const REGIONS = [
-  { value: 'domestic', label: '国内' },
-  { value: 'overseas', label: '海外' },
-  { value: 'japan', label: '日本' },
-]
-
-export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
+export function SourceModal({ source, sectionOptions, onClose, onSaved }: SourceModalProps) {
   const isEdit = !!source?.id
   const initialSchedule = getSourceSchedule({
     name: source?.name ?? '',
@@ -51,15 +55,66 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
     fetch_type: source?.fetch_type ?? 'web',
     enabled: source?.enabled ?? false,
     sort_order: source?.sort_order ?? 0,
+    platform: source?.platform ?? '',
+    x_handle: source?.x_handle ?? '',
+    x_user_id: source?.x_user_id ?? '',
+    x_profile_url: source?.x_profile_url ?? '',
+    official_evidence_url: source?.official_evidence_url ?? '',
+    verification_status: source?.verification_status ?? 'unverified',
+    verified_by: source?.verified_by ?? '',
+    verification_notes: source?.verification_notes ?? '',
   })
   const [executionMode, setExecutionMode] = useState<SourceExecutionMode>(initialSchedule.executionMode)
   const [scheduleTier, setScheduleTier] = useState<SourceScheduleTier>(initialSchedule.tier)
   const [saving, setSaving] = useState(false)
 
+  // 分类下拉：与信息源管理页“行业类型”筛选共用同一份分类清单。
+  const allSectionOptions = useMemo(() => {
+    const options = [...sectionOptions]
+    if (source?.section_id && !options.some((option) => option.id === source.section_id)) {
+      options.unshift({ id: source.section_id, title: source.section_title })
+    }
+    return options
+  }, [sectionOptions, source])
+
+  const [sectionChoice, setSectionChoice] = useState<string>(() => {
+    if (!source?.section_id) return ''
+    return allSectionOptions.some((option) => option.id === source.section_id)
+      ? source.section_id
+      : 'custom'
+  })
+
+  const handleSectionChange = (value: string) => {
+    setSectionChoice(value)
+    if (value === 'custom') return
+    const selected = allSectionOptions.find((option) => option.id === value)
+    if (selected) {
+      setForm((current) => ({ ...current, section_id: selected.id, section_title: selected.title }))
+    }
+  }
+
   const handleSave = async () => {
-    if (!form.name || !form.url || !form.type || !form.section_id || !form.section_title) {
-      alert('请填写必填字段')
+    if (!form.name || !form.url) {
+      alert('请填写网站名称和网址')
       return
+    }
+    if (!form.region) {
+      alert('请选择地区')
+      return
+    }
+    if (!sectionChoice) {
+      alert('请选择分类')
+      return
+    }
+    if (sectionChoice === 'custom') {
+      if (!form.section_id || !form.section_title) {
+        alert('请填写新分类的 ID 和名称')
+        return
+      }
+      if (!/^[a-zA-Z0-9_-]+$/.test(form.section_id)) {
+        alert('分类 ID 只能包含英文、数字、横杠或下划线，如 domestic-acg')
+        return
+      }
     }
 
     setSaving(true)
@@ -97,117 +152,111 @@ export function SourceModal({ source, onClose, onSaved }: SourceModalProps) {
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal edit-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="admin-modal source-edit-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <h3>{isEdit ? '编辑信息源' : '新增信息源'}</h3>
 
-        <label>网站名称</label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          placeholder="如：三文娱"
-        />
+        <p className="source-form-hint">带 * 的为必填项；只填这几项即可保存，其他字段无需填写。</p>
 
-        <label>网址</label>
-        <input
-          type="text"
-          value={form.url}
-          onChange={(e) => setForm({ ...form, url: e.target.value })}
-          placeholder="https://..."
-        />
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <div>
-            <label>地区</label>
-            <select
-              value={form.region}
-              onChange={(e) => setForm({ ...form, region: e.target.value })}
-            >
-              {REGIONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label>排序</label>
-            <input
-              type="number"
-              value={form.sort_order}
-              onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })}
-            />
-          </div>
+        <div className="source-form-field">
+          <label>网站名称 *</label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="如：三文娱"
+          />
         </div>
 
-        <label>分类 ID</label>
-        <input
-          type="text"
-          value={form.section_id}
-          onChange={(e) => setForm({ ...form, section_id: e.target.value })}
-          placeholder="如：domestic-acg"
-        />
-
-        <label>分类名称</label>
-        <input
-          type="text"
-          value={form.section_title}
-          onChange={(e) => setForm({ ...form, section_title: e.target.value })}
-          placeholder="如：动漫 / ACG 垂直媒体"
-        />
-
-        <label>网站定位</label>
-        <input
-          type="text"
-          value={form.type}
-          onChange={(e) => setForm({ ...form, type: e.target.value })}
-          placeholder="如：动漫/IP垂直媒体"
-        />
-
-        <label>收录原因 / 简介</label>
-        <textarea
-          rows={3}
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-
-        <label>抓取方式</label>
-        <input
-          type="text"
-          value={form.method}
-          onChange={(e) => setForm({ ...form, method: e.target.value })}
-          placeholder="如：web-access CDP搜索"
-        />
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <div>
-            <label>自动抓取类型</label>
-            <select
-              value={form.fetch_type}
-              onChange={(e) => setForm({ ...form, fetch_type: e.target.value as 'rss' | 'web' })}
-            >
-              <option value="rss">RSS（支持自动抓取）</option>
-              <option value="web">普通网页（仅入库）</option>
-            </select>
-          </div>
-          <div>
-            <label>执行方式</label>
-            <select
-              value={executionMode}
-              onChange={(e) => setExecutionMode(e.target.value as SourceExecutionMode)}
-            >
-              <option value="cloud">云端抓取</option>
-              <option value="local">本地 CDP</option>
-              <option value="manual">人工处理</option>
-              <option value="paused">已暂停</option>
-            </select>
-          </div>
+        <div className="source-form-field">
+          <label>网址 *</label>
+          <input
+            type="text"
+            value={form.url}
+            onChange={(e) => setForm({ ...form, url: e.target.value })}
+            placeholder="https://..."
+          />
         </div>
 
-        <label>抓取频率</label>
-        <select value={scheduleTier} onChange={(e) => setScheduleTier(e.target.value as SourceScheduleTier)}>
-          <option value="daily">每天</option>
-          <option value="every_2_days">每两天</option>
-          <option value="weekly">每周</option>
-        </select>
+        <div className="source-form-field">
+          <label>地区 *</label>
+          <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })}>
+            {REGION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p className="source-form-hint">与列表上方“来源地区”筛选选项一致。</p>
+        </div>
+
+        <div className="source-form-field">
+          <label>分类 *</label>
+          <select value={sectionChoice} onChange={(e) => handleSectionChange(e.target.value)}>
+            <option value="" disabled>请选择分类（与“行业类型”筛选一致）</option>
+            {allSectionOptions.map((section) => (
+              <option key={section.id} value={section.id}>{section.title}</option>
+            ))}
+            <option value="custom">＋ 新建分类（自定义）</option>
+          </select>
+          <p className="source-form-hint">直接选现用分类即可，分类 ID 和名称会自动填入。</p>
+        </div>
+
+        {sectionChoice === 'custom' && (
+          <>
+            <div className="source-form-field">
+              <label>新分类 ID *</label>
+              <input
+                type="text"
+                value={form.section_id}
+                onChange={(e) => setForm({ ...form, section_id: e.target.value })}
+                placeholder="如：domestic-acg（英文、数字、横杠）"
+              />
+            </div>
+            <div className="source-form-field">
+              <label>新分类名称 *</label>
+              <input
+                type="text"
+                value={form.section_title}
+                onChange={(e) => setForm({ ...form, section_title: e.target.value })}
+                placeholder="如：动漫 / ACG 垂直媒体"
+              />
+            </div>
+          </>
+        )}
+
+        <div className="source-form-field">
+          <label>自动抓取类型 *</label>
+          <select
+            value={form.fetch_type}
+            onChange={(e) => setForm({ ...form, fetch_type: e.target.value as 'rss' | 'web' })}
+          >
+            {FETCH_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p className="source-form-hint">RSS＝订阅源自动定时抓取；普通网页＝从页面提取资讯链接。</p>
+        </div>
+
+        <div className="source-form-field">
+          <label>执行方式 *</label>
+          <select
+            value={executionMode}
+            onChange={(e) => setExecutionMode(e.target.value as SourceExecutionMode)}
+          >
+            {(Object.entries(EXECUTION_MODE_LABELS) as Array<[SourceExecutionMode, string]>).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <p className="source-form-hint">云端＝服务器定时抓取；本地 CDP＝需本地浏览器；人工＝手动处理；已暂停＝不自动抓。</p>
+        </div>
+
+        <div className="source-form-field">
+          <label>抓取频率 *</label>
+          <select value={scheduleTier} onChange={(e) => setScheduleTier(e.target.value as SourceScheduleTier)}>
+            {(Object.entries(SCHEDULE_TIER_LABELS) as Array<[SourceScheduleTier, string]>).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+          <p className="source-form-hint">执行方式为“已暂停”或“人工处理”时不参与自动抓取。</p>
+        </div>
 
         <div className="admin-modal-btns">
           <button type="button" onClick={onClose}>取消</button>

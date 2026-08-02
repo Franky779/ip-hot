@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { shouldIgnoreArticle, summarizeArticle } from '@/lib/llm'
+import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
+import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -12,12 +14,15 @@ export async function POST(request: Request) {
   }
 
   const supabase = createServiceClient()
+  const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
+  const selectionThreshold = await getSelectionThreshold(supabase)
   const BATCH_SIZE = 3  // Vercel 60s 上限内处理 3 条（每条约 10-15s），留足安全余量
 
-  const { data: pending, error } = await supabase
-    .from('articles')
-    .select('id, title, url, source')
-    .is('title_cn', null)
+  const { data: pending, error } = await onlyArticlesAwaitingInitialLlm(
+    supabase
+      .from('articles')
+      .select('id, title, url, source'),
+  )
     .order('published_at', { ascending: false })
     .limit(BATCH_SIZE)
 
@@ -62,31 +67,17 @@ export async function POST(request: Request) {
     pending.map(async (article) => {
       const result = await summarizeArticle(article.title, '')
       if (!result) throw new Error('No LLM provider is configured')
-      if (shouldIgnoreArticle(result.relevance_score, result.commentary)) {
-        // 删除失败时改为标记为已忽略，避免同一批文章反复进入队列空转
+      const policy = applyOfficialSourcePolicy({ relevance_score: result.relevance_score, is_selected: result.is_selected, safety_blocked: result.safety_blocked, trusted_official_x: verifiedOfficialXNames.has(article.source) })
+      if (policy.action === 'delete' || (!verifiedOfficialXNames.has(article.source) && shouldIgnoreArticle(policy.relevance_score, result.commentary))) {
         const { error: deleteError } = await supabase.from('articles').delete().eq('id', article.id)
-        if (deleteError) {
-          console.warn('[process-llm] 删除无关文章失败，改为标记为已忽略:', deleteError.message, 'articleId:', article.id)
-          const { error: markError } = await supabase.from('articles').update({
-            title_cn: article.title.slice(0, 60),
-            summary_cn: '',
-            category: '待分类',
-            relevance_score: 0,
-            is_selected: false,
-            commentary: '',
-          }).eq('id', article.id)
-          if (markError) {
-            console.error('[process-llm] 标记已忽略也失败:', markError.message)
-            throw new Error(`删除并标记无关文章均失败: ${deleteError.message}; ${markError.message}`)
-          }
-        }
+        if (deleteError) throw new Error(String(deleteError))
         return {
           status: 'scored' as const,
           discarded: true,
           source: article.source,
           title: article.title,
           url: article.url,
-          score: result.relevance_score,
+          score: policy.action === 'delete' ? 0 : policy.relevance_score,
           selected: false,
           commentary: result.commentary,
         }
@@ -97,8 +88,9 @@ export async function POST(request: Request) {
           title_cn: result.title_cn,
           summary_cn: result.summary_cn,
           category: result.category,
-          relevance_score: result.relevance_score,
-          is_selected: result.is_selected,
+          relevance_score: policy.action === 'publish' ? policy.relevance_score : 0,
+          is_selected: policy.action === 'publish' ? policy.relevance_score >= selectionThreshold : false,
+          selection_threshold: selectionThreshold,
           commentary: result.commentary,
         })
         .eq('id', article.id)
@@ -109,8 +101,8 @@ export async function POST(request: Request) {
         source: article.source,
         title: article.title,
         url: article.url,
-        score: result.relevance_score,
-        selected: result.is_selected,
+        score: policy.action === 'publish' ? policy.relevance_score : 0,
+        selected: policy.action === 'publish' ? policy.is_selected : false,
         commentary: result.commentary,
       }
     })
@@ -139,10 +131,11 @@ export async function POST(request: Request) {
 
   try {
     // 查剩余队列
-    const { count: remaining } = await supabase
-      .from('articles')
-      .select('*', { count: 'exact', head: true })
-      .is('title_cn', null)
+    const { count: remaining } = await onlyArticlesAwaitingInitialLlm(
+      supabase
+        .from('articles')
+        .select('*', { count: 'exact', head: true }),
+    )
 
     // === 第三阶段：更新日志为 success ===
     await supabase.from('cron_logs').update({

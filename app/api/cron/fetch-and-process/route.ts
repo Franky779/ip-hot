@@ -8,11 +8,13 @@ import { createFeedParser, parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
 import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
 import { resolveClassificationResult } from '@/lib/pending-classification'
+import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
 import {
   MANUAL_FETCH_ASYNC_QUERY,
   MANUAL_FETCH_BACKGROUND_QUERY,
   buildManualFetchBackgroundRequest,
 } from '@/lib/manual-fetch-background'
+import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 import { normalizePublishedAt } from '@/lib/article-time'
 import { extractFeedMedia, normalizeImageUrl } from '@/lib/article-image'
 import { buildSourceCoverage, getBeijingDayRange, selectCoverageRecoverySourceIds, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
@@ -228,6 +230,8 @@ export async function GET(request: Request) {
   const enqueueOnly = requestedSourceIds.length > 0 && requestUrl.searchParams.get('enqueueOnly') === '1'
 
   const supabase = createServiceClient()
+  const selectionThreshold = await getSelectionThreshold(supabase)
+  const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
   if (coverageRepair) {
     const now = new Date()
     const { start, end } = getBeijingDayRange(now)
@@ -482,10 +486,11 @@ export async function GET(request: Request) {
 
   const pendingResult = enqueueOnly
     ? { data: [], error: null }
-    : await supabase
-      .from('articles')
-      .select('id, title, url, source, published_at')
-      .is('title_cn', null)
+    : await onlyArticlesAwaitingInitialLlm(
+      supabase
+        .from('articles')
+        .select('id, title, url, source, published_at'),
+    )
       .order('published_at', { ascending: false })
       .limit(LLM_BATCH_SIZE)
   const { data: pendingArticles, error: pendingError } = pendingResult
@@ -522,6 +527,7 @@ export async function GET(request: Request) {
                 summary_cn: '',
                 category: null,
                 relevance_score: null,
+                selection_threshold: null,
                 is_selected: false,
                 commentary: null,
               })
@@ -534,14 +540,24 @@ export async function GET(request: Request) {
             }
           }
 
-          const classification = resolveClassificationResult(llmResult)
+          const policy = applyOfficialSourcePolicy({ relevance_score: llmResult.relevance_score, is_selected: llmResult.is_selected, safety_blocked: llmResult.safety_blocked, trusted_official_x: verifiedOfficialXNames.has(article.source) })
+          if (policy.action === 'delete') {
+            const { error: deleteError } = await supabase.from('articles').delete().eq('id', article.id)
+            if (deleteError) throw new Error(deleteError.message)
+            resultOk = true
+            return { id: article.id, source: article.source, title: article.title, url: article.url, ok: true, score: 0, selected: false, commentary: '', status: 'scored' }
+          }
+          const classification = verifiedOfficialXNames.has(article.source)
+            ? { category: llmResult.category, is_selected: true }
+            : resolveClassificationResult({ ...llmResult, relevance_score: policy.relevance_score, is_selected: policy.relevance_score >= selectionThreshold }, selectionThreshold)
           const { error: updateError } = await supabase
             .from('articles')
             .update({
               title_cn: llmResult.title_cn,
               summary_cn: llmResult.summary_cn,
               category: classification.category,
-              relevance_score: llmResult.relevance_score,
+              relevance_score: policy.relevance_score,
+              selection_threshold: selectionThreshold,
               is_selected: classification.is_selected,
               commentary: llmResult.commentary,
             })
@@ -551,7 +567,7 @@ export async function GET(request: Request) {
           return {
             id: article.id, source: article.source, title: article.title, url: article.url,
             ok: !updateError,
-            score: updateError ? null : llmResult.relevance_score,
+            score: updateError ? null : policy.relevance_score,
             selected: updateError ? false : classification.is_selected,
             commentary: updateError ? '' : llmResult.commentary,
             status: updateError ? 'failed' : 'scored',

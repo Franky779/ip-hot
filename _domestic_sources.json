@@ -510,11 +510,6 @@
     "section_title": "国内 RSS"
   },
   {
-    "name": "澎湃新闻文化频道",
-    "url": "https://rsshub.app/thepaper/featured",
-    "section_title": "国内 RSS"
-  },
-  {
     "name": "36氪深度",
     "url": "https://rsshub.app/36kr/news/latest",
     "section_title": "国内 RSS"
@@ -527,11 +522,6 @@
   {
     "name": "微博热搜",
     "url": "https://rsshub.app/weibo/search/hot",
-    "section_title": "国内 RSS"
-  },
-  {
-    "name": "B站国创动态",
-    "url": "https://rsshub.app/bilibili/bangumi/timeline/cn",
     "section_title": "国内 RSS"
   },
   {
