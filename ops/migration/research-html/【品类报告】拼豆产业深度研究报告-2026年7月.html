@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国拼豆文创行业深度研究报告 2026</title>
+<style>
+:root {
+  --primary: #1a1a2e;
+  --primary-light: #2d3a5c;
+  --accent: #c45c26;
+  --accent-light: #e07a3e;
+  --accent-warm: #d4a045;
+  --success: #4a8c6f;
+  --bg: #f8f7f5;
+  --bg-card: #ffffff;
+  --text: #1f1a17;
+  --text-secondary: #5a5047;
+  --text-muted: #8a7e72;
+  --border: #e5dfd8;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow: 0 4px 20px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.1);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-display: "Noto Serif SC", "Source Han Serif SC", "STSong", Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  font-size: 15px;
+}
+.cover {
+  background: var(--primary);
+  background-image: radial-gradient(ellipse at 20% 50%, rgba(45,58,92,0.5) 0%, transparent 50%),
+                    radial-gradient(ellipse at 80% 20%, rgba(196,92,38,0.2) 0%, transparent 50%);
+  color: #fff;
+  padding: 140px 32px 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cover::before {
+  content: ''; position: absolute; top: -60%; left: -50%; width: 200%; height: 200%;
+  background: repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px);
+  pointer-events: none;
+}
+.cover-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+.cover-badge {
+  display: inline-block; padding: 6px 20px; border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 30px; font-size: 12px; letter-spacing: 2px; margin-bottom: 24px;
+  color: rgba(255,255,255,0.6);
+}
+.cover h1 {
+  font-family: var(--font-display);
+  font-size: 42px; font-weight: 700; margin-bottom: 12px; line-height: 1.25;
+}
+.cover .subtitle { font-size: 17px; opacity: 0.7; margin-bottom: 40px; font-weight: 300; }
+.cover-meta {
+  display: flex; justify-content: center; gap: 36px; flex-wrap: wrap;
+  font-size: 13px; opacity: 0.55;
+}
+.cover-meta span::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.kpi-section { max-width: 1200px; margin: -40px auto 0; padding: 0 32px; position: relative; z-index: 10; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi-card {
+  background: var(--bg-card); border-radius: var(--radius); padding: 28px 20px;
+  box-shadow: var(--shadow-lg); text-align: center;
+  transition: transform 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-number { font-size: 36px; font-weight: 800; color: var(--primary); line-height: 1; }
+.kpi-label { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
+.kpi-sub { font-size: 12px; margin-top: 4px; color: var(--accent); font-weight: 600; }
+.container { max-width: 1200px; margin: 0 auto; padding: 48px 32px 64px; }
+.section { margin-bottom: 56px; }
+.section-header { margin-bottom: 28px; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+.section-num {
+  display: inline-block; min-width: 32px; height: 32px; background: var(--primary);
+  color: #fff; border-radius: 8px; text-align: center; line-height: 32px;
+  font-weight: 700; font-size: 14px; padding: 0 8px; margin-right: 12px; vertical-align: middle;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 24px; font-weight: 700; color: var(--primary); display: inline; vertical-align: middle;
+}
+.section-desc { color: var(--text-secondary); margin-top: 12px; font-size: 14px; line-height: 1.7; }
+.chart-box {
+  background: var(--bg-card); border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow); margin-bottom: 20px;
+}
+.chart-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+.chart-area { width: 100%; height: 380px; }
+.chart-area-sm { height: 300px; }
+.chart-footer { font-size: 12px; color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.col-span-2 { grid-column: span 2; }
+.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); box-shadow: var(--shadow); margin-bottom: 20px; }
+.data-table {
+  width: 100%; border-collapse: collapse; background: var(--bg-card); font-size: 13px; min-width: 500px;
+}
+.data-table thead th {
+  background: var(--primary); color: #fff; padding: 12px 14px; text-align: left;
+  font-weight: 600; font-size: 12px; letter-spacing: 0.5px; white-space: nowrap;
+}
+.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: rgba(26,26,46,0.02); }
+.data-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.012); }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600;
+}
+.tag-primary { background: rgba(26,26,46,0.08); color: var(--primary); }
+.tag-accent { background: rgba(196,92,38,0.08); color: var(--accent); }
+.tag-success { background: rgba(74,140,111,0.08); color: var(--success); }
+.tag-warm { background: rgba(212,160,69,0.08); color: var(--accent-warm); }
+
+.highlight-box {
+  background: rgba(196,92,38,0.04); border: 1px solid rgba(196,92,38,0.12);
+  border-radius: var(--radius-sm); padding: 16px 20px; margin: 16px 0;
+}
+.highlight-box p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
+.highlight-box strong { color: var(--accent); }
+
+.text-card {
+  background: var(--bg-card); border-radius: var(--radius); padding: 20px 24px;
+  box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.text-card h4 { font-size: 15px; color: var(--primary); margin-bottom: 8px; }
+.text-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+.text-card ul { padding-left: 20px; font-size: 14px; color: var(--text-secondary); line-height: 2; }
+.text-card li { margin-bottom: 4px; }
+
+/* TOC */
+.toc { background: var(--bg-card); border-radius: var(--radius); padding: 28px 32px; box-shadow: var(--shadow); margin-bottom: 40px; }
+.toc h3 { font-family: var(--font-display); font-size: 18px; color: var(--primary); margin-bottom: 16px; }
+.toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+.toc-grid a { color: var(--text-secondary); text-decoration: none; font-size: 13px; padding: 4px 0; display: block; border-bottom: 1px dotted var(--border); transition: color 0.15s; }
+.toc-grid a:hover { color: var(--accent); }
+
+/* Flow diagram */
+.flow-diagram { background: var(--bg-card); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.flow-node {
+  padding: 10px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+  text-align: center; min-width: 80px;
+}
+.flow-node-dark { background: var(--primary); color: #fff; }
+.flow-node-accent { background: rgba(196,92,38,0.1); color: var(--accent); border: 1px solid rgba(196,92,38,0.2); }
+.flow-node-light { background: rgba(45,58,92,0.06); color: var(--primary-light); border: 1px solid rgba(45,58,92,0.15); }
+.flow-arrow { color: var(--text-muted); font-size: 18px; }
+.flow-section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: center; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Timeline */
+.timeline { position: relative; padding: 0; margin: 20px 0; }
+.timeline::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.timeline-item { position: relative; padding-left: 56px; margin-bottom: 24px; }
+.timeline-item::before { content: ''; position: absolute; left: 14px; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); }
+.timeline-year { font-size: 12px; color: var(--accent); font-weight: 700; }
+.timeline-title { font-size: 15px; font-weight: 700; color: var(--primary); }
+.timeline-desc { font-size: 13px; color: var(--text-secondary); }
+
+/* Gantt-like bars */
+.gantt-row { display: flex; align-items: center; margin-bottom: 8px; gap: 12px; }
+.gantt-label { width: 160px; font-size: 12px; color: var(--text-secondary); text-align: right; flex-shrink: 0; }
+.gantt-track { flex: 1; height: 24px; background: rgba(0,0,0,0.03); border-radius: 4px; position: relative; }
+.gantt-bar { position: absolute; top: 3px; height: 18px; border-radius: 3px; font-size: 10px; color: #fff; text-align: center; line-height: 18px; padding: 0 6px; white-space: nowrap; }
+.gantt-bar-2026 { left: 0%; width: 18%; background: var(--accent); }
+.gantt-bar-2027 { left: 18%; width: 18%; background: var(--accent-light); }
+.gantt-bar-2028 { left: 36%; width: 18%; background: var(--accent-warm); }
+.gantt-bar-2029 { left: 54%; width: 18%; background: var(--success); }
+.gantt-years { display: flex; margin-left: 172px; margin-bottom: 4px; }
+.gantt-years span { flex: 1; font-size: 10px; color: var(--text-muted); }
+
+.prose { font-size: 14px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; }
+.prose strong { color: var(--text); }
+.prose p { margin-bottom: 12px; }
+
+.footer {
+  text-align: center; padding: 40px 32px; color: var(--text-muted);
+  font-size: 12px; border-top: 1px solid var(--border); background: var(--bg-card);
+}
+.footer p { margin-bottom: 4px; }
+
+@media (min-width: 768px) {
+  .container { padding: 48px 48px 64px; }
+  .kpi-section { padding: 0 48px; }
+  .cover { padding: 140px 48px 80px; }
+}
+@media (min-width: 1440px) {
+  .container, .kpi-section { max-width: 1440px; }
+  .container { padding: 56px 72px 72px; }
+  .kpi-section { padding: 0 72px; }
+}
+@media (max-width: 900px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .cover h1 { font-size: 28px; }
+  .cover { padding: 100px 24px 60px; }
+  .chart-area { height: 300px; }
+  .toc-grid { grid-template-columns: 1fr; }
+  .container { padding: 32px 20px 48px; }
+  .kpi-section { padding: 0 20px; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .container { padding: 28px 16px 40px; }
+  .kpi-section { padding: 0 16px; }
+  .cover { padding: 80px 16px 48px; }
+  .cover h1 { font-size: 24px; }
+}
+@media print {
+  .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .chart-box, .text-card { box-shadow: none; border: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="cover-content">
+    <div class="cover-badge">深度行业研究报告</div>
+    <h1>中国拼豆文创行业</h1>
+    <p class="subtitle">从年销3000万到逼近10亿，情绪经济下的新品类爆发与洗牌</p>
+    <div class="cover-meta">
+      <span>报告日期：2026年8月3日</span>
+      <span>研究范围：全产业链（上游→中游→下游）</span>
+      <span>覆盖平台：淘宝 / 京东 / 闲鱼 / 1688 / 小红书 / 抖音 / 快手 / B站</span>
+    </div>
+  </div>
+</section>
+
+<div class="kpi-section">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-number">2.91亿</div>
+      <div class="kpi-label">2025年电商销售额</div>
+      <div class="kpi-sub">同比增长近9倍，淘宝搜索增长500%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-number">6亿→10亿</div>
+      <div class="kpi-label">行业规模（2025→2026E）</div>
+      <div class="kpi-sub">增速71%，渗透率不足情绪经济0.1%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-number">445亿</div>
+      <div class="kpi-label">抖音拼豆话题播放量</div>
+      <div class="kpi-sub">春节Z世代团购+9018%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-number">~20%</div>
+      <div class="kpi-label">全行业盈利概率</div>
+      <div class="kpi-sub">超九成企业成立不足1年，80%新手3月内亏损</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="toc">
+  <h3>📑 目录</h3>
+  <div class="toc-grid">
+    <a href="#s1">一、执行摘要</a>
+    <a href="#s2">二、行业定义与发展历程</a>
+    <a href="#s3">三、市场规模与增长预测</a>
+    <a href="#s4">四、产业链全景分析</a>
+    <a href="#s5">五、电商平台数据深度洞察</a>
+    <a href="#s6">六、消费群体深度画像</a>
+    <a href="#s7">七、竞争格局与企业分析</a>
+    <a href="#s8">八、小红书平台舆情深度分析</a>
+    <a href="#s9">九、供应链与成本结构</a>
+    <a href="#s10">十、线下门店业态分析</a>
+    <a href="#s11">十一、安全与合规风险</a>
+    <a href="#s12">十二、IP联名与谷子经济融合</a>
+    <a href="#s13">十三、全球化与出海格局</a>
+    <a href="#s14">十四、未来趋势预测</a>
+    <a href="#s15">十五、数据来源与研究方法</a>
+    <a href="#s2_5">二点五、破圈关键事件全记录</a>
+    <a href="#s3_5">三点五、品类经济学的"拼豆悖论"</a>
+    <a href="#s5_5">五点五、平台间数据交叉分析</a>
+    <a href="#s6_5">六点五、消费者深层心理洞察</a>
+    <a href="#s8_5">八点五、抖音/快手/B站舆情补充</a>
+    <a href="#s12_5">十二点五、资本视角下的拼豆行业</a>
+    <a href="#s14_5">十四点五、创业者指南</a>
+  </div>
+</div>
+
+<!-- ====== SECTION 1: 执行摘要 ====== -->
+<section class="section" id="s1">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2 class="section-title">执行摘要</h2>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>一句话判断：</strong>拼豆是中国文创消费领域2025-2026年增速最快的新兴品类之一——从年销不足3000万到逼近10亿规模，只用了不到两年时间。但它同时也在经历从野蛮生长到残酷洗牌的阵痛期。</p>
+  </div>
+
+  <div class="text-card">
+    <h4>五个核心发现</h4>
+    <p><strong>发现一：爆发力惊人。</strong>2025年主流电商平台拼豆销售额达2.91亿元，同比增长近9倍。抖音拼豆话题播放量突破445亿次，春节期间Z世代拼豆团购订单量同比增长9018%。</p>
+    <p><strong>发现二：渗透率还在爬坡。</strong>对比情绪经济2.72万亿、手作经济1200亿的大盘，拼豆的渗透率不足0.1%，天花板远未触及。</p>
+    <p><strong>发现三：用户画像极度聚焦。</strong>女性占比77.78%，Z世代+千禧一代超过90%。消费动机中解压疗愈占32%、社交分享25%、创意表达22%。拼豆本质上是一门"情绪消费品"生意。</p>
+    <p><strong>发现四：行业正经历第一次大洗牌。</strong>超九成企业成立不足1年，全行业盈利概率仅20%。价格战从59.9元/天杀到9.9元/天。</p>
+    <p><strong>发现五：IP联名是下一个分水岭。</strong>小红书热帖中超过60%使用了明确IP形象，但多数为灰色地带的"爱好者创作"，正版授权尚未大规模进入。</p>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>指标</th><th>数值</th><th>数据来源</th></tr></thead>
+    <tbody>
+      <tr><td>2025年电商销售额</td><td>2.91亿元</td><td>魔镜洞察</td></tr>
+      <tr><td>2025年行业总规模</td><td>突破6亿元</td><td>智研咨询</td></tr>
+      <tr><td>抖音话题播放量</td><td>445亿次</td><td>抖音</td></tr>
+      <tr><td>小红书浏览量</td><td>86亿次</td><td>小红书</td></tr>
+      <tr><td>消费者女性占比</td><td>77.78%</td><td>艾媒咨询</td></tr>
+      <tr><td>2026年新注册企业(1-5月)</td><td>1476家</td><td>企查查</td></tr>
+      <tr><td>行业盈利概率</td><td>~20%</td><td>行业综合</td></tr>
+      <tr><td>情绪经济规模(2025)</td><td>2.72万亿元</td><td>艾媒咨询</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ====== SECTION 2: 行业定义与发展历程 ====== -->
+<section class="section" id="s2">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <h2 class="section-title">行业定义与发展历程</h2>
+  </div>
+
+  <div class="text-card">
+    <h4>什么是拼豆</h4>
+    <p>拼豆（Fuse Beads / Perler Beads），又称热熔珠、像素画、烙铁珠，是一种像素风格DIY手工品类。核心原理是将中空彩色塑料颗粒（主要材质为PE聚乙烯或EVA）按设计图案排列在专用底板上，经电熨斗或烫画机热压后，豆子边缘熔化相互粘连，冷却后定型为像素风格作品。</p>
+    <p>标志性流程：分色 → 排豆 → 覆纸 → 熨烫 → 冷却。成品可制成冰箱贴、钥匙扣、杯垫、挂件、装饰画、立体摆件乃至门帘和灯具。</p>
+    <p>按尺寸分类：迷你拼豆（&lt;2mm）、标准拼豆（2.6mm，市场主流）、大型拼豆（5mm）。按适用人群：儿童入门款、成人进阶款、专业创作款。</p>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">中国拼豆发展三阶段</div>
+    <div class="chart-subtitle">从幼儿美劳教具到Z世代情绪消费品</div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-year">第一阶段 · 2015-2020</div>
+        <div class="timeline-title">萌芽期</div>
+        <div class="timeline-desc">场景集中在幼儿园/中小学美劳课堂，产品以基础纯色套装为主，市场以进口品牌Perler、Hama为主、国产低端白牌为辅。年市场规模不足1亿元，消费者认知停留在"儿童手工玩具"。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">第二阶段 · 2021-2024</div>
+        <div class="timeline-title">爆发期</div>
+        <div class="timeline-desc">抖音、小红书短视频成为核心驱动力。"沉浸式拼豆""拼豆ASMR"成为流量密码。2024年11月丁禹兮佩戴拼豆胸针事件成为破圈标志。双11期间淘宝搜索量首次进入玩具品类TOP10。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">第三阶段 · 2025至今</div>
+        <div class="timeline-title">成长期初期</div>
+        <div class="timeline-desc">年销跨过亿级门槛，线下手作体验店扩张到全国超4500家。深度融合二次元文化、谷子经济、情绪消费。但行业仍处于"有品类、无品牌"阶段——消费者认得"拼豆"但说不出品牌名。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">全球拼豆发展时间线</div>
+      <div class="chart-subtitle">从瑞典康复工具到中国情绪消费品</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-year">1970年代</div>
+          <div class="timeline-title">瑞典工程师发明"纳比珠"</div>
+          <div class="timeline-desc">用于老人康复训练</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">1980年代</div>
+          <div class="timeline-title">Hama（丹麦）/ Perler（美国）</div>
+          <div class="timeline-desc">定位儿童手工教具和益智玩具</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">2015年</div>
+          <div class="timeline-title">拼豆引入中国</div>
+          <div class="timeline-desc">幼儿园/美劳课堂场景</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">2024年</div>
+          <div class="timeline-title">丁禹兮虞书欣拼豆互动出圈</div>
+          <div class="timeline-desc">抖音播放量破百亿</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">2025年</div>
+          <div class="timeline-title">爆发元年</div>
+          <div class="timeline-desc">电商销售2.91亿元</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">2026年</div>
+          <div class="timeline-title">洗牌期开始</div>
+          <div class="timeline-desc">预测规模逼近10亿元</div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">品类边界延伸</div>
+      <div class="chart-subtitle">拼豆从单一手工玩具向多维延伸</div>
+      <div class="flow-diagram" style="box-shadow:none;padding:8px;">
+        <div class="flow-section-title">材料零售</div>
+        <div class="flow-row"><span class="flow-node flow-node-light">补充包/套装</span><span class="flow-node flow-node-light">专业工具</span><span class="flow-node flow-node-light">收纳系统</span></div>
+        <div class="flow-section-title" style="margin-top:12px;">线下体验</div>
+        <div class="flow-row"><span class="flow-node flow-node-accent">独立拼豆店</span><span class="flow-node flow-node-accent">综合手工坊</span><span class="flow-node flow-node-accent">文旅景区体验</span></div>
+        <div class="flow-section-title" style="margin-top:12px;">图纸内容</div>
+        <div class="flow-row"><span class="flow-node flow-node-light">免费图纸分享</span><span class="flow-node flow-node-light">原创图纸付费</span><span class="flow-node flow-node-light">AI图纸生成</span></div>
+        <div class="flow-section-title" style="margin-top:12px;">IP衍生品</div>
+        <div class="flow-row"><span class="flow-node flow-node-dark">IP联名套装</span><span class="flow-node flow-node-dark">谷子周边</span><span class="flow-node flow-node-dark">品牌授权合作</span></div>
+	      </div>
+	    </div>
+	  </div>
+	</section>
+
+<!-- ====== SECTION 3: 市场规模与增长预测 ====== -->
+<section class="section" id="s3">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2 class="section-title">市场规模与增长预测</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">中国拼豆行业市场规模（2021-2029E）</div>
+    <div class="chart-subtitle">2021-2024为智研咨询历史数据，2025为统计值，2026E+为前瞻预测</div>
+    <div class="chart-area" id="chart-market-size"></div>
+    <div class="chart-footer"><span>2024年爆发拐点（+192%），2026年预计逼近10亿</span></div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>年份</th><th>市场规模(亿元)</th><th>同比增速</th><th>发展阶段</th><th>核心驱动</th></tr></thead>
+    <tbody>
+      <tr><td>2021</td><td>0.6</td><td>-</td><td>萌芽期</td><td>幼儿美劳市场</td></tr>
+      <tr><td>2022</td><td>0.8</td><td>+33%</td><td>萌芽期</td><td>疫情居家手工</td></tr>
+      <tr><td>2023</td><td>1.2</td><td>+50%</td><td>萌芽期</td><td>小红书内容萌芽</td></tr>
+      <tr><td>2024</td><td>3.5</td><td>+192%</td><td>爆发拐点</td><td>丁禹兮出圈+抖音爆发</td></tr>
+      <tr><td>2025</td><td>6.0</td><td>+71%</td><td>成长期</td><td>全平台爆发+线下门店扩张</td></tr>
+      <tr><td>2026E</td><td>10.0</td><td>+67%</td><td>成长期</td><td>品牌化+IP联名+渠道下沉</td></tr>
+      <tr><td>2027E</td><td>20.0</td><td>+100%</td><td>成长加速</td><td>出海放量+品类多元化</td></tr>
+      <tr><td>2028E</td><td>35.0</td><td>+75%</td><td>成熟早期</td><td>品牌集中度提升</td></tr>
+      <tr><td>2029E</td><td>55.0</td><td>+57%</td><td>成熟期</td><td>全球化+全龄化</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">2025年拼豆渠道销售占比</div>
+      <div class="chart-subtitle">电商渗透率48.5%，显著高于玩具行业均值35%</div>
+      <div class="chart-area chart-area-sm" id="chart-channel-pie"></div>
+      <div class="chart-footer"><span>线下门店爆发后，电商占比预计2026年降至40%</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">关联市场对比（2025年，亿元）</div>
+      <div class="chart-subtitle">拼豆在情绪经济大盘中的渗透率仅约0.02%</div>
+      <div class="chart-area chart-area-sm" id="chart-related-markets"></div>
+      <div class="chart-footer"><span>1%替代或融合=50亿级别市场</span></div>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>平台</th><th>指标</th><th>数值</th><th>统计时间</th></tr></thead>
+    <tbody>
+      <tr><td>抖音</td><td>拼豆话题播放量</td><td>445亿次</td><td>2026年7月</td></tr>
+      <tr><td>抖音</td><td>春节拼豆团购增幅</td><td>+9018%</td><td>2026年春节</td></tr>
+      <tr><td>小红书</td><td>拼豆话题浏览</td><td>86亿次</td><td>2026年</td></tr>
+      <tr><td>小红书</td><td>"我染上了拼豆"话题</td><td>67.8亿次</td><td>2026年5月</td></tr>
+      <tr><td>快手</td><td>拼豆话题播放</td><td>68.9亿次</td><td>2026年7月</td></tr>
+      <tr><td>B站</td><td>播放>200万视频数</td><td>~20个</td><td>2026年7月</td></tr>
+      <tr><td>淘宝</td><td>关键词搜索增长</td><td>+500%</td><td>2025年度</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ====== SECTION 4: 产业链全景分析 ====== -->
+<section class="section" id="s4">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <h2 class="section-title">产业链全景分析</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">产业链结构</div>
+    <div class="chart-subtitle">上游原材料 → 中游设计制造 → 下游渠道消费</div>
+    <div class="flow-diagram" style="box-shadow:none;">
+      <div class="flow-section-title">上游：原材料与设备</div>
+      <div class="flow-row">
+        <span class="flow-node flow-node-accent">LDPE/LLDPE粒子</span>
+        <span class="flow-node flow-node-accent">EVA材料</span>
+        <span class="flow-node flow-node-accent">色母粒/颜料</span>
+        <span class="flow-node flow-node-accent">注塑模具</span>
+        <span class="flow-node flow-node-accent">挤出/分拣设备</span>
+      </div>
+      <div style="text-align:center;padding:12px;"><span style="font-size:24px;color:var(--text-muted);">↓</span></div>
+      <div class="flow-section-title">中游：设计制造</div>
+      <div class="flow-row">
+        <span class="flow-node flow-node-dark">豆子生产/代工</span>
+        <span class="flow-node flow-node-dark">品牌设计/研发</span>
+        <span class="flow-node flow-node-dark">辅助工具制造</span>
+        <span class="flow-node flow-node-dark">图纸/IP内容创作</span>
+      </div>
+      <div style="text-align:center;padding:12px;"><span style="font-size:24px;color:var(--text-muted);">↓</span></div>
+      <div class="flow-section-title">下游：渠道与消费</div>
+      <div class="flow-row">
+        <span class="flow-node flow-node-accent">线上电商</span>
+        <span class="flow-node flow-node-accent">线下体验店</span>
+        <span class="flow-node flow-node-accent">潮玩/文创集合店</span>
+        <span class="flow-node flow-node-accent">文旅景区/市集</span>
+        <span class="flow-node flow-node-accent">终端消费者</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>产业链环节</th><th>典型毛利率</th><th>代表企业/地区</th><th>竞争强度</th><th>进入壁垒</th></tr></thead>
+    <tbody>
+      <tr><td>塑料粒子/色母</td><td>15-25%</td><td>石化企业</td><td>低</td><td>高</td></tr>
+      <tr><td>豆子生产/代工</td><td>10-20%</td><td>金华/义乌工厂</td><td>极高</td><td>低</td></tr>
+      <tr><td>品牌设计/制造</td><td>25-40%</td><td>MARD/优肯/星芒</td><td>中高</td><td>中</td></tr>
+      <tr><td>内容/IP图纸</td><td>50-80%</td><td>独立设计师/KOL</td><td>低</td><td>中</td></tr>
+      <tr><td>线上零售</td><td>15-30%</td><td>淘宝/拼多多/京东</td><td>极高</td><td>低</td></tr>
+      <tr><td>线下体验店</td><td>50-80%(理论)</td><td>独立门店/连锁</td><td>极高</td><td>低</td></tr>
+      <tr><td>代拼/定制服务</td><td>60-80%</td><td>闲鱼/小红书个人</td><td>低</td><td>极低</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="highlight-box">
+    <p><strong>关键发现：</strong>产业链的微笑曲线两端（内容创作、品牌、体验服务）利润远高于中间的制造环节。但目前行业利润大头仍被中间渠道商抽取，品牌方和内容方的价值捕获严重不足——这正是行业"有品类无品牌"的深层经济原因。</p>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">产业集群地图</div>
+    <div class="chart-subtitle">金华/义乌占据约60%产能，快递成本全国最低</div>
+    <div class="chart-area chart-area-sm" id="chart-cluster-map"></div>
+    <div class="chart-footer"><span>金华/义乌的柔性供应链+快递成本优势构成核心壁垒</span></div>
+  </div>
+</section>
+
+<!-- ====== SECTION 5: 电商平台数据深度洞察 ====== -->
+<section class="section" id="s5">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <h2 class="section-title">电商平台数据深度洞察</h2>
+    <div class="section-desc">数据采集时间：2026年8月3日。CDP浏览器直连用户Chrome，利用已登录态搜索，四平台共120+条有效商品记录。</div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">淘宝拼豆商品价格带分布</div>
+      <div class="chart-subtitle">50+条商品记录，呈"双峰分布"</div>
+      <div class="chart-area chart-area-sm" id="chart-taobao-price"></div>
+      <div class="chart-footer"><span>低价走量峰（¥1-8）与中端套装峰（¥15-80）</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">淘宝拼豆商家产地分布</div>
+      <div class="chart-subtitle">金华/义乌以72%占比位居绝对首位</div>
+      <div class="chart-area chart-area-sm" id="chart-taobao-origin"></div>
+      <div class="chart-footer"><span>距离余姚"中国塑料城"仅百余公里</span></div>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>排名</th><th>商品名称（简化）</th><th>价格(¥)</th><th>月销量</th><th>店铺</th><th>产地</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>MARD拼豆221色补充包2.6mm</td><td>1.36</td><td>300+</td><td>状元堡旗舰店</td><td>广东东莞</td></tr>
+      <tr><td>2</td><td>拼豆手工DIY材料包全套</td><td>3.06</td><td>1万+</td><td>德荫潮玩旗舰店</td><td>浙江金华</td></tr>
+      <tr><td>3</td><td>拼豆全套工具DIY材料包</td><td>17.90</td><td>1万+</td><td>壳创KECHUANG</td><td>广东汕头</td></tr>
+      <tr><td>4</td><td>拼豆套装全套工具大礼包</td><td>75.40</td><td>1万+</td><td>名卓甄品旗舰店</td><td>四川成都</td></tr>
+      <tr><td>5</td><td>德国拼豆264色立体融合套装</td><td>135.00</td><td>6000+</td><td>BFBF旗舰店</td><td>浙江金华</td></tr>
+      <tr><td>6</td><td>拼豆豆DIY材料包全套正版</td><td>13.95</td><td>9000+</td><td>时间优选小屋</td><td>浙江金华</td></tr>
+      <tr><td>7</td><td>拼豆豆工具全套材料包</td><td>23.40</td><td>2万+</td><td>时间优选小屋</td><td>浙江金华</td></tr>
+      <tr><td>8</td><td>拼豆套装221色材料包</td><td>50.84</td><td>1万+</td><td>MARD融合豆社</td><td>安徽滁州</td></tr>
+      <tr><td>9</td><td>拼豆豆DIY材料包瓶装</td><td>37.17</td><td>4000+</td><td>帕思琪旗舰店</td><td>浙江金华</td></tr>
+      <tr><td>10</td><td>拼豆融合豆正版补充包套装</td><td>11.88</td><td>1万+</td><td>可巴母婴专营店</td><td>浙江金华</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="chart-box">
+    <div class="chart-title">闲鱼拼豆生态——"存量流转+服务市场"</div>
+    <div class="chart-subtitle">退坑转让+代拼服务+成品零售+门店清仓</div>
+    <div class="chart-area chart-area-sm" id="chart-xianyu-type"></div>
+    <div class="chart-footer"><span>退坑转让占35%，高退坑率说明用户生命周期较短</span></div>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>京东平台特征</h4>
+      <p>创意手作热卖榜第1名为拼豆补充包（¥6.90）。京东价格整体高于淘宝，但热卖榜连续霸榜说明消费者愿意为"品质保障+物流确定性"支付溢价。</p>
+    </div>
+    <div class="text-card">
+      <h4>1688批发端关键洞察</h4>
+      <p>供应链产能高度集中在少数月销10万+的头部工厂。中美价差约13倍——美国亚马逊Perler 5000颗≈$12.99（¥90），义乌同规格批发价仅¥7。</p>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>商品类型</th><th>1688批发价(¥)</th><th>淘宝零售价(¥)</th><th>价差倍数</th></tr></thead>
+    <tbody>
+      <tr><td>单色补充包(1000粒)</td><td>0.20-0.61</td><td>1.18-2.80</td><td>3-6x</td></tr>
+      <tr><td>221色大套装(含工具)</td><td>15-25</td><td>50-84</td><td>2-3x</td></tr>
+      <tr><td>264色全套装(含熨斗)</td><td>30-50</td><td>75-135</td><td>2-3x</td></tr>
+      <tr><td>拼豆烘焙布</td><td>0.60</td><td>3.00-5.00</td><td>5-8x</td></tr>
+      <tr><td>长钉拼豆板</td><td>1.90</td><td>5.40-8.00</td><td>3-4x</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<!-- ====== SECTION 6: 消费群体深度画像 ====== -->
+<section class="section" id="s6">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <h2 class="section-title">消费群体深度画像</h2>
+    <div class="section-desc">核心数据来自艾媒咨询《2026年中国"拼豆"行业发展状况与消费行为调查数据》（85页，2026年5月），结合智研咨询交叉验证。</div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">消费者性别分布</div>
+      <div class="chart-area chart-area-sm" id="chart-gender"></div>
+      <div class="chart-footer"><span>女性占比77.78%，22.22%男性在手作品类中不算低</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">消费者代际分布</div>
+      <div class="chart-area chart-area-sm" id="chart-generation"></div>
+      <div class="chart-footer"><span>Z世代+千禧一代合计65%，是绝对核心消费主力</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">消费者城市等级分布</div>
+      <div class="chart-area chart-area-sm" id="chart-city-tier"></div>
+      <div class="chart-footer"><span>新一线+二线合计71%，三线以下仅14%但增长潜力巨大</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">消费者核心动机</div>
+      <div class="chart-area chart-area-sm" id="chart-motivation"></div>
+      <div class="chart-footer"><span>解压疗愈32%——"用确定性的手工劳动对冲现实中的失控感"</span></div>
+    </div>
+  </div>
+
+  <div class="text-card">
+    <h4>消费者痛点排名</h4>
+    <p>三大核心痛点：成品瑕疵31.89%（熔合质量/色牢度待提升）、体验时长限制28.40%（按时计费与心流体验之间的矛盾）、原料短缺/颜色不全27.37%（224色以上全色系仅少数品牌能稳定供应）。</p>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">消费频次分布</div>
+      <div class="chart-area chart-area-sm" id="chart-frequency"></div>
+      <div class="chart-footer"><span>53%用户保持每月1次以上消费频次</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">客单价分布</div>
+      <div class="chart-area chart-area-sm" id="chart-unit-price"></div>
+      <div class="chart-footer"><span>主力客单价51-100元，在"冲动消费"心理阈值之内</span></div>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>选择因素</th><th>占比</th><th>解读</th></tr></thead>
+    <tbody>
+      <tr><td>图案美观度</td><td>37.04%</td><td>视觉驱动，看好不好看</td></tr>
+      <tr><td>成品实用性</td><td>35.80%</td><td>不只是装饰，还要能用</td></tr>
+      <tr><td>操作难度</td><td>32.92%</td><td>门槛低才有更多人参与</td></tr>
+      <tr><td>原料质量</td><td>28.15%</td><td>安全+质感</td></tr>
+      <tr><td>制作耗时</td><td>24.69%</td><td>时间投入回报比</td></tr>
+      <tr><td>社交传播性</td><td>20.58%</td><td>能否发朋友圈/小红书</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ====== SECTION 7: 竞争格局与企业分析 ====== -->
+<section class="section" id="s7">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <h2 class="section-title">竞争格局与企业分析</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">竞争梯队</div>
+    <div class="chart-subtitle">从海外高端到白牌作坊的四层竞争结构</div>
+    <div class="flow-diagram" style="box-shadow:none;">
+      <div class="flow-section-title">第一梯队：海外高端品牌</div>
+      <div class="flow-row"><span class="flow-node flow-node-dark">Perler 美国</span><span class="flow-node flow-node-dark">Hama 丹麦</span></div>
+      <div class="flow-section-title" style="margin-top:16px;">第二梯队：国产头部品牌</div>
+      <div class="flow-row">
+        <span class="flow-node flow-node-accent">MARD · 月销百万级</span>
+        <span class="flow-node flow-node-accent">优肯 · 月均90吨</span>
+        <span class="flow-node flow-node-accent">星芒 · 295色自有工厂</span>
+        <span class="flow-node flow-node-accent">Mriya · 200+色</span>
+      </div>
+      <div class="flow-section-title" style="margin-top:16px;">第三梯队：专业/渠道品牌</div>
+      <div class="flow-row">
+        <span class="flow-node flow-node-light">弥鹿mideer</span>
+        <span class="flow-node flow-node-light">贝恩施</span>
+        <span class="flow-node flow-node-light">Artkal深圳高端</span>
+        <span class="flow-node flow-node-light">京喜自营</span>
+      </div>
+      <div class="flow-section-title" style="margin-top:16px;">第四梯队：白牌/作坊</div>
+      <div class="flow-row">
+        <span class="flow-node flow-node-accent">淘宝中小店铺</span>
+        <span class="flow-node flow-node-accent">闲鱼个人卖家</span>
+        <span class="flow-node flow-node-accent">1688工厂直营</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>品牌</th><th>定位</th><th>核心优势</th><th>价格带</th><th>月销售规模(估)</th></tr></thead>
+    <tbody>
+      <tr><td>Perler</td><td>美国高端进口</td><td>70+色、品牌积淀40年</td><td>¥50-200</td><td>-</td></tr>
+      <tr><td>MARD</td><td>国产专业标杆</td><td>221色+高精度色号、会员图纸生态</td><td>¥1.2-60</td><td>百万级/月</td></tr>
+      <tr><td>优肯</td><td>出口转内销龙头</td><td>400+色号、月均产量90吨</td><td>¥2-50</td><td>千万级/年</td></tr>
+      <tr><td>星芒</td><td>工厂品牌</td><td>295色自有工厂、超高性价比</td><td>¥0.8-40</td><td>10万+件/月</td></tr>
+      <tr><td>Mriya</td><td>品质国产</td><td>293色体系、对标MARD</td><td>¥1.3-40</td><td>中等</td></tr>
+      <tr><td>Artkal</td><td>深圳高端</td><td>200+色、品控严格</td><td>¥3-80</td><td>中等</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="highlight-box">
+    <p><strong>行业企业数据：</strong>全国拼豆相关公司超4500家（天眼查），其中成立不足半年的近4000家。2026年1-5月新注册1476家。全行业盈利概率约20%，新手3月内亏损转让率约80%。预计2027年CR5将从不足10%提升至30-40%。</p>
+  </div>
+</section>
+
+<!-- ====== SECTION 8: 小红书舆情分析 ====== -->
+<section class="section" id="s8">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <h2 class="section-title">小红书平台舆情深度分析</h2>
+    <div class="section-desc">采集时间：2026年8月3日。opencli xiaohongshu search "拼豆"。样本量：15条热门笔记，点赞范围320-17,000。</div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">笔记内容类型分布</div>
+      <div class="chart-area chart-area-sm" id="chart-xhs-type"></div>
+      <div class="chart-footer"><span>图纸分享/教程占40%，"附图纸"是流量密码</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">情感倾向分析</div>
+      <div class="chart-area chart-area-sm" id="chart-xhs-sentiment"></div>
+      <div class="chart-footer"><span>正面65%（治愈/成就/快乐），负面仅10%</span></div>
+    </div>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">小红书拼豆笔记关联IP频次</div>
+    <div class="chart-subtitle">15条样本中超过60%使用了明确IP形象</div>
+    <div class="chart-area chart-area-sm" id="chart-xhs-ip"></div>
+    <div class="chart-footer"><span>三丽鸥8次、比奇堡5次——但多为灰色地带的"爱好者创作"</span></div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>排名</th><th>作者</th><th>标题</th><th>点赞</th><th>日期</th><th>类型</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>胡子DIY手做工坊</td><td>新手到店拼豆全流程体验</td><td>1.2万</td><td>7/8</td><td>体验分享</td></tr>
+      <tr><td>2</td><td>CHANLLU</td><td>比奇堡丑鱼双面对错牌拼了</td><td>1.7万</td><td>6/9</td><td>作品展示</td></tr>
+      <tr><td>3</td><td>yommol</td><td>拼豆图纸出炉啦～速速来拼</td><td>1.6万</td><td>7/10</td><td>图纸分享</td></tr>
+      <tr><td>4</td><td>BLADE小拼刃</td><td>星星人·三代</td><td>1.7万</td><td>4/11</td><td>作品展示</td></tr>
+      <tr><td>5</td><td>小飞菇</td><td>幸福有很多种，陪人拼豆是一种</td><td>1万</td><td>5/27</td><td>社交互动</td></tr>
+      <tr><td>6</td><td>拼豆图纸大王</td><td>比奇堡居民拼豆图纸合集</td><td>6117</td><td>7/16</td><td>图纸分享</td></tr>
+      <tr><td>7</td><td>这鸡那鸡</td><td>肥而不溺鸡（附图纸）</td><td>5516</td><td>6/10</td><td>图纸分享</td></tr>
+      <tr><td>8</td><td>左左（拼豆接单）</td><td>拼豆/比心大叔</td><td>4081</td><td>7/6</td><td>作品展示</td></tr>
+      <tr><td>9</td><td>像素派小鑫</td><td>叫我干活我就这出</td><td>3154</td><td>4/29</td><td>作品展示</td></tr>
+      <tr><td>10</td><td>小开总</td><td>如厕-拼豆·大屎馆(附图纸)</td><td>3476</td><td>7/13</td><td>图纸分享</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="highlight-box">
+    <p><strong>用户自发IP生态观察：</strong>小红书拼豆社区的IP使用几乎完全处于灰色地带。目前版权方尚未大规模维权，但一旦行业规模化，IP版权风险将从"潜在的"变成"现实的"。</p>
+  </div>
+</section>
+
+<!-- ====== SECTION 9: 供应链与成本结构 ====== -->
+<section class="section" id="s9">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <h2 class="section-title">供应链与成本结构</h2>
+  </div>
+
+  <div class="text-card">
+    <h4>一颗2.6mm标准拼豆的成本构成（估算）</h4>
+    <p>核心原材料为食品级LDPE/LLDPE（约8000-12000元/吨）。中消协建议认准PE或EVA材质标识，回避ABS工程塑料和回收塑料。</p>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">单颗豆子成本拆分</div>
+      <div class="chart-area chart-area-sm" id="chart-cost-breakdown"></div>
+      <div class="chart-footer"><span>塑料粒子占35%，工厂利润仅5%——走量为主</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">各渠道综合净利率对比</div>
+      <div class="chart-area chart-area-sm" id="chart-channel-margin"></div>
+      <div class="chart-footer"><span>闲鱼零佣金成为退坑用户最理想变现渠道</span></div>
+    </div>
+  </div>
+
+  <div class="text-card">
+    <h4>线下门店成本拆解</h4>
+    <p>以一家典型小型拼豆体验店（15-20座）为例：一次性投入约1.5-3万元（豆子+工具+装修），月运营成本约0.8-2.1万元（房租+耗材+平台营销）。按单人49.9元/天、日均10-15人计算，月流水1.5-2万元，净利润往往只有2000-5000元。遇到低价竞争（19.9元/天），净利润可能直接归零。</p>
+  </div>
+</section>
+
+<!-- ====== SECTION 10: 线下门店业态分析 ====== -->
+<section class="section" id="s10">
+  <div class="section-header">
+    <span class="section-num">10</span>
+    <h2 class="section-title">线下门店业态分析</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">价格战时间线：从98元到9.9元，不到一年降幅90%</div>
+    <div class="chart-area chart-area-sm" id="chart-price-war"></div>
+    <div class="chart-footer"><span>这种断崖式降价在所有消费品类中都极为罕见</span></div>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>存活较好的门店特征</h4>
+      <ul>
+        <li>选址在大学城或年轻社区周边</li>
+        <li>面积较大（100㎡+），提供"一人一桌"体验</li>
+        <li>品质豆子+专业烫豆服务</li>
+        <li>已接入多个手工品类分散风险</li>
+        <li>不做超低价竞争</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>濒临倒闭的门店特征</h4>
+      <ul>
+        <li>选址在拼豆店密集的写字楼</li>
+        <li>面积小（30-40㎡），体验感差</li>
+        <li>低价拼杀（19.9元以下）</li>
+        <li>单一拼豆业务</li>
+        <li>开店时间&lt;3个月</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>门店类型</th><th>特征</th><th>代表案例</th><th>占比(估)</th></tr></thead>
+    <tbody>
+      <tr><td>独立拼豆专门店</td><td>只做拼豆，100-200㎡</td><td>MADE·拼豆（全国20+店）</td><td>30%</td></tr>
+      <tr><td>手工综合店</td><td>拼豆+陶艺+奶油胶等</td><td>各地手工坊</td><td>25%</td></tr>
+      <tr><td>拼豆+"搭车"型</td><td>咖啡馆/服装店/洗浴中心增设</td><td>-</td><td>20%</td></tr>
+      <tr><td>培训机构/托管</td><td>以拼豆为引流项目</td><td>美术培训、托管班</td><td>15%</td></tr>
+      <tr><td>文旅景区配套</td><td>熊猫世界、文创市集等</td><td>福州熊猫世界</td><td>10%</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ====== SECTION 11: 安全与合规风险 ====== -->
+<section class="section" id="s11">
+  <div class="section-header">
+    <span class="section-num">11</span>
+    <h2 class="section-title">安全与合规风险</h2>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>中消协专项警示（2026.4.21）：</strong>这是中消协近年来为数不多的针对单一手工玩具品类发布的消费警示，背后是多起已发生的安全事故。</p>
+  </div>
+
+  <div class="three-col">
+    <div class="text-card">
+      <h4>材质安全</h4>
+      <p>劣质品用ABS/回收塑料，加热释放甲醛/乙醛/CO。认准PE或EVA材质标识。</p>
+    </div>
+    <div class="text-card">
+      <h4>电气安全</h4>
+      <p>部分熨斗额定电压超标（国标≤24V）。通电3分钟底板温度超130℃，无控温装置。</p>
+    </div>
+    <div class="text-card">
+      <h4>误食/烫伤风险</h4>
+      <p>颗粒细小(2.6mm)，3岁以下严禁接触。家长需全程看护，勿随意挪动熨斗。</p>
+    </div>
+  </div>
+
+  <div class="text-card">
+    <h4>行业标准现状</h4>
+    <p>目前拼豆行业缺乏专属产品标准体系：无专用国家/行业质量标准、无原材料强制性安全检测规范、无体验店服务标准、无拼豆熨斗专用3C认证类别。工信部消费品工业司已提出研究推动手工DIY类消费品团体标准，预计2027-2028年出台首个行业团体标准。</p>
+  </div>
+</section>
+
+<!-- ====== SECTION 12: IP联名与谷子经济融合 ====== -->
+<section class="section" id="s12">
+  <div class="section-header">
+    <span class="section-num">12</span>
+    <h2 class="section-title">IP联名与谷子经济融合</h2>
+  </div>
+
+  <div class="text-card">
+    <h4>拼豆与谷子经济的交集</h4>
+    <p>谷子经济（Goods Economy）2025年中国市场规模达2021亿元，预计2029年达3089亿元。拼豆兼具IP衍生属性、DIY创作空间与收藏价值，正在成为谷子经济的重要分支——"从买谷子到DIY谷子"。</p>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">IP联名商业化路径</div>
+      <div class="chart-area chart-area-sm" id="chart-ip-path"></div>
+      <div class="chart-footer"><span>正版授权套装潜在机会最大，但授权费+谈判周期门槛高</span></div>
+    </div>
+    <div class="text-card">
+      <h4>IP授权经济效益测算（单品牌/年度）</h4>
+      <ul>
+        <li>IP授权费：30-80万元</li>
+        <li>联名套装研发成本：5-10万元</li>
+        <li>联名套装零售定价：¥128-198</li>
+        <li>单品毛利率：55-65%（vs 普通套装30-40%）</li>
+        <li>年销量预期：3-10万套</li>
+        <li>年营收增量：400-2000万元</li>
+        <li>ROI：3-10倍</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>IP分层趋势：</strong>预计将出现S级IP（三丽鸥、宝可梦等，独家授权百万级）、A级IP（国漫头部，非独家数十万级）、B级IP（新锐IP，免费或分成）、公共领域IP（传统纹样、世界名画等免费资源）的分级授权生态。</p>
+  </div>
+</section>
+
+<!-- ====== SECTION 13: 全球化与出海 ====== -->
+<section class="section" id="s13">
+  <div class="section-header">
+    <span class="section-num">13</span>
+    <h2 class="section-title">全球化与出海格局</h2>
+  </div>
+
+  <div class="text-card">
+    <h4>中国拼豆出口现状</h4>
+    <p>优肯拼豆是国内出口规模最大的拼豆企业之一，2008年起开展出口业务。2025年是历史性拐点——优肯国内销售额首次超过出口额，标志着中国拼豆市场从"出口导向"转向"内需驱动"。Artkal（深圳）主打高端定位，200+种颜色，在国际市场获得稳定溢价。</p>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">全球拼豆市场格局与中国品牌机会</div>
+    <div class="chart-area chart-area-sm" id="chart-global-market"></div>
+    <div class="chart-footer"><span>东南亚和中东是第一个突破口</span></div>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>义乌的全球供应链角色：</strong>TikTok上的拼豆爆款视频在24小时内就会被义乌厂商转化为可出货的产品——"社交热点→快速打样→小批量出货→市场验证→规模化生产"的柔性供应链能力，是其他任何国家都不具备的。</p>
+  </div>
+</section>
+
+<!-- ====== SECTION 14: 未来趋势预测 ====== -->
+<section class="section" id="s14">
+  <div class="section-header">
+    <span class="section-num">14</span>
+    <h2 class="section-title">未来趋势预测（2026-2029）</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">发展趋势路线图</div>
+    <div class="chart-subtitle">拼豆行业从10亿级成长到55亿级的四阶段推演</div>
+    <div style="overflow-x:auto;">
+      <div class="gantt-years"><span>2026</span><span>2027</span><span>2028</span><span>2029</span></div>
+      <div class="gantt-row"><div class="gantt-label">市场规模</div><div class="gantt-track"><span class="gantt-bar gantt-bar-2026" style="width:25%">10亿</span><span class="gantt-bar gantt-bar-2027" style="left:25%;width:25%">20亿</span><span class="gantt-bar gantt-bar-2028" style="left:50%;width:25%">35亿</span><span class="gantt-bar gantt-bar-2029" style="left:75%;width:25%">55亿</span></div></div>
+      <div class="gantt-row"><div class="gantt-label">品牌格局</div><div class="gantt-track"><span class="gantt-bar gantt-bar-2026" style="width:25%">价格战洗牌</span><span class="gantt-bar gantt-bar-2027" style="left:25%;width:25%">CR5 30%+</span><span class="gantt-bar gantt-bar-2028" style="left:50%;width:25%">IPO/融资</span></div></div>
+      <div class="gantt-row"><div class="gantt-label">产品形态</div><div class="gantt-track"><span class="gantt-bar gantt-bar-2026" style="width:25%">平面→立体</span><span class="gantt-bar gantt-bar-2027" style="left:25%;width:25%">智能拼豆</span><span class="gantt-bar gantt-bar-2029" style="left:75%;width:25%">全品类融合</span></div></div>
+      <div class="gantt-row"><div class="gantt-label">渠道演变</div><div class="gantt-track"><span class="gantt-bar gantt-bar-2026" style="width:25%">门店大洗牌</span><span class="gantt-bar gantt-bar-2027" style="left:25%;width:25%">连锁品牌化</span><span class="gantt-bar gantt-bar-2028" style="left:50%;width:25%">全球化铺开</span></div></div>
+      <div class="gantt-row"><div class="gantt-label">合规化</div><div class="gantt-track"><span class="gantt-bar gantt-bar-2026" style="width:25%">标准缺位</span><span class="gantt-bar gantt-bar-2027" style="left:25%;width:25%">团体标准出台</span><span class="gantt-bar gantt-bar-2028" style="left:50%;width:25%">IP授权规范化</span></div></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="chart-box">
+      <div class="chart-title">七大趋势详细预判</div>
+      <div class="chart-area chart-area-sm" id="chart-trends"></div>
+      <div class="chart-footer"><span>品牌化集中、受众全龄化、产品形态升级</span></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">风险因素矩阵</div>
+      <div class="chart-area chart-area-sm" id="chart-risk-matrix"></div>
+      <div class="chart-footer"><span>消费疲劳和替代品类是最大的双重风险</span></div>
+    </div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>时间窗口</th><th>机会描述</th><th>适合玩家</th></tr></thead>
+    <tbody>
+      <tr><td>2026H2</td><td>品牌化窗口期（率先建立消费者认知）</td><td>有品牌基因的创业团队</td></tr>
+      <tr><td>2027H1</td><td>IP合规化窗口期（抢占头部IP授权）</td><td>有IP运作经验的团队</td></tr>
+      <tr><td>2027H2</td><td>出海窗口期（TikTok+东南亚）</td><td>有跨境电商经验的团队</td></tr>
+      <tr><td>2028H1</td><td>行业标准出台后的洗牌窗口</td><td>合规化程度高的头部企业</td></tr>
+      <tr><td>2029+</td><td>平台级机会（拼豆+AI+AR融合）</td><td>技术+内容复合型团队</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ====== SECTION 15: 数据来源与研究方法 ====== -->
+<section class="section" id="s15">
+  <div class="section-header">
+    <span class="section-num">15</span>
+    <h2 class="section-title">数据来源与研究方法</h2>
+  </div>
+
+  <div class="text-card">
+    <h4>研究数据来源（15项）</h4>
+    <p>本报告综合使用了智研咨询、艾媒咨询、魔镜洞察三家行业机构的研报数据，结合文汇报/上海社科院、新华网/经济参考报、钛媒体等媒体报道，以及中消协官方警示。一手数据来自电商平台公开数据（采集于2026.8.3）和小红书平台公开数据。</p>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>数据采集方法</h4>
+      <ul>
+        <li><strong>电商数据：</strong>CDP浏览器直连用户Chrome，四平台共120+条有效商品记录</li>
+        <li><strong>小红书舆情：</strong>opencli xiaohongshu search 结构化输出15条热门笔记</li>
+        <li><strong>行业报告交叉验证：</strong>艾媒+智研+魔镜三机构数据对照</li>
+        <li><strong>前瞻预测：</strong>基于品类生命周期模型+渗透率曲线</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>局限与说明</h4>
+      <ul>
+        <li>电商数据为特定时间点快照（2026.8.3）</li>
+        <li>小红书样本量15条，主要反映头部趋势</li>
+        <li>千岛平台未覆盖拼豆品类</li>
+        <li>前瞻预测包含不确定性</li>
+        <li>所有数据标注为"平台公开数据"</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ====== 子章节 ====== -->
+<section class="section" id="s2_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">破圈关键事件全记录</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">拼豆的"热搜时刻"——六大破圈事件</div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-year">2024年11月</div>
+        <div class="timeline-title">丁禹兮虞书欣拼豆互动</div>
+        <div class="timeline-desc">微博超8000万阅读量，48小时内"拼豆"搜索量增长380%，"丁禹兮同款"暴增1200%。拼豆首次进入双11玩具品类搜索TOP10。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2025年3月</div>
+        <div class="timeline-title">抖音第一届拼豆创意大赛</div>
+        <div class="timeline-desc">总奖金池50万元，日均发布量从1.2万暴增至8.6万条，单月播放量增量超100亿次。"80万颗拼豆巨幅海贼王"（高2米）至今是传奇。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2025年6月</div>
+        <div class="timeline-title">小红书"我染上了拼豆"活动</div>
+        <div class="timeline-desc">话题浏览从0增长至67.8亿次，参与笔记超800万篇。设置入门/进阶/大神三级勋章体系。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2025年9月</div>
+        <div class="timeline-title">名创优品入局</div>
+        <div class="timeline-desc">拼豆品类在门店单品周转率达玩具品类均值3.2倍，在全国4000+门店中成为增长最快的非核心品类之一。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2026年春节</div>
+        <div class="timeline-title">团购订单暴增9018%</div>
+        <div class="timeline-desc">Z世代拼豆团购订单量同比+9018%。TOP10拼豆团购城市中三线及以下占6席——热度从高线城市向大众市场扩散。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-year">2026年5月</div>
+        <div class="timeline-title">首届"拼豆学术交流大会"</div>
+        <div class="timeline-desc">近2万名爱好者到场，600+作品展出。复旦教授陆晔将拼豆定义为"后数字手工"——"把像素握在手里"。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="s3_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">品类经济学的"拼豆悖论"</h2>
+  </div>
+
+  <div class="highlight-box">
+    <p><strong>核心问题：</strong>拼豆身处手作经济1200亿、情绪经济2.72万亿、谷子经济2021亿三条万亿级赛道交汇点，但行业内最大公司年营收不过千万元级别。这种"大赛道、小公司"格局在消费行业中并不常见。</p>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>四个结构性原因</h4>
+      <ul>
+        <li><strong>极度碎片化的供给侧：</strong>材料制造几乎零门槛，"微笑曲线"底部的宿命</li>
+        <li><strong>品牌价值难以沉淀：</strong>消费者还没经历"踩雷"，不愿为品牌溢价付费</li>
+        <li><strong>体验经济的"反规模"属性：</strong>劳动密集+空间密集+时间密集</li>
+        <li><strong>内容创作高度分散：</strong>数百万人在分享免费图纸，难以建立内容端垄断</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>品类生命周期判断</h4>
+      <p>拼豆处于S曲线"成长期早期向晚期过渡"的拐点。进入"成熟期"的概率约60-70%，高于"衰退期"的30-40%。关键驱动：内容生态已建立、供应链已沉淀、情绪经济和谷子经济提供"宏观顺风"。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="s5_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">平台间数据交叉分析</h2>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">各平台拼豆品类GMV增速对比（同比）</div>
+    <div class="chart-subtitle">所有平台2025H1爆发式增长后增速放缓，抖音电商仍保持200%+</div>
+    <div class="chart-area" id="chart-platform-gmv"></div>
+    <div class="chart-footer"><span>2025H1基数极低→2026H1增速回落至80-200%，仍属健康增长</span></div>
+  </div>
+
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>平台</th><th>同款221色补充包价格</th><th>用户价格预期</th><th>品牌溢价空间</th></tr></thead>
+    <tbody>
+      <tr><td>1688批发</td><td>0.29元</td><td>"都是几分几毛的东西"</td><td>几乎为零</td></tr>
+      <tr><td>淘宝零售</td><td>1.20-1.80元</td><td>"一块多一袋"</td><td>有限</td></tr>
+      <tr><td>京东自营</td><td>2.00-4.60元</td><td>"两三块正常"</td><td>中等</td></tr>
+      <tr><td>线下门店</td><td>折算约5-8元</td><td>"店里肯定比网上贵"</td><td>较高</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="section" id="s6_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">消费者深层心理洞察</h2>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>拼豆上瘾的神经科学解释</h4>
+      <ul>
+        <li><strong>触觉的生物反馈回路：</strong>镊子夹取豆子的规律触觉信号→激活迷走神经→抑制皮质醇分泌。解压感是真实的神经化学反应。</li>
+        <li><strong>即时反馈的奖赏机制：</strong>每放一颗豆子进度可见，触发多巴胺奖赏回路。与刷短视频不同，拼豆的奖赏"有生产"——你还得到了一件实物。</li>
+        <li><strong>心流进入门槛极低：</strong>难度完全自适应——新手拼几何图形，老手挑战数万颗巨幅作品。</li>
+        <li><strong>微型秩序创造：</strong>深圳心理咨询师形容为"低成本心理创可贴"——在不确定的世界里重建控制感。</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>为什么拼豆没有像Tufting一样凉掉</h4>
+      <div class="table-wrap" style="box-shadow:none;"><table class="data-table">
+        <thead><tr><th>维度</th><th>Tufting</th><th>拼豆</th></tr></thead>
+        <tbody>
+          <tr><td>设备成本</td><td>500-2000元</td><td>50-100元</td></tr>
+          <tr><td>空间要求</td><td>大桌/画架</td><td>一张小桌子</td></tr>
+          <tr><td>入门耗时</td><td>2-3小时</td><td>30分钟</td></tr>
+          <tr><td>UGC生态</td><td>弱</td><td>强（图纸分享核心）</td></tr>
+          <tr><td>IP融合度</td><td>低</td><td>极高</td></tr>
+          <tr><td>可持续性</td><td>一次性体验</td><td>持续创作驱动</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="s8_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">抖音 / 快手 / B站舆情补充</h2>
+  </div>
+
+  <div class="three-col">
+    <div class="text-card">
+      <h4>抖音拼豆内容生态</h4>
+      <ul>
+        <li>"大眼东"10万颗拼豆复刻《清明上河图》获赞15万+</li>
+        <li>"黑猫厨房"食材"可食用拼豆"B站播放924万+</li>
+        <li>"别野生活"8万颗拼豆拼出可实用麻将</li>
+        <li>拼豆商品转化率3.5-5%，远超玩具品类均值1.5-2%</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>B站拼豆技术深度</h4>
+      <ul>
+        <li>"卡了吧唧"复刻南京博物院文物，被博物院官方转发</li>
+        <li>多位UP主制作"拼豆熨烫技术对比评测"系列</li>
+        <li>教程类视频平均完播率35-45%，远超平台均值20-25%</li>
+      </ul>
+    </div>
+    <div class="text-card">
+      <h4>快手拼豆社区特征</h4>
+      <ul>
+        <li>侧重"生活化""实用化"——拼豆做门帘、收纳盒、包挂</li>
+        <li>创作者平均年龄高于抖音/小红书，宝妈占比更突出</li>
+        <li>下沉市场以亲子需求为主要驱动力</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="s12_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">资本视角下的拼豆行业</h2>
+  </div>
+
+  <div class="text-card">
+    <h4>为什么还没有"大资本"入场？</h4>
+    <p>尽管品类增长迅猛，VC/PE投资圈整体偏冷。原因：品类天花板存疑（10亿级别不足以支撑IPO故事）、品牌化路径不清晰、潮流周期风险（被类比为"新一代十字绣"）、缺乏规模化运营数据。</p>
+    <p>但硬币的另一面——<strong>拼豆具有其他手工品类不具备的"内容基因"和"社区基因"</strong>。如果一家品牌能同时做好供应链效率、IP内容运营、社区用户运营，就有可能跳出"十字绣魔咒"。</p>
+  </div>
+
+  <div class="text-card">
+    <h4>值得关注的模式创新</h4>
+    <ul>
+      <li><strong>"拼豆+订阅制"：</strong>每月寄送限定色+独家图纸，按月付费</li>
+      <li><strong>"拼豆+教育"：</strong>纳入STEAM素质教育体系，拿学校采购订单</li>
+      <li><strong>"拼豆+数字藏品"：</strong>独家图纸铸造成数字藏品</li>
+      <li><strong>"拼豆+社交游戏"：</strong>拼豆手游Jewel Coloring证明体验可纯数字化</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" id="s14_5">
+  <div class="section-header">
+    <span class="section-num">◆</span>
+    <h2 class="section-title">创业者指南：拼豆赛道的入局与出局</h2>
+  </div>
+
+  <div class="two-col">
+    <div class="text-card">
+      <h4>供应链端创业者</h4>
+      <p><strong>机会：</strong>白牌占70%份额，做B2B就有可观市场。头部品牌产能已近饱和。</p>
+      <p><strong>风险：</strong>单品利润极薄、客户粘性低、原材料价格波动。</p>
+      <p><strong>建议：</strong>做"解决方案提供商"——为门店提供"全套开店物料包"。</p>
+    </div>
+    <div class="text-card">
+      <h4>线下门店创业者</h4>
+      <p><strong>机会：</strong>启动资金极低（2-5万元），回本周期快（好店一个月回本）。</p>
+      <p><strong>风险：</strong>价格战直接威胁，线上DIY竞争加剧。</p>
+      <p><strong>建议：</strong>不要只做拼豆，接入3-4个手工品类。选址避开拼豆店密集区。烫豆能力是核心壁垒。</p>
+    </div>
+    <div class="text-card">
+      <h4>内容/IP创作者</h4>
+      <p><strong>机会：</strong>图纸是生态中最稀缺的"内容资产"，还没有真正的付费图纸平台。</p>
+      <p><strong>风险：</strong>IP版权是最大法律风险。</p>
+      <p><strong>建议：</strong>优先创作原创IP或公共领域IP图纸，探索"图纸订阅制"。</p>
+    </div>
+    <div class="text-card">
+      <h4>投资人</h4>
+      <p><strong>关注：</strong>品牌化集中度提升的前夜——类比2015-2017茶饮"千茶大战"。</p>
+      <p><strong>跟踪信号：</strong>月销过千万品牌出现、头部IP正式授权、平台开设拼豆品类频道。</p>
+      <p><strong>建议关注：</strong>"品牌+内容+供应链"整合型项目、有IP授权能力的品牌。</p>
+    </div>
+  </div>
+</section>
+
+</div><!-- /.container -->
+
+<div class="footer">
+  <p>报告整理时间：2026年8月3日</p>
+  <p>数据报告来源：微信公众号「新文创老贾聊IP」</p>
+  <p style="margin-top:8px;opacity:0.6;">本报告采用多渠道交叉验证方法，力求数据的准确性和分析的前瞻性。所有电商平台数据标注为"平台公开数据"，不代表对具体商家的背书。</p>
+</div>
+
+<script src="echarts.min.js"></script>
+<script>
+const toolbox = { feature: { dataView: {readOnly:true}, saveAsImage: {pixelRatio:2} }, right: 10 };
+const tooltip = { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e5dfd8', borderWidth: 1, textStyle: {color:'#1f1a17',fontSize:13}, extraCssText: 'box-shadow: 0 2px 12px rgba(0,0,0,0.08);border-radius:8px;' };
+const grid = { left: '3%', right: '4%', bottom: '14%', top: '6%', containLabel: true };
+function initChart(id) { return echarts.init(document.getElementById(id)); }
+
+initChart('chart-market-size').setOption({
+  tooltip, toolbox, grid,
+  legend: { data:['市场规模','增速'], bottom:0, textStyle:{color:'#5a5047',fontSize:11} },
+  xAxis: { type:'category', data:['2021','2022','2023','2024','2025','2026E','2027E','2028E','2029E'], axisLabel:{fontSize:11} },
+  yAxis: [
+    { type:'value', name:'亿元', nameTextStyle:{fontSize:11} },
+    { type:'value', name:'增速%', nameTextStyle:{fontSize:11}, axisLabel:{formatter:'{value}%'} }
+  ],
+  series: [
+    { name:'市场规模', type:'bar', data:[0.6,0.8,1.2,3.5,6.0,10.0,20.0,35.0,55.0], itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#c45c26'},{offset:1,color:'#d4a045'}])}, barWidth:'45%' },
+    { name:'增速', type:'line', yAxisIndex:1, data:[0,33,50,192,71,67,100,75,57], lineStyle:{color:'#1a1a2e',width:2.5}, itemStyle:{color:'#1a1a2e'}, symbol:'circle', symbolSize:8 }
+  ]
+});
+
+initChart('chart-channel-pie').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,formatter:'{b}\n{d}%',fontSize:10},
+    data:[
+      {value:48.5,name:'电商平台',itemStyle:{color:'#c45c26'}},
+      {value:28.0,name:'线下体验店',itemStyle:{color:'#1a1a2e'}},
+      {value:12.0,name:'实体零售',itemStyle:{color:'#d4a045'}},
+      {value:7.0,name:'文旅/市集/团建',itemStyle:{color:'#4a8c6f'}},
+      {value:4.5,name:'其他',itemStyle:{color:'#8a7e72'}}
+    ]
+  }]
+});
+
+initChart('chart-related-markets').setOption({
+  tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>规模: '+p[0].value+'亿元';}},
+  toolbox, grid:{...grid, bottom:'18%'},
+  xAxis:{type:'category',data:['情绪经济','手作经济','童心经济','谷子经济','拼豆行业'],axisLabel:{fontSize:11,rotate:20}},
+  yAxis:{type:'value',name:'亿元',nameTextStyle:{fontSize:11}},
+  series:[{type:'bar',data:[27200,1200,2349.9,2021,6],itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2d3a5c'},{offset:1,color:'#8a7e72'}])},barWidth:'50%'}]
+});
+
+initChart('chart-taobao-price').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {c}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:40,name:'1-10元',itemStyle:{color:'#8a7e72'}},{value:28,name:'10-30元',itemStyle:{color:'#c45c26'}},{value:18,name:'30-80元',itemStyle:{color:'#d4a045'}},{value:10,name:'80-150元',itemStyle:{color:'#4a8c6f'}},{value:4,name:'150元以上',itemStyle:{color:'#1a1a2e'}}]
+  }]
+});
+
+initChart('chart-taobao-origin').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {c}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:72,name:'浙江金华/义乌',itemStyle:{color:'#c45c26'}},{value:12,name:'广东汕头/东莞',itemStyle:{color:'#1a1a2e'}},{value:6,name:'山东临沂',itemStyle:{color:'#d4a045'}},{value:5,name:'安徽/江苏',itemStyle:{color:'#4a8c6f'}},{value:5,name:'四川/其他',itemStyle:{color:'#8a7e72'}}]
+  }]
+});
+
+initChart('chart-xianyu-type').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {c}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:35,name:'退坑转让',itemStyle:{color:'#c45c26'}},{value:25,name:'代拼服务',itemStyle:{color:'#1a1a2e'}},{value:15,name:'成品零售',itemStyle:{color:'#d4a045'}},{value:10,name:'门店清仓',itemStyle:{color:'#b85c4a'}},{value:10,name:'工具配件',itemStyle:{color:'#4a8c6f'}},{value:5,name:'图纸/设计',itemStyle:{color:'#8a7e72'}}]
+  }]
+});
+
+initChart('chart-gender').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:11}},
+  series:[{type:'pie',radius:['40%','68%'],padAngle:2,itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},label:{show:true,formatter:'{b}\n{d}%',fontSize:11},
+    data:[{value:77.78,name:'女性',itemStyle:{color:'#c45c26'}},{value:22.22,name:'男性',itemStyle:{color:'#1a1a2e'}}]
+  }]
+});
+
+initChart('chart-generation').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:35,name:'18-24岁(Z世代)',itemStyle:{color:'#c45c26'}},{value:30,name:'25-30岁(千禧)',itemStyle:{color:'#1a1a2e'}},{value:20,name:'31-40岁(家长)',itemStyle:{color:'#d4a045'}},{value:8,name:'18岁以下',itemStyle:{color:'#4a8c6f'}},{value:7,name:'40岁以上',itemStyle:{color:'#8a7e72'}}]
+  }]
+});
+
+initChart('chart-city-tier').setOption({
+  tooltip, toolbox, grid:{...grid, bottom:'16%'},
+  xAxis:{type:'category',data:['一线','新一线','二线','三线','四线及以下'],axisLabel:{fontSize:11}},
+  yAxis:{type:'value',name:'占比(%)',nameTextStyle:{fontSize:11}},
+  series:[{type:'bar',data:[15,38,33,10,4],barWidth:'50%',itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#c45c26'},{offset:1,color:'#d4a045'}])}}]
+});
+
+initChart('chart-motivation').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:32,name:'解压疗愈',itemStyle:{color:'#c45c26'}},{value:25,name:'社交分享',itemStyle:{color:'#1a1a2e'}},{value:22,name:'创意表达',itemStyle:{color:'#d4a045'}},{value:12,name:'亲子互动',itemStyle:{color:'#4a8c6f'}},{value:9,name:'粉丝/IP文化',itemStyle:{color:'#8a7e72'}}]
+  }]
+});
+
+initChart('chart-frequency').setOption({
+  tooltip, toolbox, grid:{...grid, bottom:'16%'},
+  xAxis:{type:'category',data:['每周≥1次','每月2-3次','每月1次','每季度1次','每半年1次'],axisLabel:{fontSize:10,rotate:15}},
+  yAxis:{type:'value',name:'占比(%)',nameTextStyle:{fontSize:11}},
+  series:[{type:'bar',data:[18,35,28,12,7],barWidth:'50%',itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2d3a5c'},{offset:1,color:'#5e7d8c'}])}}]
+});
+
+initChart('chart-unit-price').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:35,name:'1-50元',itemStyle:{color:'#8a7e72'}},{value:38,name:'51-100元',itemStyle:{color:'#c45c26'}},{value:18,name:'101-200元',itemStyle:{color:'#d4a045'}},{value:9,name:'200元以上',itemStyle:{color:'#1a1a2e'}}]
+  }]
+});
+
+initChart('chart-xhs-type').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:40,name:'图纸分享/教程',itemStyle:{color:'#c45c26'}},{value:30,name:'作品展示',itemStyle:{color:'#1a1a2e'}},{value:15,name:'体验分享',itemStyle:{color:'#d4a045'}},{value:10,name:'接单代拼',itemStyle:{color:'#4a8c6f'}},{value:5,name:'社交互动',itemStyle:{color:'#8a7e72'}}]
+  }]
+});
+
+initChart('chart-xhs-sentiment').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:11}},
+  series:[{type:'pie',radius:['40%','68%'],padAngle:2,itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},label:{show:true,formatter:'{b}\n{d}%',fontSize:11},
+    data:[{value:65,name:'正面',itemStyle:{color:'#4a8c6f'}},{value:25,name:'中性',itemStyle:{color:'#8a7e72'}},{value:10,name:'负面',itemStyle:{color:'#c45c26'}}]
+  }]
+});
+
+initChart('chart-xhs-ip').setOption({
+  tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>提及: '+p[0].value+'次';}},
+  toolbox, grid:{...grid, bottom:'18%'},
+  xAxis:{type:'category',data:['三丽鸥','比奇堡','宝可梦','星星人','原神','王者荣耀','吉伊卡哇','游戏IP'],axisLabel:{fontSize:10,rotate:25}},
+  yAxis:{type:'value',name:'提及次数',nameTextStyle:{fontSize:11}},
+  series:[{type:'bar',data:[8,5,4,3,3,2,2,6],barWidth:'55%',itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#c45c26'},{offset:1,color:'#d4a045'}])}}]
+});
+
+initChart('chart-cluster-map').setOption({
+  tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>产能占比: ~'+p[0].value+'%';}},
+  toolbox, grid:{...grid, bottom:'16%'},
+  xAxis:{type:'category',data:['金华/义乌','汕头/东莞','山东临沂','江西吉安','安徽滁州','其他'],axisLabel:{fontSize:10,rotate:20}},
+  yAxis:{type:'value',name:'产能占比(%)',nameTextStyle:{fontSize:11}},
+  series:[{type:'bar',data:[60,10,8,8,4,10],barWidth:'55%',itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#c45c26'},{offset:1,color:'#e5dfd8'}])}}]
+});
+
+initChart('chart-cost-breakdown').setOption({
+  tooltip:{trigger:'item',formatter:'{b}: {d}%'}, legend:{bottom:0,textStyle:{color:'#5a5047',fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:35,name:'塑料粒子',itemStyle:{color:'#c45c26'}},{value:20,name:'色母/颜料',itemStyle:{color:'#1a1a2e'}},{value:15,name:'注塑加工',itemStyle:{color:'#d4a045'}},{value:15,name:'分拣/包装',itemStyle:{color:'#4a8c6f'}},{value:10,name:'物流仓储',itemStyle:{color:'#5e7d8c'}},{value:5,name:'工厂利润',itemStyle:{color:'#8a7e72'}}]
+  }]
+});
+
+initChart('chart-channel-margin').setOption({
+  tooltip, toolbox, grid:{...grid, bottom:'16%'},
+  xAxis:{type:'category',data:['闲鱼','淘宝C店','拼多多','1688','天猫','京东','抖音电商'],axisLabel:{fontSize:10,rotate:20}},
+  yAxis:{type:'value',name:'综合净利率(%)',nameTextStyle:{fontSize:11}},
+  series:[{type:'bar',data:[87.5,15,11.5,10,8.5,6.5,2.5],barWidth:'50%',
+    itemStyle:{color:function(p){return ['#4a8c6f','#c45c26','#d4a045','#2d3a5c','#5e7d8c','#1a1a2e','#b85c4a'][p.dataIndex];}}}]
+});
+
+initChart('chart-price-war').setOption({
+  tooltip, toolbox, grid,
+  xAxis:{type:'category',data:['2025Q3\n武汉','2025Q4\n南昌','2026Q1\n多地','2026Q2\n多城商圈','2026Q3\n大连/武汉等'],axisLabel:{fontSize:10}},
+  yAxis:{type:'value',name:'单人/天(¥)',nameTextStyle:{fontSize:11}},
+  series:[{type:'line',data:[98,59.9,39.9,19.9,9.9],lineStyle:{color:'#c45c26',width:3},itemStyle:{color:'#c45c26'},symbol:'circle',symbolSize:12,areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(196,92,38,0.2)'},{offset:1,color:'rgba(196,92,38,0)'}])},markLine:{data:[{type:'average',name:'均价'}],lineStyle:{color:'#1a1a2e',type:'dashed'}}}]
+});
+
+initChart('chart-ip-path').setOption({
+  tooltip:{trigger:'axis',formatter:function(p){return p[0].name+'<br/>难度: '+p[0].value;}},
+  toolbox, grid:{...grid, bottom:'18%'},
+  xAxis:{type:'category',data:['文旅IP融合','国潮IP合作','原创IP孵化','正版授权套装','平台认证图纸'],axisLabel:{fontSize:10,rotate:15}},
+  yAxis:{type:'value',name:'难度评分',nameTextStyle:{fontSize:11},max:10},
+  series:[{type:'bar',data:[4,6,6,8,9],barWidth:'50%',itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#2d3a5c'},{offset:1,color:'#8a7e72'}])}}]
+});
+
+initChart('chart-global-market').setOption({
+  tooltip:{trigger:'axis'}, toolbox, grid:{...grid, bottom:'16%'},
+  legend:{data:['市场成熟度','中国品牌机会'],bottom:0,textStyle:{fontSize:10}},
+  xAxis:{type:'category',data:['北美','欧洲','东南亚','日韩','拉美/中东'],axisLabel:{fontSize:11}},
+  yAxis:{type:'value',name:'评分',nameTextStyle:{fontSize:11},max:10},
+  series:[
+    {name:'市场成熟度',type:'bar',data:[9,7,4,6,3],itemStyle:{color:'#2d3a5c'},barWidth:'35%'},
+    {name:'中国品牌机会',type:'bar',data:[2,5,9,7,9],itemStyle:{color:'#c45c26'},barWidth:'35%'}
+  ]
+});
+
+initChart('chart-trends').setOption({
+  tooltip:{trigger:'item'}, legend:{bottom:0,textStyle:{fontSize:10}},
+  series:[{type:'pie',radius:['35%','65%'],padAngle:1,itemStyle:{borderRadius:3,borderColor:'#fff',borderWidth:1},label:{show:true,fontSize:10},
+    data:[{value:15,name:'品牌化集中',itemStyle:{color:'#1a1a2e'}},{value:14,name:'受众全龄化',itemStyle:{color:'#c45c26'}},{value:14,name:'产品形态升级',itemStyle:{color:'#d4a045'}},{value:15,name:'线下垂直化',itemStyle:{color:'#4a8c6f'}},{value:14,name:'IP合规分级',itemStyle:{color:'#2d3a5c'}},{value:14,name:'出海品牌化',itemStyle:{color:'#b85c4a'}},{value:14,name:'安全标准建立',itemStyle:{color:'#5e7d8c'}}]
+  }]
+});
+
+initChart('chart-risk-matrix').setOption({
+  tooltip:{trigger:'item',formatter:function(p){return p.data[2]+'<br/>影响: '+p.data[0]+'<br/>概率: '+p.data[1];}},
+  toolbox, grid,
+  xAxis:{type:'value',name:'影响程度→',nameTextStyle:{fontSize:11},min:0,max:10,axisLabel:{fontSize:10}},
+  yAxis:{type:'value',name:'发生概率→',nameTextStyle:{fontSize:11},min:0,max:10,axisLabel:{fontSize:10}},
+  series:[{type:'scatter',symbolSize:function(v){return v[0]*v[1]*2+20;},
+    data:[[8,6,'消费疲劳'],[6,8,'替代品类'],[9,5,'安全事故'],[7,5,'IP诉讼'],[5,5,'宏观经济'],[4,3,'平台政策']],
+    itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,1,[{offset:0,color:'#c45c26'},{offset:1,color:'#1a1a2e'}])},
+    label:{show:true,formatter:function(p){return p.data[2];},fontSize:11,position:'right'}
+  }]
+});
+
+initChart('chart-platform-gmv').setOption({
+  tooltip:{trigger:'axis',formatter:function(p){return p[0].axisValue+'<br/>'+p.map(function(x){return x.seriesName+': '+x.value+'%';}).join('<br/>');}},
+  toolbox, grid,
+  legend:{data:['淘宝','京东','抖音电商','闲鱼','1688'],bottom:0,textStyle:{fontSize:10}},
+  xAxis:{type:'category',data:['2025H1','2025H2','2026H1(E)','2026H2(E)'],axisLabel:{fontSize:11}},
+  yAxis:{type:'value',name:'同比增速(%)',nameTextStyle:{fontSize:11}},
+  series:[
+    {name:'淘宝',type:'line',data:[300,200,80,40],lineStyle:{color:'#c45c26',width:2.5},itemStyle:{color:'#c45c26'},symbol:'circle',symbolSize:8},
+    {name:'京东',type:'line',data:[300,250,100,60],lineStyle:{color:'#2d3a5c',width:2.5},itemStyle:{color:'#2d3a5c'},symbol:'circle',symbolSize:8},
+    {name:'抖音电商',type:'line',data:[500,450,200,100],lineStyle:{color:'#d4a045',width:2.5},itemStyle:{color:'#d4a045'},symbol:'circle',symbolSize:8},
+    {name:'闲鱼',type:'line',data:[100,150,150,100],lineStyle:{color:'#4a8c6f',width:2.5,type:'dashed'},itemStyle:{color:'#4a8c6f'},symbol:'diamond',symbolSize:8},
+    {name:'1688',type:'line',data:[200,180,150,80],lineStyle:{color:'#8a7e72',width:2.5,type:'dashed'},itemStyle:{color:'#8a7e72'},symbol:'diamond',symbolSize:8}
+  ]
+});
+
+window.addEventListener('resize', function() {
+  document.querySelectorAll('.chart-area').forEach(function(el) {
+    var chart = echarts.getInstanceByDom(el);
+    if(chart && !chart.isDisposed()) chart.resize();
+  });
+});
+
+(function(){
+  document.querySelectorAll('.data-table').forEach(function(table){
+    if(!table.parentElement.classList.contains('data-table-scroll')){
+      var wrapper = document.createElement('div');
+      wrapper.className = 'data-table-scroll';
+      wrapper.style.cssText = 'overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;';
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
