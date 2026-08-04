@@ -144,10 +144,11 @@ function ResearchUploadDialog({ onClose, onCreated }: { onClose: () => void; onC
       formData.append('password', password())
       formData.append('file', zipBlob, 'images.zip')
       const response = await fetch('/api/admin/upload-research-images', { method: 'POST', body: formData })
-      const result = await response.json()
-      if (!response.ok) { setNotice(result.error || '上传失败'); setSaving(false); setPdfProgress(''); setPdfProgressPct(0); return }
-      onCreated(result.report)
-      setNotice(result.warning || '')
+      const ct = response.headers.get('content-type') || ''
+      const body = ct.includes('json') ? await response.json() : await response.text()
+      if (!response.ok) { setNotice(typeof body === 'string' ? `服务器错误 (${response.status}): ${body.slice(0, 200)}` : (body.error || '上传失败')); setSaving(false); setPdfProgress(''); setPdfProgressPct(0); return }
+      onCreated(body.report)
+      setNotice(body.warning || '')
     } catch (err) {
       setNotice(`处理失败：${err instanceof Error ? err.message : '未知错误'}`)
       setSaving(false); setPdfProgress(''); setPdfProgressPct(0)
