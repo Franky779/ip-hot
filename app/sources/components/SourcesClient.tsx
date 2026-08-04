@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAdmin } from '@/app/components/AdminToggle'
 import { SourceModal } from './SourceModal'
 import { EXECUTION_MODE_LABELS, getNextScheduledAt, getSourceSchedule, getSourceToggleAction, SCHEDULE_TIER_LABELS } from '@/lib/source-schedule'
@@ -160,6 +160,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [bulkAction, setBulkAction] = useState<'test' | 'start' | 'stop' | 'fetch' | null>(null)
   const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 })
   const [bulkNotice, setBulkNotice] = useState('')
+  const abortRef = useRef<AbortController | null>(null)
   const [keyword, setKeyword] = useState('')
   const [regionFilter, setRegionFilter] = useState('all')
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
@@ -323,7 +324,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     return true
   }
 
-  const handleTest = async (id: string, refresh = true): Promise<TestResult | null> => {
+  const handleTest = async (id: string, refresh = true, signal?: AbortSignal): Promise<TestResult | null> => {
     if (testingIds.has(id)) return null
     setTestingIds((previous) => new Set(previous).add(id))
     setTestResults((previous) => {
@@ -338,6 +339,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id }),
+        signal,
       })
       const result = await res.json().catch(() => ({}))
       const testResult: TestResult = {
@@ -347,7 +349,8 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       setTestResults((previous) => ({ ...previous, [id]: testResult }))
       if (refresh) await handleRefresh()
       return testResult
-    } catch {
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return null
       const testResult: TestResult = {
         status: 'failed',
         message: '网络请求失败，请稍后重试。',
@@ -417,8 +420,24 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   }
 
   const handleTestAll = async () => {
+    // 二次点击 = 取消
+    if (bulkAction === 'test') {
+      abortRef.current?.abort()
+      setBulkNotice('已取消批量测试。')
+      setBulkAction(null)
+      return
+    }
+    if (bulkAction || testingIds.size > 0) return
+
     const targets = [...filteredSources]
-    if (bulkAction || testingIds.size > 0 || targets.length === 0) return
+    if (targets.length === 0) {
+      setBulkNotice('当前筛选结果为空，没有可测试的信息源。')
+      return
+    }
+    if (!confirm(`将对当前筛选的 ${targets.length} 条信息源执行批量测试。确定继续吗？`)) return
+
+    const controller = new AbortController()
+    abortRef.current = controller
     setBulkAction('test')
     setBulkNotice('')
     setBulkProgress({ completed: 0, total: targets.length })
@@ -428,9 +447,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     let succeeded = 0
     const runWorker = async () => {
       while (queue.length > 0) {
+        if (controller.signal.aborted) return
         const source = queue.shift()
         if (!source) return
-        const result = await handleTest(source.id, false)
+        const result = await handleTest(source.id, false, controller.signal)
+        if (controller.signal.aborted) return
         if (result?.status === 'success') succeeded += 1
         completed += 1
         setBulkProgress({ completed, total: targets.length })
@@ -441,65 +462,106 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       await Promise.all(
         Array.from({ length: Math.min(5, targets.length) }, () => runWorker())
       )
-      await handleRefresh()
-      setBulkNotice(`批量测试完成：${succeeded} 条成功，${targets.length - succeeded} 条异常；失败测试会自动停用来源。`)
+      if (!controller.signal.aborted) {
+        await handleRefresh()
+        setBulkNotice(`批量测试完成：${succeeded} 条成功，${targets.length - succeeded} 条异常；失败测试会自动停用来源。`)
+      }
     } finally {
+      if (abortRef.current === controller) abortRef.current = null
       setBulkAction(null)
     }
   }
 
   const handleStartAll = async () => {
+    if (bulkAction === 'start') {
+      abortRef.current?.abort()
+      setBulkNotice('已取消一键启动。')
+      setBulkAction(null)
+      return
+    }
     if (bulkAction) return
-    const targets = sources.filter((source) => (
+
+    const targets = filteredSources.filter((source) => (
       getSourceSchedule(source).executionMode === 'paused' && source.last_test_status === 'success'
     ))
     if (targets.length === 0) {
-      setBulkNotice('没有测试成功且待启动的信息源。')
+      setBulkNotice('当前筛选结果中没有测试成功且待启动的信息源。')
       return
     }
-    if (!confirm(`将恢复 ${targets.length} 条最近测试成功且处于暂停状态的信息源，并修复其运行方式。确定继续吗？`)) return
+    if (!confirm(`将恢复当前筛选结果中 ${targets.length} 条测试成功且暂停的信息源。确定继续吗？`)) return
 
+    const controller = new AbortController()
+    abortRef.current = controller
     setBulkAction('start')
     setBulkNotice('')
+    setBulkProgress({ completed: 0, total: targets.length })
+
     try {
       const pw = localStorage.getItem('ip-hot-admin-pw') || ''
-      const results = await Promise.all(targets.map((source) => fetch('/api/admin/source-quality/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-        body: JSON.stringify({ sourceId: source.id, action: 'resume' }),
-      })))
-      const failed = results.filter((result) => !result.ok).length
-      await handleRefresh()
-      setBulkNotice(failed > 0
-        ? `已恢复 ${targets.length - failed} 条，${failed} 条恢复失败。`
-        : `已恢复 ${targets.length} 条信息源，并修复其运行方式。`)
-    } catch {
-      setBulkNotice('一键启动失败：网络请求失败，请稍后重试。')
+      let completed = 0
+      let failed = 0
+      const results: Response[] = []
+      for (const source of targets) {
+        if (controller.signal.aborted) break
+        const res = await fetch('/api/admin/source-quality/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+          body: JSON.stringify({ sourceId: source.id, action: 'resume' }),
+          signal: controller.signal,
+        })
+        results.push(res)
+        if (!res.ok) failed += 1
+        completed += 1
+        setBulkProgress({ completed, total: targets.length })
+      }
+      if (!controller.signal.aborted) {
+        await handleRefresh()
+        setBulkNotice(failed > 0
+          ? `已恢复 ${targets.length - failed} 条，${failed} 条恢复失败。`
+          : `已恢复 ${targets.length} 条信息源，并修复其运行方式。`)
+      }
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        setBulkNotice('一键启动失败：网络请求失败，请稍后重试。')
+      }
     } finally {
+      if (abortRef.current === controller) abortRef.current = null
       setBulkAction(null)
     }
   }
 
   const handleStopAll = async () => {
-    if (bulkAction) return
-    const ids = sources
-      .filter((source) => ['cloud', 'local'].includes(getSourceSchedule(source).executionMode))
-      .map((source) => source.id)
-    if (ids.length === 0) {
-      setBulkNotice('当前没有云端或本地自动来源。')
+    if (bulkAction === 'stop') {
+      abortRef.current?.abort()
+      setBulkNotice('已取消一键停用。')
+      setBulkAction(null)
       return
     }
-    if (!confirm(`将停用 ${ids.length} 条云端或本地自动来源；人工来源不会被处理。确定继续吗？`)) return
+    if (bulkAction) return
 
+    const targets = filteredSources
+      .filter((source) => ['cloud', 'local'].includes(getSourceSchedule(source).executionMode))
+    const ids = targets.map((source) => source.id)
+    if (ids.length === 0) {
+      setBulkNotice('当前筛选结果中没有云端或本地自动来源。')
+      return
+    }
+    if (!confirm(`将停用当前筛选结果中 ${ids.length} 条云端或本地自动来源；人工来源不会被处理。确定继续吗？`)) return
+
+    const controller = new AbortController()
+    abortRef.current = controller
     setBulkAction('stop')
     setBulkNotice('')
+
     try {
       const pw = localStorage.getItem('ip-hot-admin-pw') || ''
       const res = await fetch('/api/admin/sources', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ ids, enabled: false }),
+        signal: controller.signal,
       })
+      if (controller.signal.aborted) return
       const result = await res.json().catch(() => ({}))
       if (!res.ok) {
         setBulkNotice(`一键停用失败：${result.error || '未知错误'}`)
@@ -507,9 +569,12 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       }
       await handleRefresh()
       setBulkNotice(`已停用 ${ids.length} 条信息源。`)
-    } catch {
-      setBulkNotice('一键停用失败：网络请求失败，请稍后重试。')
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        setBulkNotice('一键停用失败：网络请求失败，请稍后重试。')
+      }
     } finally {
+      if (abortRef.current === controller) abortRef.current = null
       setBulkAction(null)
     }
   }
@@ -529,21 +594,33 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   }
 
   const handleFetchAll = async () => {
-    if (bulkAction) return
-    const targets = sources.filter((source) => source.enabled)
-    if (targets.length === 0) {
-      setBulkNotice('当前没有已启用的信息源。')
+    if (bulkAction === 'fetch') {
+      abortRef.current?.abort()
+      setBulkNotice('已取消一键抓取。')
+      setBulkAction(null)
       return
     }
-    if (!confirm(`将对 ${targets.length} 条已启用的信息源执行全面抓取。确定继续吗？`)) return
+    if (bulkAction) return
 
+    const targets = filteredSources.filter((source) => source.enabled)
+    if (targets.length === 0) {
+      setBulkNotice('当前筛选结果中没有已启用的信息源。')
+      return
+    }
+    if (!confirm(`将对当前筛选结果中 ${targets.length} 条已启用的信息源执行全面抓取。确定继续吗？`)) return
+
+    const controller = new AbortController()
+    abortRef.current = controller
     setBulkAction('fetch')
     setBulkNotice('')
+
     try {
       const pw = localStorage.getItem('ip-hot-admin-pw') || ''
       const response = await fetch('/api/cron/fetch-and-process', {
         headers: { 'x-admin-password': pw },
+        signal: controller.signal,
       })
+      if (controller.signal.aborted) return
       const payload = await response.json().catch(() => ({}))
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || '抓取失败')
@@ -554,9 +631,12 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       ) ?? 0
       await handleRefresh()
       setBulkNotice(`一键抓取完成：共处理 ${total} 条信息源，新增 ${totalInserted} 条资讯，已加入 LLM 处理队列。`)
-    } catch (error) {
-      setBulkNotice(`一键抓取失败：${error instanceof Error ? error.message : String(error)}`)
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        setBulkNotice(`一键抓取失败：${error instanceof Error ? error.message : String(error)}`)
+      }
     } finally {
+      if (abortRef.current === controller) abortRef.current = null
       setBulkAction(null)
     }
   }
@@ -677,9 +757,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
             <button
               className="search-btn"
               onClick={handleTestAll}
-              disabled={bulkAction !== null || testingIds.size > 0}
+              disabled={(bulkAction !== null && bulkAction !== 'test') || testingIds.size > 0}
               style={{ background: '#2563eb' }}
-              title="测试失败会自动停用来源；测试当前筛选结果"
+              title={bulkAction === 'test' ? '再次点击取消' : '测试失败会自动停用来源；操作当前筛选结果'}
             >
               {bulkAction === 'test'
                 ? `测试中 ${bulkProgress.completed}/${bulkProgress.total}`
@@ -688,27 +768,29 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
             <button
               className="search-btn"
               onClick={handleStartAll}
-              disabled={bulkAction !== null}
+              disabled={bulkAction !== null && bulkAction !== 'start'}
               style={{ background: '#eab308', color: '#2d2200' }}
-              title="恢复测试成功且处于暂停状态的信息源，并修复运行方式"
+              title={bulkAction === 'start' ? '再次点击取消' : '恢复当前筛选结果中测试成功且暂停的信息源'}
             >
-              {bulkAction === 'start' ? '启动中...' : '一键启动'}
+              {bulkAction === 'start'
+                ? `启动中 ${bulkProgress.completed}/${bulkProgress.total}`
+                : '一键启动'}
             </button>
             <button
               className="search-btn"
               onClick={handleFetchAll}
-              disabled={bulkAction !== null}
+              disabled={bulkAction !== null && bulkAction !== 'fetch'}
               style={{ background: '#8b5cf6' }}
-              title="对所有已启用的信息源执行一次全面抓取"
+              title={bulkAction === 'fetch' ? '再次点击取消' : '对当前筛选结果中已启用的信息源执行全面抓取'}
             >
               {bulkAction === 'fetch' ? '抓取中...' : '一键抓取'}
             </button>
             <button
               className="search-btn"
               onClick={handleStopAll}
-              disabled={bulkAction !== null}
+              disabled={bulkAction !== null && bulkAction !== 'stop'}
               style={{ background: '#dc2626' }}
-              title="停用云端或本地自动来源，不处理人工来源"
+              title={bulkAction === 'stop' ? '再次点击取消' : '停用当前筛选结果中云端或本地自动来源'}
             >
               {bulkAction === 'stop' ? '停用中...' : '一键停用'}
             </button>
