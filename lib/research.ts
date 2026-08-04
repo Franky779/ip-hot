@@ -277,7 +277,7 @@ export function renderResearchMarkdown(markdown: string): string {
       ...sanitizeHtml.defaults.allowedAttributes,
       '*': ['class', 'role', 'aria-label'],
       a: ['href', 'name', 'target', 'rel'],
-      img: ['src', 'alt', 'title', 'width', 'height'],
+      img: ['src', 'alt', 'title', 'width', 'height', 'loading'],
       input: ['type', 'checked', 'disabled'],
       svg: ['viewBox', 'role', 'aria-label'],
       line: ['x1', 'x2', 'y1', 'y2'],
@@ -292,6 +292,7 @@ export function renderResearchMarkdown(markdown: string): string {
     allowedSchemesByTag: { img: ['http', 'https', 'data'] },
     transformTags: {
       a: (_tagName, attribs) => ({ tagName: 'a', attribs: { ...attribs, rel: 'noreferrer noopener', target: '_blank' } }),
+      img: (_tagName, attribs) => ({ tagName: 'img', attribs: { ...attribs, loading: attribs.loading || 'lazy' } }),
     },
   })
 }
