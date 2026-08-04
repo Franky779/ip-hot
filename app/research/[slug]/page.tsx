@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { formatResearchDate, renderResearchMarkdown, researchCategoryLink, type ResearchReport } from '@/lib/research'
 import { previewReports, researchPreviewEnabled } from '@/lib/research-preview'
 import { ResearchHtmlFrame } from './ResearchHtmlFrame'
+import { ImageRetry } from './ImageRetry'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,5 +26,5 @@ function ReportPage({ report }: { report: ResearchReport }) {
   if (report.content_format === 'html') {
     return <><header className="page-header research-html-toolbar"><Link className="research-back-link" href={backLink.href}>{backLink.label}</Link><p className="eyebrow">{report.category} · {report.published_at}</p></header><article className="research-html-page"><ResearchHtmlFrame slug={report.slug} title={report.title} /></article></>
   }
-  return <><header className="page-header"><div className="research-report-header"><div><Link className="research-back-link" href={backLink.href}>{backLink.label}</Link><p className="eyebrow">{report.category} · {report.published_at}</p><h1 className="page-title font-serif">{report.title}</h1></div></div></header><article className="research-report-page"><div className="research-report-content" dangerouslySetInnerHTML={{ __html: renderResearchMarkdown(report.markdown_content) }} /></article></>
+  return <><header className="page-header"><div className="research-report-header"><div><Link className="research-back-link" href={backLink.href}>{backLink.label}</Link><p className="eyebrow">{report.category} · {report.published_at}</p><h1 className="page-title font-serif">{report.title}</h1></div></div></header><article className="research-report-page"><div className="research-report-content" dangerouslySetInnerHTML={{ __html: renderResearchMarkdown(report.markdown_content) }} /><ImageRetry /></article></>
 }
