@@ -15,6 +15,7 @@
     "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs"
   },
   "dependencies": {
+    "adm-zip": "^0.6.0",
     "cheerio": "^1.1.2",
     "marked": "^18.0.7",
     "next": "^16.2.11",
