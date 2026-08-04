@@ -58,11 +58,11 @@ export async function POST(request: Request) {
   // 5. Security: filter and validate entries
   const entries = zip.getEntries()
   const pngEntries = entries.filter(
-    e => !e.isDirectory && e.entryName.toLowerCase().endsWith('.png'),
+    e => !e.isDirectory && e.entryName.toLowerCase().endsWith('.webp'),
   )
 
   if (pngEntries.length === 0) {
-    return Response.json({ error: 'ZIP 文件中没有找到 PNG 图片' }, { status: 400 })
+    return Response.json({ error: 'ZIP 文件中没有找到 WebP 图片' }, { status: 400 })
   }
   if (pngEntries.length > MAX_PAGES) {
     return Response.json({ error: `最多支持 ${MAX_PAGES} 页图片` }, { status: 400 })
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     const imageNames: string[] = []
 
     for (let i = 0; i < sorted.length; i++) {
-      const name = `page-${String(i + 1).padStart(2, '0')}.png`
+      const name = `page-${String(i + 1).padStart(2, '0')}.webp`
       writeFileSync(resolve(imageDir, name), sorted[i].getData())
       imageNames.push(name)
     }
