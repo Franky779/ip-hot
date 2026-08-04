@@ -91,5 +91,16 @@ fi
 
 echo "Installed release: $release"
 
+# --- auto cleanup: keep last 5 releases, remove old tarballs ---
+echo 'Cleaning up old releases (keeping last 5)...'
+cd "$app_root/releases"
+ls -t | tail -n +6 | while read -r dir; do
+  [[ -n $dir ]] && rm -rf "$dir" && echo "  removed: $dir"
+done
+echo 'Cleaning up release archives...'
+rm -f /root/ip-hot-release-*.tar.gz
+echo 'Cleanup done.'
+# --- end auto cleanup ---
+
 # Database migration is intentionally not part of routine releases.
 # For a one-time import, run ops/migration/import-postgres.mjs explicitly.
