@@ -116,25 +116,44 @@ function ResearchUploadDialog({ onClose, onCreated }: { onClose: () => void; onC
       const doc = await pdfjsLib.getDocument({ data }).promise
       pdfRef.current.doc = doc
       const total = doc.numPages
-      // Step 2: Render each page to WebP
+      // Step 2: Render each page to WebP (scale 1.5 = 108 DPI, good balance of quality vs memory)
       const zip = new JSZip()
+      let retried = 0
       for (let i = 1; i <= total; i++) {
         setPdfProgress(`正在处理 ${i}/${total} 页…`)
         setPdfProgressPct(5 + Math.round((i / total) * 80))
         const page = await doc.getPage(i)
-        const viewport = page.getViewport({ scale: 2.0 }) // 144 DPI equivalent
+        const viewport = page.getViewport({ scale: 1.5 })
         const canvas = document.createElement('canvas')
         canvas.width = viewport.width
         canvas.height = viewport.height
+        const ctx = canvas.getContext('2d')
         await page.render({ canvas, viewport }).promise
         const blob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob((b) => b ? resolve(b) : reject(new Error('WebP 编码失败')), 'image/webp', 0.85)
         })
-        const name = `page-${String(i).padStart(2, '0')}.webp`
-        zip.file(name, blob)
-        // Cleanup canvas to free memory
+        // Validate blob — if suspiciously small, retry once with scale 1.0
+        if (blob.size < 5000) {
+          canvas.width = 0; canvas.height = 0
+          const rViewport = page.getViewport({ scale: 1.0 })
+          canvas.width = rViewport.width; canvas.height = rViewport.height
+          await page.render({ canvas, viewport: rViewport }).promise
+          const retryBlob = await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob((b) => b ? resolve(b) : reject(new Error('WebP 重试失败')), 'image/webp', 0.85)
+          })
+          zip.file(`page-${String(i).padStart(2, '0')}.webp`, retryBlob)
+          retried++
+        } else {
+          zip.file(`page-${String(i).padStart(2, '0')}.webp`, blob)
+        }
+        // Aggressive cleanup — release canvas, null context, let GC breathe
         canvas.width = 0; canvas.height = 0
+        canvas.remove()
+        if (ctx) { ctx.reset?.() }
+        // Yield to browser between pages to prevent memory fragmentation
+        await new Promise(r => setTimeout(r, 10))
       }
+      if (retried > 0) setNotice(`注意：${retried} 页因内存压力降低了分辨率`)
       // Step 3: Build ZIP and upload
       setPdfProgress('正在打包上传…'); setPdfProgressPct(90)
       const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
