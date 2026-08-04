@@ -157,7 +157,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set())
   const [fetchNotices, setFetchNotices] = useState<Record<string, SourceFetchNotice>>({})
   const [copyNotice, setCopyNotice] = useState<CopyNotice | null>(null)
-  const [bulkAction, setBulkAction] = useState<'test' | 'start' | 'stop' | null>(null)
+  const [bulkAction, setBulkAction] = useState<'test' | 'start' | 'stop' | 'fetch' | null>(null)
   const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 })
   const [bulkNotice, setBulkNotice] = useState('')
   const [keyword, setKeyword] = useState('')
@@ -528,6 +528,39 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     window.setTimeout(() => setCopyNotice((current) => current === notice ? null : current), 5000)
   }
 
+  const handleFetchAll = async () => {
+    if (bulkAction) return
+    const targets = sources.filter((source) => source.enabled)
+    if (targets.length === 0) {
+      setBulkNotice('当前没有已启用的信息源。')
+      return
+    }
+    if (!confirm(`将对 ${targets.length} 条已启用的信息源执行全面抓取。确定继续吗？`)) return
+
+    setBulkAction('fetch')
+    setBulkNotice('')
+    try {
+      const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+      const response = await fetch('/api/cron/fetch-and-process', {
+        headers: { 'x-admin-password': pw },
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || '抓取失败')
+      }
+      const total = payload.fetch?.results?.length ?? 0
+      const totalInserted = payload.fetch?.results?.reduce(
+        (sum: number, r: any) => sum + (r?.inserted ?? 0), 0
+      ) ?? 0
+      await handleRefresh()
+      setBulkNotice(`一键抓取完成：共处理 ${total} 条信息源，新增 ${totalInserted} 条资讯，已加入 LLM 处理队列。`)
+    } catch (error) {
+      setBulkNotice(`一键抓取失败：${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setBulkAction(null)
+    }
+  }
+
   const handleExport = () => {
     const md = generateMarkdown(sources)
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
@@ -660,6 +693,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               title="恢复测试成功且处于暂停状态的信息源，并修复运行方式"
             >
               {bulkAction === 'start' ? '启动中...' : '一键启动'}
+            </button>
+            <button
+              className="search-btn"
+              onClick={handleFetchAll}
+              disabled={bulkAction !== null}
+              style={{ background: '#8b5cf6' }}
+              title="对所有已启用的信息源执行一次全面抓取"
+            >
+              {bulkAction === 'fetch' ? '抓取中...' : '一键抓取'}
             </button>
             <button
               className="search-btn"
