@@ -1093,6 +1093,190 @@ hr { border:none; border-top:1px solid var(--border); margin:2rem 0; }
 
 </div>
 
+<script src="echarts.min.js"></script>
+
+<script>
+
+const priceBands = {"0-5": 451, "10-15": 633, "15-20": 508, "20-30": 514, "30-50": 266, "5-10": 435, "50+": 191};
+const regionalProducts = {"US": 1675, "PH": 452, "SG": 343, "GB": 244, "JP": 129, "TH": 66, "MY": 26, "BR": 29, "ID": 10, "MX": 22};
+const regionalPrice = {"US": 17.0, "GB": 15.35, "PH": 8.41, "SG": 12.5, "JP": 17.85, "TH": 13.65, "ID": 6.71, "MY": 30.44};
+const salesConc = {"TOP 5%": 78.8, "TOP 10%": 90.6, "TOP 20%": 97.8, "TOP 50%": 100.0};
+const brandRanking = {"POP MART": 274, "Sonny Angel": 165, "THE MONSTERS": 141, "Labubu": 130, "Smiski": 80, "Sanrio": 62, "Bear": 51, "Pokemon": 40, "Crybaby": 33, "SKULLPANDA": 32, "Hello Kitty": 31, "Miniso": 29};
+const influencerTiers = {"<1K": 2.1, "1K-10K": 14.9, "10K-100K": 43.0, "100K-1M": 35.5, "1M+": 4.5};
+const liveVsVideo = {"\u76f4\u64ad": 86.3, "\u89c6\u9891": 13.7};
+const adRoas = {"\u82f1\u56fd": 29.2, "\u7f8e\u56fd": 16.8, "\u83f2\u5f8b\u5bbe": 15.0, "\u5370\u5c3c": 3.3, "\u9a6c\u6765\u897f\u4e9a": 0, "\u6cf0\u56fd": 0, "\u8d8a\u5357": 0};
+const newProducts = {"06/14": 87, "06/21": 57, "06/28": 56, "07/05": 79, "07/12": 123, "07/19": 95, "07/26": 112, "08/02": 237};
+const popmartStores = {"\u5370\u5c3c": 146.71, "\u6cf0\u56fd": 838.1, "\u9a6c\u6765\u897f\u4e9a": 113.27, "\u7f8e\u56fd": 54.58, "\u82f1\u56fd": 30.41, "\u83f2\u5f8b\u5bbe": 384.49, "\u65b0\u52a0\u5761": 13.46};
+
+
+function initChart(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const chart = echarts.init(el);
+    window.addEventListener('resize', () => chart.resize());
+    return chart;
+}
+
+(function() {
+    const c = initChart('chart-price-bands');
+    if (!c) return;
+    const data = Object.entries(priceBands).map(([k,v]) => ({name: '$'+k, value: v}));
+    c.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c}件 ({d}%)' },
+        series: [{
+            type: 'pie', radius: ['40%', '70%'], center: ['50%', '50%'],
+            itemStyle: { borderRadius: 6, borderColor: '#0f1117', borderWidth: 3 },
+            label: { color: '#9ca3b8', fontSize: 12, formatter: '{b}\n{d}%' },
+            data: data
+        }]
+    });
+})();
+
+(function() {
+    const c = initChart('chart-regional-products');
+    if (!c) return;
+    const data = Object.entries(regionalProducts).sort((a,b) => b[1]-a[1]);
+    c.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', axisLabel: { color: '#9ca3b8' } },
+        series: [{ type: 'bar', data: data.map(d=>d[1]), itemStyle: { color: '#f0a050', borderRadius: [6,6,0,0] }, barWidth: '50%' }],
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '5%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-sales-conc');
+    if (!c) return;
+    const data = Object.entries(salesConc);
+    c.setOption({
+        tooltip: { trigger: 'axis', formatter: '{b}: 贡献{c}%销量' },
+        xAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', max: 100, axisLabel: { color: '#9ca3b8', formatter: '{value}%' } },
+        series: [{ type: 'bar', data: data.map(d=>d[1]), barWidth: '45%',
+            itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0, color:'#f0a050'},{offset:1, color:'#c06030'}]), borderRadius: [6,6,0,0] },
+            label: { show: true, position: 'top', color: '#f0a050', formatter: '{c}%', fontSize: 13, fontWeight: 'bold' }
+        }],
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-new-products');
+    if (!c) return;
+    const data = Object.entries(newProducts);
+    c.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', axisLabel: { color: '#9ca3b8' } },
+        series: [{ type: 'line', data: data.map(d=>d[1]), smooth: true, symbol: 'circle', symbolSize: 8,
+            lineStyle: { color: '#f0a050', width: 3 }, itemStyle: { color: '#f0a050' },
+            areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0, color:'rgba(240,160,80,0.3)'},{offset:1, color:'rgba(240,160,80,0.02)'}]) },
+            label: { show: true, color: '#f0a050', fontSize: 12, fontWeight: 'bold' }
+        }],
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '10%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-regional-price');
+    if (!c) return;
+    const data = Object.entries(regionalPrice).sort((a,b) => b[1]-a[1]);
+    c.setOption({
+        tooltip: { trigger: 'axis', formatter: '{b}: USD {c}' },
+        xAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', axisLabel: { color: '#9ca3b8', formatter: '${value}' } },
+        series: [{ type: 'bar', data: data.map(d=>d[1]), itemStyle: { color: '#60a5fa', borderRadius: [6,6,0,0] }, barWidth: '50%',
+            label: { show: true, position: 'top', color: '#60a5fa', formatter: '${c}', fontSize: 11 } }],
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-brand-white');
+    if (!c) return;
+    c.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['SKU占比','GMV占比'], bottom: 0, textStyle: { color: '#9ca3b8' } },
+        xAxis: { type: 'category', data: ['品牌商品','白牌商品'], axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', max: 100, axisLabel: { color: '#9ca3b8', formatter: '{value}%' } },
+        series: [
+            { name: 'SKU占比', type: 'bar', data: [23.3, 76.7], itemStyle: { color: '#f0a050', borderRadius: [6,6,0,0] }, barWidth: '35%', label: { show: true, position: 'top', formatter: '{c}%', color: '#f0a050' } },
+            { name: 'GMV占比', type: 'bar', data: [83.9, 16.1], itemStyle: { color: '#4ade80', borderRadius: [6,6,0,0] }, barWidth: '35%', label: { show: true, position: 'top', formatter: '{c}%', color: '#4ade80' } }
+        ],
+        grid: { left: '3%', right: '4%', bottom: '12%', top: '12%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-brand-ranking');
+    if (!c) return;
+    const data = Object.entries(brandRanking).sort((a,b) => a[1]-b[1]);
+    c.setOption({
+        tooltip: { trigger: 'axis', formatter: '{b}: {c}件商品' },
+        xAxis: { type: 'value', axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8', fontSize: 12 }, inverse: true },
+        series: [{ type: 'bar', data: data.map(d=>d[1]), barWidth: '55%',
+            itemStyle: { color: new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0, color:'#c06030'},{offset:1, color:'#f0a050'}]), borderRadius: [0,6,6,0] },
+            label: { show: true, position: 'right', color: '#f0a050', formatter: '{c}件', fontSize: 12, fontWeight: 'bold' } }],
+        grid: { left: '15%', right: '10%', bottom: '5%', top: '5%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-influencer-tiers');
+    if (!c) return;
+    const data = Object.entries(influencerTiers).map(([k,v]) => ({name: k, value: v}));
+    c.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
+        series: [{ type: 'pie', radius: ['45%', '72%'], center: ['50%', '50%'],
+            itemStyle: { borderRadius: 5, borderColor: '#0f1117', borderWidth: 3 },
+            label: { color: '#9ca3b8', fontSize: 11, formatter: '{b}\n{d}%' }, data: data }]
+    });
+})();
+
+(function() {
+    const c = initChart('chart-live-video');
+    if (!c) return;
+    c.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c}%' },
+        series: [{ type: 'pie', radius: ['50%', '75%'], center: ['50%', '50%'],
+            itemStyle: { borderRadius: 5, borderColor: '#0f1117', borderWidth: 3 },
+            label: { color: '#e1e4ed', fontSize: 14, fontWeight: 'bold', formatter: '{b}\n{d}%' },
+            data: [{name: '直播带货', value: 86.3, itemStyle: { color: '#f0a050' }},{name: '视频带货', value: 13.7, itemStyle: { color: '#60a5fa' }}] }]
+    });
+})();
+
+(function() {
+    const c = initChart('chart-ad-roas');
+    if (!c) return;
+    const data = Object.entries(adRoas).sort((a,b) => b[1]-a[1]);
+    c.setOption({
+        tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+        xAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', axisLabel: { color: '#9ca3b8', formatter: '{value}%' } },
+        series: [{ type: 'bar', data: data.map(d=>d[1]), barWidth: '45%',
+            itemStyle: { color: function(p) { var v=p.value; return v>20?'#4ade80':v>10?'#f0a050':v>0?'#f87171':'#6b7280'; }, borderRadius: [6,6,0,0] },
+            label: { show: true, position: 'top', formatter: '{c}%', color: '#9ca3b8', fontSize: 12, fontWeight: 'bold' } }],
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true }
+    });
+})();
+
+(function() {
+    const c = initChart('chart-popmart-stores');
+    if (!c) return;
+    const data = Object.entries(popmartStores);
+    c.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: data.map(d=>d[0]), axisLabel: { color: '#9ca3b8' } },
+        yAxis: { type: 'value', axisLabel: { color: '#9ca3b8' } },
+        series: [{ type: 'bar', data: data.map(d=>d[1]), barWidth: '50%',
+            itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0, color:'#a78bfa'},{offset:1, color:'#7c3aed'}]), borderRadius: [6,6,0,0] },
+            label: { show: true, position: 'top', color: '#a78bfa', formatter: function(p){return p.value.toFixed(2);}, fontSize: 10 } }],
+        grid: { left: '3%', right: '4%', bottom: '8%', top: '12%', containLabel: true }
+    });
+})();
+</script>
 
 </body>
 </html>
