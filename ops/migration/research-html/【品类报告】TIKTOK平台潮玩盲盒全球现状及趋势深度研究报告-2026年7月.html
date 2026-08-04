@@ -1088,10 +1088,13 @@ hr { border:none; border-top:1px solid var(--border); margin:2rem 0; }
 
 <p><strong>建议6：拉美先占坑、不着急收割。**</strong></p>
 <p>数据支撑：巴西29件商品、墨西哥22件商品、拉美几乎无竞争。现在做拉美不需要投入太多——上架5-10个SKU测试定价和物流、找2-3个本地小达人发开箱内容、观察3-6个月的用户反馈。等TikTok Shop拉美全面开放（预计2027年），你已经有了第一手的数据和品牌认知基础。</p>
+
+
 <p>*报告整理时间：2026年8月3日*</p>
 <p>*数据报告来源：微信公众号「新文创老贾聊IP」*</p>
 
 </div>
+
 
 <script src="echarts.min.js"></script>
 
@@ -1278,5 +1281,22 @@ function initChart(id) {
 })();
 </script>
 
+<style data-ip-hot-layout-fix>
+/* 保持报告原有排版：抵消站点注入的通用响应式规则 */
+@media (min-width: 1440px) {
+  .container { max-width: 900px !important; }
+  .kpi-section { max-width: 1280px !important; }
+}
+@media (max-width: 900px) {
+  .container { padding-left: 2rem !important; padding-right: 2rem !important; }
+  .kpi-section { padding-left: 2rem !important; padding-right: 2rem !important; }
+  .chart-area { height: 380px !important; }
+  .chart-area-sm { height: 300px !important; }
+  .chart-area-lg { height: 480px !important; }
+}
+@media (max-width: 640px) {
+  .container { padding-left: 1rem !important; padding-right: 1rem !important; }
+}
+</style>
 </body>
 </html>
