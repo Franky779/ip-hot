@@ -66,3 +66,7 @@ export function addPreviewReport(report: ResearchReport): void {
 export function updatePreviewReport(id: string, patch: Partial<ResearchReport>): void {
   globalThis.__ipHotResearchPreview = previewReports().map((report) => report.id === id ? { ...report, ...patch } : report)
 }
+
+export function removePreviewReport(id: string): void {
+  globalThis.__ipHotResearchPreview = previewReports().filter((report) => report.id !== id)
+}

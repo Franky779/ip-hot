@@ -223,6 +223,9 @@ body {
 .research-backup-status.backed_up { color: #2d8a4e; }
 .research-backup-status.failed { color: var(--accent); }
 .research-retry { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; text-decoration: underline; padding: 0; }
+.research-delete-btn { margin-left: 0.25rem; padding: 0.1rem 0.45rem; border: 1px solid #e94560; border-radius: 6px; background: rgba(233, 69, 96, 0.08); color: #e94560; cursor: pointer; font: inherit; font-size: 0.72rem; line-height: 1.5; transition: background 0.15s ease; }
+.research-delete-btn:hover { background: rgba(233, 69, 96, 0.15); }
+.research-delete-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .admin-modal.research-upload-modal { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; width: min(1400px, calc(100vw - 3rem)); max-width: none; height: min(900px, calc(100vh - 3rem)); max-height: none; overflow: hidden; }
 .research-upload-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .research-upload-heading h3 { margin-bottom: 0.25rem; }
