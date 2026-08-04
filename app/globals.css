@@ -235,6 +235,17 @@ body {
 .research-upload-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: 0.75rem; }
 .research-upload-modal label { display: block; margin-top: 0.75rem; font-size: 0.82rem; font-weight: 700; }
 .research-upload-modal input, .research-upload-modal select, .research-markdown-input { display: block; width: 100%; margin-top: 0.35rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 0.65rem 0.75rem; font: inherit; }
+.research-upload-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-top: 0.75rem; }
+.research-upload-tabs button { flex: 1; padding: 0.65rem 1rem; border: 0; border-bottom: 2px solid transparent; margin-bottom: -2px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.research-upload-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.research-upload-tabs button:hover:not(.active) { color: var(--text); }
+.research-pdf-upload-area { margin-top: 0.75rem; min-height: 200px; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border); border-radius: 12px; background: var(--surface-hover); }
+.research-pdf-file-label { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; cursor: pointer; padding: 2rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem; }
+.research-pdf-file-label input[type="file"] { display: none; }
+.research-pdf-file-label:hover { color: var(--accent); }
+.research-pdf-progress { margin-top: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.research-pdf-progress-bar { width: 0%; height: 6px; border-radius: 3px; background: var(--accent); transition: width 0.3s ease; align-self: stretch; }
+.research-pdf-progress span { font-size: 0.82rem; color: var(--text-secondary); }
 .research-markdown-input { height: 100%; min-height: 0; resize: none; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.82rem; line-height: 1.6; }
 .research-markdown-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; min-height: 0; }
 .research-markdown-columns > label { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min-height: 0; }

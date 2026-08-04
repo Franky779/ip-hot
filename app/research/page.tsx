@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ADMIN_PW_KEY, useAdmin } from '../components/AdminToggle'
 import { normalizeResearchCategory, RESEARCH_CATEGORIES, renderResearchMarkdown, researchTags, type ResearchCategory, type ResearchReport } from '@/lib/research'
 
@@ -77,11 +77,116 @@ export default function ResearchPage() {
 }
 
 function ResearchUploadDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (report: ResearchReport) => void }) {
+  const [mode, setMode] = useState<'markdown' | 'pdf'>('markdown')
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<ResearchCategory>('品类研究')
+  // Markdown mode
   const [markdown, setMarkdown] = useState('')
+  // PDF mode
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [pdfProgress, setPdfProgress] = useState('')
+  const [pdfProgressPct, setPdfProgressPct] = useState(0)
   const [notice, setNotice] = useState('')
   const [saving, setSaving] = useState(false)
-  const submit = async () => { setSaving(true); setNotice('发布中…'); const response = await fetch('/api/research', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-password': password() }, body: JSON.stringify({ title, category, markdown_content: markdown }) }); const result = await response.json(); if (!response.ok) { setNotice(result.error || '发布失败'); setSaving(false); return } onCreated(result.report); setNotice(result.warning || '') }
-  return <div className="admin-modal-overlay"><div className="admin-modal research-upload-modal"><div className="research-upload-heading"><div><h3>上传研究报告</h3><p>发布日期将自动记录为上传当天。</p></div><button className="research-upload-close" onClick={onClose} disabled={saving} aria-label="关闭">×</button></div><div className="research-upload-fields"><label>报告标题<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：潮玩行业深度研究报告" /></label><label>报告分类<select value={category} onChange={(event) => setCategory(event.target.value as ResearchCategory)}>{RESEARCH_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></label></div><div className="research-markdown-columns"><label>Markdown 内容<textarea className="research-markdown-input" value={markdown} onChange={(event) => setMarkdown(event.target.value)} placeholder="在这里粘贴 Markdown 文档" /></label><div className="research-markdown-preview"><span>实时预览</span><div className="research-report-content" dangerouslySetInnerHTML={{ __html: renderResearchMarkdown(markdown || '*粘贴 Markdown 后将在这里预览*') }} /></div></div>{notice && <p className="admin-notice">{notice}</p>}<div className="admin-modal-btns"><button onClick={onClose} disabled={saving}>取消</button><button className="admin-submit" onClick={submit} disabled={saving}>{saving ? '发布中…' : '发布报告'}</button></div></div></div>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pdfRef = useRef<{ doc: any }>({ doc: null })
+
+  // Markdown submit
+  const submitMarkdown = async () => {
+    setSaving(true); setNotice('发布中…')
+    const response = await fetch('/api/research', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-password': password() }, body: JSON.stringify({ title, category, markdown_content: markdown }) })
+    const result = await response.json()
+    if (!response.ok) { setNotice(result.error || '发布失败'); setSaving(false); return }
+    onCreated(result.report); setNotice(result.warning || '')
+  }
+
+  // PDF processing & upload
+  const submitPdf = async () => {
+    if (!pdfFile) { setNotice('请先选择 PDF 文件'); return }
+    if (pdfFile.size > 50 * 1024 * 1024) { setNotice('PDF 文件不能超过 50 MB'); return }
+    setSaving(true); setNotice('')
+    try {
+      // Dynamic imports — pdfjs-dist uses DOM APIs, can't be SSR'd
+      const [pdfjsLib, JSZipModule] = await Promise.all([import('pdfjs-dist'), import('jszip')])
+      const JSZip = JSZipModule.default
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+      // Step 1: Load PDF
+      setPdfProgress('正在加载 PDF…'); setPdfProgressPct(2)
+      const data = new Uint8Array(await pdfFile.arrayBuffer())
+      const doc = await pdfjsLib.getDocument({ data }).promise
+      pdfRef.current.doc = doc
+      const total = doc.numPages
+      // Step 2: Render each page to WebP
+      const zip = new JSZip()
+      for (let i = 1; i <= total; i++) {
+        setPdfProgress(`正在处理 ${i}/${total} 页…`)
+        setPdfProgressPct(5 + Math.round((i / total) * 80))
+        const page = await doc.getPage(i)
+        const viewport = page.getViewport({ scale: 2.0 }) // 144 DPI equivalent
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        await page.render({ canvas, viewport }).promise
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((b) => b ? resolve(b) : reject(new Error('WebP 编码失败')), 'image/webp', 0.85)
+        })
+        const name = `page-${String(i).padStart(2, '0')}.webp`
+        zip.file(name, blob)
+        // Cleanup canvas to free memory
+        canvas.width = 0; canvas.height = 0
+      }
+      // Step 3: Build ZIP and upload
+      setPdfProgress('正在打包上传…'); setPdfProgressPct(90)
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
+      const formData = new FormData()
+      formData.append('title', title || pdfFile.name.replace(/\.pdf$/i, ''))
+      formData.append('category', category)
+      formData.append('password', password())
+      formData.append('file', zipBlob, 'images.zip')
+      const response = await fetch('/api/admin/upload-research-images', { method: 'POST', body: formData })
+      const result = await response.json()
+      if (!response.ok) { setNotice(result.error || '上传失败'); setSaving(false); setPdfProgress(''); setPdfProgressPct(0); return }
+      onCreated(result.report)
+      setNotice(result.warning || '')
+    } catch (err) {
+      setNotice(`处理失败：${err instanceof Error ? err.message : '未知错误'}`)
+      setSaving(false); setPdfProgress(''); setPdfProgressPct(0)
+    }
+  }
+
+  return <div className="admin-modal-overlay"><div className="admin-modal research-upload-modal">
+    <div className="research-upload-heading">
+      <div><h3>上传研究报告</h3><p>发布日期将自动记录为上传当天。</p></div>
+      <button className="research-upload-close" onClick={onClose} disabled={saving} aria-label="关闭">×</button>
+    </div>
+    <div className="research-upload-tabs">
+      <button className={mode === 'markdown' ? 'active' : ''} onClick={() => { setMode('markdown'); setNotice('') }}>粘贴 Markdown</button>
+      <button className={mode === 'pdf' ? 'active' : ''} onClick={() => { setMode('pdf'); setNotice('') }}>上传 PDF</button>
+    </div>
+    <div className="research-upload-fields">
+      <label>报告标题<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：潮玩行业深度研究报告" /></label>
+      <label>报告分类<select value={category} onChange={(event) => setCategory(event.target.value as ResearchCategory)}>{RESEARCH_CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></label>
+    </div>
+    {mode === 'markdown' ? (
+      <div className="research-markdown-columns">
+        <label>Markdown 内容<textarea className="research-markdown-input" value={markdown} onChange={(event) => setMarkdown(event.target.value)} placeholder="在这里粘贴 Markdown 文档" /></label>
+        <div className="research-markdown-preview"><span>实时预览</span><div className="research-report-content" dangerouslySetInnerHTML={{ __html: renderResearchMarkdown(markdown || '*粘贴 Markdown 后将在这里预览*') }} /></div>
+      </div>
+    ) : (
+      <div className="research-pdf-upload-area">
+        <label className="research-pdf-file-label">
+          <input type="file" accept=".pdf" disabled={saving} onChange={(event) => { const f = event.target.files?.[0]; if (f) { setPdfFile(f); if (!title) setTitle(f.name.replace(/\.pdf$/i, '')) } }} />
+          {pdfFile ? <span>📄 {pdfFile.name}（{(pdfFile.size / 1024 / 1024).toFixed(1)} MB）</span> : <span>点击选择 PDF 文件，或将文件拖拽到此处</span>}
+        </label>
+        {pdfProgress && <div className="research-pdf-progress"><div className="research-pdf-progress-bar" style={{ width: `${pdfProgressPct}%` }} /><span>{pdfProgress}</span></div>}
+      </div>
+    )}
+    {notice && <p className="admin-notice">{notice}</p>}
+    <div className="admin-modal-btns">
+      <button onClick={onClose} disabled={saving}>取消</button>
+      <button className="admin-submit" onClick={mode === 'markdown' ? submitMarkdown : submitPdf} disabled={saving || (mode === 'pdf' && !pdfFile)}>
+        {saving ? (mode === 'pdf' ? '处理中…' : '发布中…') : '发布报告'}
+      </button>
+    </div>
+  </div></div>
 }
