@@ -11,7 +11,7 @@ import { createArticleSearchPattern } from '@/lib/article-search'
 import { DEFAULT_SELECTION_THRESHOLD, getSelectionThreshold } from '@/lib/selection-threshold'
 
 // The public list must observe threshold changes without waiting for ISR expiry.
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 const ARTICLES_PER_PAGE = 20
 const MAX_PAGE = 50
 const DATABASE_BATCH_SIZE = 100

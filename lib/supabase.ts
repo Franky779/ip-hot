@@ -337,6 +337,11 @@ export class DatabaseClient {
   from(table: string): QueryBuilder {
     return new QueryBuilder(table)
   }
+
+  async query(text: string, params?: unknown[]): Promise<{ rows: Row[]; rowCount: number }> {
+    const result = await getPool().query(text, params || [])
+    return { rows: result.rows, rowCount: result.rowCount ?? 0 }
+  }
 }
 
 const databaseClient = new DatabaseClient()

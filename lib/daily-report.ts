@@ -183,28 +183,35 @@ function buildDailyPrompt(period: 'daily' | 'weekly' | 'monthly', categoryGroups
 
 // ─── 主入口 ──────────────────────────────────────────────────
 
-/** 获取指定周期的可用日期列表（最新在前） */
+/** 获取指定周期的可用日期列表（最新在前）—— 用 SQL DISTINCT，不走 JS 去重 */
 export async function getAvailableDates(period: 'daily' | 'weekly' | 'monthly'): Promise<PeriodDate[]> {
   const db = getSupabase()
-  const { data: rows } = await db
-    .from('articles')
-    .select('published_at')
-    .not('published_at', 'is', null)
-    .not('category', 'is', null)
-    .neq('category', '待分类')
-    .neq('category', '待人工复核')
-    .order('published_at', { ascending: false })
-    .limit(5000)
 
-  if (!rows || rows.length === 0) return []
+  // 按天去重取 published_at，数据库层完成，不拉5000行
+  const trunc = period === 'monthly'
+    ? "DATE_TRUNC('month', published_at)"
+    : period === 'weekly'
+      ? "DATE_TRUNC('week', published_at)"
+      : "DATE(published_at)"
 
-  const seen = new Set<string>()
+  const { rows } = await db.query(
+    `SELECT DISTINCT ${trunc} AS d FROM articles
+     WHERE published_at IS NOT NULL
+       AND category IS NOT NULL
+       AND category NOT IN ('待分类', '待人工复核')
+     ORDER BY d DESC
+     LIMIT 200`
+  )
+
+  if (rows.length === 0) return []
+
   const result: PeriodDate[] = []
   for (const row of rows) {
-    const d = new Date(row.published_at as string)
-    const key = toPeriodDate(period, d)
-    if (seen.has(key)) continue
-    seen.add(key)
+    const d = new Date(row.d as string)
+    // 周报需要调整为周一（DATE_TRUNC('week') 返回周一）
+    const key = period === 'monthly'
+      ? d.toISOString().slice(0, 7) + '-01'
+      : d.toISOString().slice(0, 10)
     const dl = formatDateLabel(period, key)
     result.push({ value: key, label: dl.label, sublabel: dl.sublabel })
   }
