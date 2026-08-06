@@ -65,7 +65,7 @@ type ResearchChart = {
   suffix?: string
 }
 
-const CHART_COLORS = ['#c45c26', '#287271', '#d4a017', '#6b5b95', '#2d8a4e', '#b04a5a']
+const CHART_COLORS = ['#00b48a', '#287271', '#d4a017', '#6b5b95', '#2d8a4e', '#b04a5a']
 
 type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string }
 

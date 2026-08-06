@@ -2,72 +2,72 @@
 
 /* ====== 閼瑰弶婢?濞村懓澹婃稉濠氼暯(姒涙顓?鐠虹喍瀵岀粩?laojia-ip.com 娑撯偓閼? ====== */
 :root {
-  --bg: #f5f3f0;
-  --surface: #ffffff;
-  --surface-hover: #faf9f7;
-  --text: #1a1714;
-  --text-secondary: #6b6560;
-  --text-muted: #9a948e;
-  --accent: #c45c26;
-  --accent-light: #f5e6d8;
-  --border: #e5e0da;
-  --border-light: #f0ede8;
+  --bg: #ffffff;
+  --surface: #f7f7f7;
+  --surface-hover: #fafafa;
+  --text: #0a0a0a;
+  --text-secondary: #5a5a5c;
+  --text-muted: #888888;
+  --accent: #00b48a;
+  --accent-light: rgba(0, 212, 164, 0.1);
+  --border: #e5e5e5;
+  --border-light: #ededed;
   --shadow: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
 
-  --sidebar-bg: #1a1714;
-  --sidebar-text: #a39e98;
-  --sidebar-text-hover: #e5e0da;
-  --sidebar-active: #c45c26;
-  --sidebar-active-bg: rgba(196, 92, 38, 0.12);
+  --sidebar-bg: #0a0a0a;
+  --sidebar-text: #888888;
+  --sidebar-text-hover: #e5e5e5;
+  --sidebar-active: #00d4a4;
+  --sidebar-active-bg: rgba(0, 212, 164, 0.12);
   --sidebar-border: rgba(255,255,255,0.06);
   --sidebar-width: 220px;
 }
 
 /* ====== 閼瑰弶婢?濞ｈ精澹婃稉濠氼暯(閺勬儳绱?data-theme="dark") ====== */
 [data-theme="dark"] {
-  --bg: #0f1419;
-  --surface: #151e2b;
-  --surface-hover: #1c2838;
-  --text: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent: #38bdf8;
-  --accent-light: rgba(56, 189, 248, 0.12);
-  --border: #243447;
-  --border-light: #1e2d3d;
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-hover: #1c1c1e;
+  --text: #f5f5f5;
+  --text-secondary: #b3b3b3;
+  --text-muted: #888888;
+  --accent: #00d4a4;
+  --accent-light: rgba(0, 212, 164, 0.12);
+  --border: #1f1f1f;
+  --border-light: #1a1a1a;
   --shadow: 0 2px 8px rgba(0,0,0,0.3);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
 
-  --sidebar-bg: #080c11;
-  --sidebar-text: #64748b;
-  --sidebar-text-hover: #e2e8f0;
-  --sidebar-active: #38bdf8;
-  --sidebar-active-bg: rgba(56, 189, 248, 0.1);
+  --sidebar-bg: #060606;
+  --sidebar-text: #888888;
+  --sidebar-text-hover: #f5f5f5;
+  --sidebar-active: #00d4a4;
+  --sidebar-active-bg: rgba(0, 212, 164, 0.1);
   --sidebar-border: rgba(255,255,255,0.04);
 }
 
 /* ====== 閼瑰弶婢?鐠虹喖娈㈢化鑽ょ埠(閺?data-theme,缁崵绮洪弰顖涚箒閼? ====== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #0f1419;
-    --surface: #151e2b;
-    --surface-hover: #1c2838;
-    --text: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --accent: #38bdf8;
-    --accent-light: rgba(56, 189, 248, 0.12);
-    --border: #243447;
-    --border-light: #1e2d3d;
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface-hover: #1c1c1e;
+    --text: #f5f5f5;
+    --text-secondary: #b3b3b3;
+    --text-muted: #888888;
+    --accent: #00d4a4;
+    --accent-light: rgba(0, 212, 164, 0.12);
+    --border: #1f1f1f;
+    --border-light: #1a1a1a;
     --shadow: 0 2px 8px rgba(0,0,0,0.3);
     --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
 
-    --sidebar-bg: #080c11;
-    --sidebar-text: #64748b;
-    --sidebar-text-hover: #e2e8f0;
-    --sidebar-active: #38bdf8;
-    --sidebar-active-bg: rgba(56, 189, 248, 0.1);
+    --sidebar-bg: #060606;
+    --sidebar-text: #888888;
+    --sidebar-text-hover: #f5f5f5;
+    --sidebar-active: #00d4a4;
+    --sidebar-active-bg: rgba(0, 212, 164, 0.1);
     --sidebar-border: rgba(255,255,255,0.04);
   }
 }
@@ -84,7 +84,8 @@ body {
 }
 
 .font-serif {
-  font-family: var(--font-noto-serif-sc), "Noto Serif SC", "Songti SC", serif;
+  font-family: var(--font-noto-sans-sc), "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: -0.01em;
 }
 
 /* ====== 鎼存梻鏁ゆ稉璇茬鐏炩偓(瀹?sidebar + 閸欏啿鍞寸€圭懓灏? ====== */
@@ -302,13 +303,13 @@ body {
 .chart-axis { fill: var(--text-secondary); font-size: 11px; }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
 .chart-grid-polygon { fill: none; stroke: var(--border); stroke-width: 1; }
-.chart-radar-area { fill: rgba(196, 92, 38, 0.2); stroke: #c45c26; stroke-width: 2.5; }
+.chart-radar-area { fill: rgba(0, 180, 138, 0.2); stroke: #00b48a; stroke-width: 2.5; }
 .chart-stroke-1, .chart-stroke-2, .chart-stroke-3, .chart-stroke-4 { fill: none; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
-.chart-stroke-1 { stroke: #c45c26; }
+.chart-stroke-1 { stroke: #00b48a; }
 .chart-stroke-2 { stroke: #287271; }
 .chart-stroke-3 { stroke: #d4a017; }
 .chart-stroke-4 { stroke: #6b5b95; }
-.chart-fill-1, .color-1 { fill: #c45c26; background: #c45c26; }
+.chart-fill-1, .color-1 { fill: #00b48a; background: #00b48a; }
 .chart-fill-2, .color-2 { fill: #287271; background: #287271; }
 .chart-fill-3, .color-3 { fill: #d4a017; background: #d4a017; }
 .chart-fill-4, .color-4 { fill: #6b5b95; background: #6b5b95; }
@@ -2362,7 +2363,7 @@ body {
 }
 
 .review-queue-commentary {
-  color: #c45c26;
+  color: var(--accent);
   -webkit-line-clamp: 2;
 }
 

@@ -98,7 +98,7 @@ export function ArticleActions({ id, title_cn, summary_cn, commentary, category,
         </button>
         <button
           className="article-action-btn edit"
-          style={{ color: '#c45c26', borderColor: '#c45c26' }}
+          style={{ color: '#00b48a', borderColor: '#00b48a' }}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
