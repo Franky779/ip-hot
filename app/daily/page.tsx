@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getAvailableDates, getDailyReport, type PeriodDate } from '@/lib/daily-report'
+import { getAvailableDates, getDailyReport, getCachedReportHtml, type PeriodDate } from '@/lib/daily-report'
 
 export const revalidate = 120
 
@@ -186,14 +186,18 @@ export default async function DailyPage({
   const selectedDate = params.date || (availableDates.length > 0 ? availableDates[0].value : '')
   const hasSelection = !!selectedDate
 
-  // Report
+  // 优先读预渲染的静态HTML（秒开路径）
+  let cachedHtml: string | null = null
   let report: any = null
   if (hasSelection) {
     if (useDemo) {
       report = DEMO[period].report
     } else {
-      try { report = await getDailyReport(period, selectedDate) } catch (e) {
-        console.error('[DailyPage] 加载报告失败:', (e as Error).message)
+      try { cachedHtml = await getCachedReportHtml(period, selectedDate) } catch { /* 忽略 */ }
+      if (!cachedHtml) {
+        try { report = await getDailyReport(period, selectedDate) } catch (e) {
+          console.error('[DailyPage] 加载报告失败:', (e as Error).message)
+        }
       }
     }
   }
@@ -249,6 +253,8 @@ export default async function DailyPage({
       <section className="daily-content">
         {!hasSelection ? (
           <p className="empty-state">请从左侧选择一个日期。</p>
+        ) : cachedHtml ? (
+          <div dangerouslySetInnerHTML={{ __html: cachedHtml }} />
         ) : report && report.totalCount === 0 ? (
           <p className="empty-state">该周期暂无资讯。</p>
         ) : report ? (

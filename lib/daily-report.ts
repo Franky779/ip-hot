@@ -279,18 +279,98 @@ export async function getDailyReport(
   const summary = llmResult?.summary ?? null
   const highlights = llmResult?.highlights ?? null
 
-  // 4. 写缓存
+  // 4. 渲染HTML + 写缓存
+  const contentHtml = summary ? renderReportHtml({
+    periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length,
+  }) : null
+
   try {
     await db.from('daily_reports').upsert({
       period, period_date: targetDate, summary, highlights,
       category_counts: categoryCounts, article_data: JSON.stringify(articles),
-      total_count: articles.length, created_at: new Date().toISOString(),
+      total_count: articles.length, content_html: contentHtml,
+      created_at: new Date().toISOString(),
     }, { onConflict: 'period, period_date' })
   } catch (e) {
     console.error('[DailyReport] 缓存写入失败:', (e as Error).message)
   }
 
   return { period, periodDate: targetDate, periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length }
+}
+
+/** 读取预渲染的静态HTML（秒开路径） */
+export async function getCachedReportHtml(period: string, dateStr: string): Promise<string | null> {
+  const db = getSupabase()
+  try {
+    const result = await db.from('daily_reports')
+      .select('content_html').eq('period', period).eq('period_date', dateStr).maybeSingle()
+    return result.data?.content_html || null
+  } catch { return null }
+}
+
+// ─── HTML 渲染（服务端生成，存DB，前端直接注入） ───────────────
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function renderReportHtml(report: {
+  periodLabel: string
+  summary: string | null
+  highlights: string | null
+  categoryCounts: Record<string, number>
+  categoryGroups: CategoryGroup[]
+  totalCount: number
+}): string {
+  const parts: string[] = []
+
+  // 摘要
+  parts.push('<div class="daily-summary">')
+  parts.push(`<h2 class="daily-summary-title">${esc(report.periodLabel)}资讯汇总</h2>`)
+  if (report.summary) {
+    parts.push('<div class="daily-summary-text">')
+    for (const p of report.summary.split('\n').filter(Boolean)) {
+      parts.push(`<p>${esc(p)}</p>`)
+    }
+    parts.push('</div>')
+  } else {
+    parts.push(`<p class="daily-summary-text text-muted">共收录 ${report.totalCount} 条IP行业资讯，覆盖 ${report.categoryGroups.length} 个分类领域。</p>`)
+  }
+  parts.push('</div>')
+
+  // 分类数量
+  parts.push('<div class="daily-category-counts">')
+  parts.push(`<span class="daily-counts-label">共收录 ${report.totalCount} 条资讯：</span>`)
+  for (const g of report.categoryGroups) {
+    parts.push(`<span class="daily-count-item">${esc(g.category)} <strong>${g.count}</strong>条</span>`)
+  }
+  parts.push('</div>')
+
+  // 本期看点
+  if (report.highlights) {
+    parts.push('<div class="daily-highlights">')
+    parts.push('<h3 class="daily-highlights-title">📌 本期看点</h3>')
+    parts.push('<ul class="daily-highlights-list">')
+    for (const h of report.highlights.split('\n').filter(Boolean)) {
+      parts.push(`<li>${esc(h.replace(/^[•\-\s]+/, ''))}</li>`)
+    }
+    parts.push('</ul></div>')
+  }
+
+  // 分类链接
+  parts.push('<div class="daily-category-links">')
+  for (const g of report.categoryGroups) {
+    parts.push('<div class="daily-category-block">')
+    parts.push(`<h3 class="daily-category-name">${esc(g.category)}<span class="daily-category-badge">${g.count}</span></h3>`)
+    parts.push('<ul class="daily-article-list">')
+    for (const a of g.articles) {
+      parts.push(`<li><a href="${esc(a.url)}" target="_blank" rel="noopener noreferrer" class="daily-article-link">${esc(a.title_cn || '(无标题)')}</a></li>`)
+    }
+    parts.push('</ul></div>')
+  }
+  parts.push('</div>')
+
+  return parts.join('')
 }
 
 function safeJsonParse(raw: unknown, fallback: any): any {
