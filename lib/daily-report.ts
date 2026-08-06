@@ -239,12 +239,23 @@ export async function getDailyReport(
 
   if (cached && cached.summary) {
     const articleData: ArticleLink[] = safeJsonParse(cached.article_data, [])
+    const categoryGroups = buildCategoryGroups(articleData)
+    const categoryCounts = cached.category_counts || {}
+    // 如果缓存没有预渲染HTML，补生成（向前兼容旧缓存）
+    if (!cached.content_html) {
+      const html = renderReportHtml({
+        periodLabel, summary: cached.summary, highlights: cached.highlights,
+        categoryCounts, categoryGroups, totalCount: cached.total_count || 0,
+      })
+      try {
+        await db.from('daily_reports').update({ content_html: html })
+          .eq('period', period).eq('period_date', targetDate)
+      } catch { /* 忽略 */ }
+    }
     return {
       period, periodDate: targetDate, periodLabel,
       summary: cached.summary, highlights: cached.highlights,
-      categoryCounts: cached.category_counts || {},
-      categoryGroups: buildCategoryGroups(articleData),
-      totalCount: cached.total_count || 0,
+      categoryCounts, categoryGroups, totalCount: cached.total_count || 0,
     }
   }
 
