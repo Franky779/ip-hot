@@ -75,14 +75,17 @@ export function validateAboutPageInput(input: unknown): ValidationResult<AboutPa
   return { ok: true, value: { title, blocks } }
 }
 
-export function validateFeedbackInput(input: unknown): ValidationResult<{ content: string; email: string | null }> {
+export function validateFeedbackInput(input: unknown): ValidationResult<{ content: string; wechat: string | null; image: string | null }> {
   if (!input || typeof input !== 'object') return { ok: false, error: '提交失败，请稍后重试' }
-  const raw = input as { content?: unknown; email?: unknown; website?: unknown }
+  const raw = input as { content?: unknown; wechat?: unknown; image?: unknown; website?: unknown }
   if (textValue(raw.website)) return { ok: false, error: '提交失败，请稍后重试' }
   const content = textValue(raw.content)
   if (!content) return { ok: false, error: '请填写反馈内容' }
   if (content.length > MAX_FEEDBACK_LENGTH) return { ok: false, error: `反馈内容不能超过 ${MAX_FEEDBACK_LENGTH} 字` }
-  const email = textValue(raw.email)
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: '邮箱格式不正确' }
-  return { ok: true, value: { content, email: email || null } }
+  const wechat = textValue(raw.wechat)
+  if (wechat && wechat.length > 100) return { ok: false, error: '微信号不能超过 100 字' }
+  const image = textValue(raw.image)
+  if (image && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) return { ok: false, error: '图片格式不支持' }
+  if (image && image.length > MAX_IMAGE_DATA_URL_LENGTH) return { ok: false, error: '单张图片不能超过 2 MB' }
+  return { ok: true, value: { content, wechat: wechat || null, image: image || null } }
 }

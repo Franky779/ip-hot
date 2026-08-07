@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   if (!isAdminAuthenticated(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const { data, error } = await createServiceClient().from('feedback').select('id, content, email, created_at').order('created_at', { ascending: false }).limit(200)
+  const { data, error } = await createServiceClient().from('feedback').select('id, content, wechat, image, created_at').order('created_at', { ascending: false }).limit(200)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ feedback: data ?? [] })
 }

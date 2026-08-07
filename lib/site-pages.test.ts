@@ -25,8 +25,9 @@ test('rejects unsupported about-page blocks and oversized images', () => {
 })
 
 test('normalizes valid feedback and rejects empty, invalid, or automated submissions', () => {
-  assert.deepEqual(validateFeedbackInput({ content: '  希望增加每周报告。  ', email: '  reader@example.com  ', website: '' }), { ok: true, value: { content: '希望增加每周报告。', email: 'reader@example.com' } })
-  assert.deepEqual(validateFeedbackInput({ content: '   ', email: '', website: '' }), { ok: false, error: '请填写反馈内容' })
-  assert.deepEqual(validateFeedbackInput({ content: '反馈', email: 'not-an-email', website: '' }), { ok: false, error: '邮箱格式不正确' })
-  assert.deepEqual(validateFeedbackInput({ content: '反馈', email: '', website: 'bot' }), { ok: false, error: '提交失败，请稍后重试' })
+  assert.deepEqual(validateFeedbackInput({ content: '  希望增加每周报告。  ', wechat: '  laojia_ip  ', website: '' }), { ok: true, value: { content: '希望增加每周报告。', wechat: 'laojia_ip', image: null } })
+  assert.deepEqual(validateFeedbackInput({ content: '   ', wechat: '', website: '' }), { ok: false, error: '请填写反馈内容' })
+  assert.deepEqual(validateFeedbackInput({ content: '反馈', wechat: '', website: 'bot' }), { ok: false, error: '提交失败，请稍后重试' })
+  assert.deepEqual(validateFeedbackInput({ content: '反馈', wechat: '', image: 'data:image/png;base64,aGVsbG8=', website: '' }), { ok: true, value: { content: '反馈', wechat: null, image: 'data:image/png;base64,aGVsbG8=' } })
+  assert.deepEqual(validateFeedbackInput({ content: '反馈', wechat: '', image: 'not-an-image', website: '' }), { ok: false, error: '图片格式不支持' })
 })
