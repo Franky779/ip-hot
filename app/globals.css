@@ -1027,6 +1027,12 @@ body {
 
 .talks-admin-saved.visible { opacity: 1; }
 
+.talks-admin-error {
+  font-size: 0.8125rem;
+  color: #c62828;
+  white-space: nowrap;
+}
+
 .talks-admin-split {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
