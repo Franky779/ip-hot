@@ -96,7 +96,7 @@ function api(method, path, data) {
       treeItems.push({ path: file, mode: '100644', type: 'blob', sha: null });
       continue;
     }
-const content = execFileSync('git', ['show', `HEAD:${file}`], { maxBuffer: 32 * 1024 * 1024 }).toString('base64');
+    const content = execFileSync('git', ['show', `HEAD:${file}`]).toString('base64');
     const blob = await api('POST', '/git/blobs', { content, encoding: 'base64' });
     console.log(`   blob ${file} -> ${blob.sha}`);
     treeItems.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
