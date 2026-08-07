@@ -7,11 +7,33 @@ const PERIODS = ['daily', 'weekly', 'monthly'] as const
 
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)
-  const limit = Number(searchParams.get('limit') || '0') || 0 // 0 = unlimited
+  const limit = Number(searchParams.get('limit') || '0') || 0
+  const singleDate = searchParams.get('date')           // YYYY-MM-DD
+  const singlePeriod = searchParams.get('period')       // daily | weekly | monthly
 
   const results: string[] = []
   let totalGen = 0, totalSkip = 0, totalFail = 0
 
+  // 单日期模式（cron 触发）
+  if (singleDate && singlePeriod && PERIODS.includes(singlePeriod as any)) {
+    const period = singlePeriod as 'daily' | 'weekly' | 'monthly'
+    try {
+      const report = await getDailyReport(period, singleDate)
+      if (report.summary) {
+        results.push(`✅ ${period} ${singleDate} — ${report.totalCount}条`)
+        totalGen++
+      } else {
+        results.push(`⚠️ ${period} ${singleDate} — ${report.totalCount}条`)
+        totalSkip++
+      }
+    } catch (e) {
+      results.push(`❌ ${period} ${singleDate} — ${(e as Error).message?.slice(0, 80)}`)
+      totalFail++
+    }
+    return NextResponse.json({ ok: true, totalGen, totalSkip, totalFail, results })
+  }
+
+  // 全量模式（手动触发）
   for (const period of PERIODS) {
     results.push(`\n=== ${period} ===`)
     const dates = await getAvailableDates(period)
@@ -40,7 +62,6 @@ export async function POST(request: Request) {
         totalFail++
       }
 
-      // 间隔
       if (processed < Math.min(dates.length, limit || dates.length)) {
         await new Promise(r => setTimeout(r, 1500))
       }
