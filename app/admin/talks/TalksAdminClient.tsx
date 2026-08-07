@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { CsvImportButton } from './CsvImportButton'
 
 // ====== 数据结构 ======
 
@@ -130,6 +131,17 @@ function ArticleEditor({ articles, editing: externalEditing, update }: { article
     <div className="talks-admin-split">
       <div className="talks-admin-list">
         <button className="talks-admin-add-btn" onClick={() => setEditing({ id: String(Date.now()), title: '', sourceUrl: '', publishedAt: new Date().toISOString().slice(0, 10) })}>+ 新增文章</button>
+        <CsvImportButton
+          columns={[{ key: 'title', label: '标题' }, { key: 'sourceUrl', label: '公众号链接' }]}
+          sampleCsv={'title,sourceUrl\n文章标题一,https://mp.weixin.qq.com/s/xxxx\n文章标题二,https://mp.weixin.qq.com/s/yyyy'}
+          onImport={(rows) => {
+            const today = new Date().toISOString().slice(0, 10)
+            const imported: Article[] = rows
+              .filter((r) => r.title || r.sourceUrl)
+              .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), title: r.title, sourceUrl: r.sourceUrl, publishedAt: today }))
+            update([...articles, ...imported])
+          }}
+        />
         {[...articles].sort((a, b) => Number(b.id) - Number(a.id)).map((a) => (
           <div className={`talks-admin-item${editing?.id === a.id ? ' active' : ''}`} key={a.id}>
             <div className="talks-admin-item-main">
@@ -192,6 +204,16 @@ function KnowledgeEditor({ terms, update }: { terms: KnowledgeTerm[]; update: (k
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <button className="talks-admin-add-btn" style={{ flex: 1, margin: 0 }} onClick={() => setEditing({ id: String(Date.now()), category: filterCat || categories[0] || '', term: '', definition: '' })}>+ 新增词条</button>
+          <CsvImportButton
+            columns={[{ key: 'category', label: '分类' }, { key: 'term', label: '词条名称' }, { key: 'definition', label: '名词解释' }, { key: 'example', label: '举例(选填)' }]}
+            sampleCsv={'category,term,definition,example\n授权模式,保底授权,授权方与被授权方约定一个最低保证金...,\nIP分级,S级IP,指具有国民级知名度的顶级IP...,'}
+            onImport={(rows) => {
+              const imported: KnowledgeTerm[] = rows
+                .filter((r) => r.category && r.term)
+                .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), category: r.category, term: r.term, definition: r.definition, example: r.example || undefined }))
+              update([...terms, ...imported])
+            }}
+          />
         </div>
         {filtered.map((t) => (
           <div className={`talks-admin-item${editing?.id === t.id ? ' active' : ''}`} key={t.id}>
@@ -263,6 +285,16 @@ function PodcastEditor({ items, editing: externalEditing, update }: { items: Pod
     <div className="talks-admin-split">
       <div className="talks-admin-list">
         <button className="talks-admin-add-btn" onClick={() => setEditing({ title: '', date: new Date().toISOString().slice(0, 10), url: '' })}>+ 新增播客</button>
+        <CsvImportButton
+          columns={[{ key: 'title', label: '标题' }, { key: 'date', label: '日期' }, { key: 'url', label: '链接' }]}
+          sampleCsv={'title,date,url\nEP07｜标题,2026-08-07,https://www.ximalaya.com/...\nEP08｜另一个标题,2026-08-14,https://www.ximalaya.com/...'}
+          onImport={(rows) => {
+            const imported: PodcastItem[] = rows
+              .filter((r) => r.title)
+              .map((r) => ({ title: r.title, date: r.date || new Date().toISOString().slice(0, 10), url: r.url }))
+            update([...items, ...imported])
+          }}
+        />
         {items.map((p) => (
           <div className={`talks-admin-item${editing?.title === p.title ? ' active' : ''}`} key={p.title}>
             <div className="talks-admin-item-main">

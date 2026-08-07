@@ -1033,6 +1033,90 @@ body {
   white-space: nowrap;
 }
 
+/* CSV批量导入弹窗 */
+
+.csv-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.csv-preview-modal {
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  max-width: 720px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+}
+
+.csv-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.csv-preview-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.csv-preview-table-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem 1.25rem;
+}
+
+.csv-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.csv-preview-table th,
+.csv-preview-table td {
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.csv-preview-table th {
+  background: var(--bg-muted);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.csv-preview-more {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  padding: 0.35rem 0;
+}
+
+.csv-preview-actions {
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid var(--border-light);
+  text-align: right;
+}
+
 .talks-admin-split {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
