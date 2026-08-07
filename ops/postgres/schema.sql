@@ -84,6 +84,8 @@ alter table info_sources add column if not exists verified_at timestamptz;
 alter table info_sources add column if not exists last_reviewed_at timestamptz;
 alter table info_sources add column if not exists verification_notes text not null default '';
 
+alter table info_sources add column if not exists is_official boolean not null default false;
+
 create index if not exists idx_info_sources_section_id on info_sources (section_id);
 create index if not exists idx_info_sources_region on info_sources (region);
 create index if not exists idx_info_sources_sort_order on info_sources (sort_order);

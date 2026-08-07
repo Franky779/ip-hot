@@ -22,6 +22,7 @@ interface Source {
   x_user_id?: string
   x_profile_url?: string
   official_evidence_url?: string
+  is_official?: boolean
   verification_status?: 'unverified' | 'verified' | 'revoked'
   verified_by?: string
   verification_notes?: string
@@ -63,6 +64,7 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
     verification_status: source?.verification_status ?? 'unverified',
     verified_by: source?.verified_by ?? '',
     verification_notes: source?.verification_notes ?? '',
+    is_official: source?.is_official ?? false,
   })
   const [executionMode, setExecutionMode] = useState<SourceExecutionMode>(initialSchedule.executionMode)
   const [scheduleTier, setScheduleTier] = useState<SourceScheduleTier>(initialSchedule.tier)
@@ -255,10 +257,22 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
-          <p className="source-form-hint">执行方式为“已暂停”或“人工处理”时不参与自动抓取。</p>
+          <p className=”source-form-hint”>执行方式为”已暂停”或”人工处理”时不参与自动抓取。</p>
         </div>
 
-        <div className="admin-modal-btns">
+        <div className=”source-form-field”>
+          <label>
+            <input
+              type=”checkbox”
+              checked={form.is_official ?? false}
+              onChange={(e) => setForm({ ...form, is_official: e.target.checked })}
+            />
+            {' '}官方号
+          </label>
+          <p className=”source-form-hint”>勾选后，该来源的所有文章将跳过相关性筛选，LLM 分类后直接展示。</p>
+        </div>
+
+        <div className=”admin-modal-btns”>
           <button type="button" onClick={onClose}>取消</button>
           <button type="button" className="admin-submit" onClick={handleSave} disabled={saving}>
             {saving ? '保存中...' : '保存'}

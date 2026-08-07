@@ -39,7 +39,9 @@ export function applyOfficialSourcePolicy(input: OfficialSourcePolicyInput): Off
 export async function loadVerifiedOfficialXNames(supabase: { from: (table: string) => any }): Promise<Set<string>> {
   const { data, error } = await supabase
     .from('info_sources')
-    .select('name, platform, verification_status, x_handle, x_user_id, x_profile_url, official_evidence_url')
+    .select('name, is_official, platform, verification_status, x_handle, x_user_id, x_profile_url, official_evidence_url')
   if (error) throw new Error(error.message)
-  return new Set((data ?? []).filter(isVerifiedOfficialX).map((source: { name: string }) => source.name))
+  return new Set((data ?? [])
+    .filter((source: any) => source.is_official || isVerifiedOfficialX(source))
+    .map((source: { name: string }) => source.name))
 }
