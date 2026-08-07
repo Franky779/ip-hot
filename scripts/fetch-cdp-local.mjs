@@ -637,17 +637,6 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
-  {
-    id: 'polygon-cdp',
-    name: 'Polygon',
-    url: 'https://www.polygon.com/',
-    selector: 'a[href*="/"][href*="polygon.com"]',
-    maxItems: 10,
-    loadWait: 25000,
-    needsScroll: true,
-  },
-
-
 ];
 
 const requestedIndex = Number(process.argv[2]);

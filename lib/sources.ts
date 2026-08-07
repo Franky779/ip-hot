@@ -235,6 +235,11 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.news-list li, ul li', titleSelector: 'h3 a, a', linkSelector: 'a', linkPrefix: 'http://www.licensingexpochina.com', maxItems: 10 },
   },
+  {
+    id: 'lcexpo', name: '全球授权展·上海站(LEC)', url: 'https://www.licensingexpochina.com/media/news',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: "article h4 a[href*='/archives/']", titleSelector: '', linkSelector: '', linkPrefix: 'https://www.licensingexpochina.com', maxItems: 10 },
+  },
   // --- 海外IP授权/潮玩 ---
   {
     id: 'artnews', name: 'ArtNews', url: 'https://www.artnews.com/feed',
@@ -535,10 +540,9 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: { adapter: 'jiemian-account', apiUrl: 'https://papi.jiemian.com/page/api/officialAccount/accountArticles', accountId: '2079', maxItems: 10 },
   },
   {
-    id: 'polygon-cdp', name: 'Polygon', url: 'https://www.polygon.com/',
+    id: 'polygon', name: 'Polygon', url: 'https://www.polygon.com/',
     language: 'en', priority: 'P0', type: 'web',
-    needsLocalCdp: true,
-    scrapeConfig: { itemSelector: 'a[href*="/"][href*="polygon.com"]:not([href*="/author/"])', titleSelector: '', linkSelector: '', maxItems: 10 },
+    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/https://www.polygon.com/', sourceHost: 'www.polygon.com', pathPrefix: '/', linkPattern: '/[a-z0-9]+-[a-z0-9-]+/$', maxItems: 10 },
   },
   {
     id: 'kotaku', name: 'Kotaku', url: 'https://kotaku.com/',
@@ -565,11 +569,7 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'ja', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: 'a[href*="/20"]', titleSelector: '', linkSelector: '', maxItems: 10 },
   },
-  {
-    id: 'mkzhan-cdp', name: '漫客栈', url: 'https://www.mkzhan.com/category/?order=2',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-    scrapeConfig: { itemSelector: 'a[href*="/"][href*="comic"]', titleSelector: '', linkSelector: '', maxItems: 10 },
-  },
+
 ]
 
 // ============================================================

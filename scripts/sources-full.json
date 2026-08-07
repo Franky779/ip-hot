@@ -92,12 +92,20 @@
   {
     "id": "polygon",
     "name": "Polygon",
-    "url": "https://www.polygon.com/rss/index.xml",
-    "category": "RSS",
-    "isRss": true,
+    "url": "https://www.polygon.com/",
+    "category": "WEB",
+    "isRss": false,
     "needsLocalCdp": false,
     "loginRequired": false,
-    "priority": "P0"
+    "priority": "P0",
+    "scrapeConfig": {
+      "adapter": "jina-markdown-links",
+      "proxyUrl": "https://r.jina.ai/https://www.polygon.com/",
+      "sourceHost": "www.polygon.com",
+      "pathPrefix": "/",
+      "linkPattern": "/[a-z0-9]+-[a-z0-9-]+/$",
+      "maxItems": 10
+    }
   },
   {
     "id": "kotaku",
@@ -323,18 +331,18 @@
   },
   {
     "id": "lcexpo",
-    "name": "LCEXPO上海国际授权展",
-    "url": "http://www.lcexpo.com.cn",
+    "name": "全球授权展·上海站(LEC)",
+    "url": "https://www.licensingexpochina.com/media/news",
     "category": "WEB",
     "isRss": false,
     "needsLocalCdp": false,
     "loginRequired": false,
     "priority": "P1",
     "scrapeConfig": {
-      "itemSelector": ".news-list li, ul li",
-      "titleSelector": "h3 a, a",
-      "linkSelector": "a",
-      "linkPrefix": "http://www.lcexpo.com.cn",
+      "itemSelector": "article h4 a[href*='/archives/']",
+      "titleSelector": "",
+      "linkSelector": "",
+      "linkPrefix": "https://www.licensingexpochina.com",
       "maxItems": 10
     }
   },
