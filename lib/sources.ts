@@ -128,22 +128,21 @@ export const RSS_SOURCES: NewsSource[] = [
   { id: 'variety', name: 'Variety', url: 'https://variety.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'thr', name: 'The Hollywood Reporter', url: 'https://www.hollywoodreporter.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // 游戏+动漫综合
-  { id: 'polygon', name: 'Polygon', url: 'https://www.polygon.com/feed/', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // 文化/博物馆/艺术
   { id: 'hyperallergic', name: 'Hyperallergic', url: 'https://hyperallergic.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // IP授权/潮玩/玩具
   { id: 'toybook', name: 'The Toy Book', url: 'https://toybook.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'spankystokes', name: 'Spanky Stokes', url: 'https://www.spankystokes.com/feeds/posts/default', language: 'en', priority: 'P0', type: 'rss', isRss: true },
+  { id: 'weareresonate', name: 'Resonate', url: 'https://www.weareresonate.com/feed/', language: 'en', priority: 'P1', type: 'rss', isRss: true },
   // 日本动漫/游戏
   { id: 'animeanime', name: 'Anime Anime', url: 'https://animeanime.jp/category/news/', language: 'ja', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/article/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://animeanime.jp', maxItems: 10 } },
+  { id: 'natalie', name: 'Comic Natalie', url: 'https://natalie.mu/comic/feed/news', language: 'ja', priority: 'P0', type: 'rss', isRss: true },
   { id: '4gamer', name: '4Gamer', url: 'https://www.4gamer.net/rss/index.xml', language: 'ja', priority: 'P0', type: 'rss', isRss: true },
   { id: 'famitsu', name: 'Famitsu', url: 'https://www.famitsu.com/category/news/page/1', language: 'ja', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/article/"], a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.famitsu.com', maxItems: 10 } },
   // 国内商业媒体
   { id: '36kr', name: '36氪', url: 'https://36kr.com/feed', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   { id: 'huxiu', name: '虎嗅', url: 'https://www.huxiu.com/', language: 'zh', priority: 'P1', type: 'web', scrapeConfig: { adapter: 'huxiu-api', apiUrl: 'https://article-api.huxiu.com/web/channel/articleList', maxItems: 10 } },
   { id: 'tmtpost', name: '钛媒体', url: 'https://www.tmtpost.com/rss.xml', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
-  // 2026-08-03 新增（IP NEWS 搜索）
-  { id: 'kotaku', name: 'Kotaku', url: 'https://kotaku.com/rss', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // D类 RSSHub — 已实测全部不可达（rsshub.app 超时），改为本地CDP直连
   // 微博热搜 → scripts/fetch-cdp-local.mjs (CDP直连，无需登录)
   // 知乎热榜 → scripts/fetch-cdp-local.mjs (CDP直连，无需登录)
@@ -535,41 +534,41 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { adapter: 'jiemian-account', apiUrl: 'https://papi.jiemian.com/page/api/officialAccount/accountArticles', accountId: '2079', maxItems: 10 },
   },
-  // 2026-08-03 新增（IP NEWS 搜索）
+  {
+    id: 'polygon-cdp', name: 'Polygon', url: 'https://www.polygon.com/',
+    language: 'en', priority: 'P0', type: 'web',
+    needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'a[href*="/"][href*="polygon.com"]:not([href*="/author/"])', titleSelector: '', linkSelector: '', maxItems: 10 },
+  },
+  {
+    id: 'kotaku', name: 'Kotaku', url: 'https://kotaku.com/',
+    language: 'en', priority: 'P0', type: 'web',
+    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/https://kotaku.com/', sourceHost: 'kotaku.com', pathPrefix: '/', linkPattern: '/[a-z][a-z-]+-\\d{7,}$', maxItems: 10 },
+  },
+  {
+    id: 'goodsmile', name: 'Good Smile Company', url: 'https://www.goodsmile.com/en/news',
+    language: 'en', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: 'main a[href*="/en/news/"]', titleSelector: '', linkSelector: '', maxItems: 10 },
+  },
+  {
+    id: 'licensingmagazine', name: 'Licensing Magazine', url: 'https://www.licensingmagazine.com/',
+    language: 'en', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: '.entry-title a[href*="/20"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.licensingmagazine.com', maxItems: 10 },
+  },
   {
     id: 'chinaventure', name: '投中网', url: 'https://www.chinaventure.com.cn/',
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.news-list li, article, ul li', titleSelector: 'h2 a, h3 a, a', linkSelector: 'a', linkPrefix: 'https://www.chinaventure.com.cn', maxItems: 10 },
   },
   {
-    id: 'licensingmagazine', name: 'Licensing Magazine', url: 'https://www.licensingmagazine.com/',
-    language: 'en', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: 'article a[href*="/202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.licensingmagazine.com', maxItems: 10 },
-  },
-  {
-    id: 'weareresonate', name: 'Resonate', url: 'https://www.weareresonate.com/',
-    language: 'en', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: 'article a[href*="/202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.weareresonate.com', maxItems: 10 },
-  },
-  {
-    id: 'goodsmile', name: 'Good Smile Company', url: 'https://www.goodsmile.com/en/news',
-    language: 'en', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: '.news-list li a, article a', titleSelector: '', linkSelector: '', maxItems: 10 },
-  },
-  {
     id: 'tokyotoyshow', name: '东京玩具展', url: 'https://tokyotoyshow.com/',
     language: 'ja', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: 'a[href*="/202"]', titleSelector: '', linkSelector: '', maxItems: 10 },
+    scrapeConfig: { itemSelector: 'a[href*="/20"]', titleSelector: '', linkSelector: '', maxItems: 10 },
   },
   {
-    id: 'mkzhan', name: '漫客栈', url: 'https://www.mkzhan.com',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: '.news-list li, article, ul li', titleSelector: 'h3 a, h2 a, a', linkSelector: 'a', linkPrefix: 'https://www.mkzhan.com', maxItems: 10 },
-  },
-  {
-    id: 'lcexpo', name: 'LCEXPO上海国际授权展', url: 'http://www.lcexpo.com.cn',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: '.news-list li, ul li', titleSelector: 'h3 a, a', linkSelector: 'a', linkPrefix: 'http://www.lcexpo.com.cn', maxItems: 10 },
+    id: 'mkzhan-cdp', name: '漫客栈', url: 'https://www.mkzhan.com/category/?order=2',
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'a[href*="/"][href*="comic"]', titleSelector: '', linkSelector: '', maxItems: 10 },
   },
 ]
 
@@ -587,7 +586,7 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'cnipa', name: '国家知识产权局', url: 'https://www.cnipa.gov.cn/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.cnipa.gov.cn', maxItems: 5 } },
   { id: 'mof', name: '财政部', url: 'https://www.mof.gov.cn/zhengwuxinxi/zhengcefabu/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   // 省级文旅厅
-{ id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/zj/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.mct.gov.cn/whzx/qgwhxxlb/zj/', maxItems: 5 } },
+{ id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://ct.zj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/col/"][href*="/art/2026/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://ct.zj.gov.cn', maxItems: 5 } },
   { id: 'dg-gov', name: '东莞市人民政府', aliases: ['东莞市文化广电旅游体育局'], url: 'https://wglt.dg.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://wglt.dg.gov.cn/', sourceHost: 'wglt.dg.gov.cn', pathPrefix: '/', linkPattern: '/content/post_\\d+\\.html$', maxItems: 5 } },
   { id: 'hz-xh', name: '杭州西湖区政府', aliases: ['杭州市西湖区人民政府'], url: 'https://www.hzxh.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.hzxh.gov.cn/', sourceHost: 'www.hzxh.gov.cn', pathPrefix: '/', linkPattern: '/art/202\\d/art_[a-f0-9]+\\.html$', maxItems: 5 } },
   { id: 'xj-wlt', name: '新疆文旅厅', url: 'https://wlt.xinjiang.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.xinjiang.gov.cn', maxItems: 5 } },

@@ -628,6 +628,24 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
+  {
+    id: 'mkzhan-cdp',
+    name: '漫客栈',
+    url: 'https://www.mkzhan.com/category/?order=2',
+    selector: 'a[href*="/"][href*="comic"]',
+    maxItems: 10,
+    loadWait: 20000,
+    needsScroll: true,
+  },
+  {
+    id: 'polygon-cdp',
+    name: 'Polygon',
+    url: 'https://www.polygon.com/',
+    selector: 'a[href*="/"][href*="polygon.com"]',
+    maxItems: 10,
+    loadWait: 25000,
+    needsScroll: true,
+  },
 
 
 ];
