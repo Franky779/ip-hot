@@ -171,11 +171,10 @@ function ArticleEditor({ articles, editing: externalEditing, update }: { article
     <div className="talks-admin-split">
       <div className="talks-admin-list">
         <button className="talks-admin-add-btn" onClick={() => setEditing({ id: String(Date.now()), title: '', sourceUrl: '', publishedAt: new Date().toISOString().slice(0, 10) })}>+ 新增文章</button>
-        {articles.map((a) => (
+        {[...articles].sort((a, b) => Number(b.id) - Number(a.id)).map((a) => (
           <div className={`talks-admin-item${editing?.id === a.id ? ' active' : ''}`} key={a.id}>
             <div className="talks-admin-item-main">
               <span className="talks-admin-item-title">{a.title}</span>
-              <span className="talks-admin-item-meta">{a.publishedAt}</span>
             </div>
             <div className="talks-admin-item-actions">
               <button className="talks-admin-action-btn" onClick={() => setEditing(a)}>编辑</button>
@@ -197,7 +196,6 @@ function ArticleForm({ item, onSave, onCancel }: { item: Article; onSave: (a: Ar
       <h3>{item.title ? '编辑文章' : '新增文章'}</h3>
       <label>标题<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
       <label>公众号链接<input value={form.sourceUrl} onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })} placeholder="https://mp.weixin.qq.com/s/..." /></label>
-      <label>发布日期<input type="date" value={form.publishedAt} onChange={(e) => setForm({ ...form, publishedAt: e.target.value })} /></label>
       <div className="talks-admin-form-actions">
         <button className="talks-admin-save-btn" onClick={() => onSave(form)}>保存</button>
         <button className="talks-admin-cancel-btn" onClick={onCancel}>取消</button>
