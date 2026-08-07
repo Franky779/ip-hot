@@ -890,6 +890,65 @@ body {
   gap: 0.4rem;
 }
 
+/* Industry Practices — steps & rules lists */
+.practice-steps {
+  list-style: none;
+  counter-reset: step;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.practice-step-item {
+  counter-increment: step;
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+.practice-step-item::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.1rem;
+}
+.practice-rules {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.practice-rule-item {
+  position: relative;
+  padding-left: 1.2rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+.practice-rule-item::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+.practice-source {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
 
 .talks-admin-filter {
   padding: 0.5rem 0.75rem;

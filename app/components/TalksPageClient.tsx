@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { LAOJIA_TALKS } from '@/lib/migrated-content'
+import { IndustryPractices } from '@/app/components/IndustryPractices'
+import { getAllKnowledgeTerms, searchKnowledgeTerms, type KnowledgeTerm } from '@/lib/knowledge'
 
 const TABS = [
   { key: 'articles', label: '公众号文章' },
   { key: 'knowledge', label: '行业知识' },
+  { key: 'practices', label: '行业实操' },
   { key: 'podcast', label: '播客/直播' },
   { key: 'courses', label: '线上课程' },
 ] as const
@@ -14,17 +17,8 @@ type TabKey = (typeof TABS)[number]['key']
 
 const LS_KEY = 'ip-hot-talks-data'
 
-interface KnowledgeTerm {
-  id: string
-  category: string
-  term: string
-  definition: string
-  example?: string
-}
-
 interface TalksData {
   articles: { id: string; title: string; sourceUrl: string; publishedAt: string }[]
-  knowledge: KnowledgeTerm[]
   podcast: { title: string; date: string; url: string }[]
   courses: { title: string; duration: string; videoUrl: string }[]
 }
@@ -38,7 +32,8 @@ function loadTalksData(): TalksData | null {
   return null
 }
 
-const DEFAULT_KNOWLEDGE: KnowledgeTerm[] = [
+/** @deprecated — migrated to data/knowledge-terms.json; kept for admin backward compat */
+const _DEFAULT_KNOWLEDGE: KnowledgeTerm[] = [
   { id: 'k1', category: '授权模式', term: '保底授权', definition: '授权方与被授权方约定一个最低保证金（Minimum Guarantee），被授权方无论实际销售收入如何，都必须支付这笔保底金额。超出保底部分按约定的版税率分成。这是最常见的IP授权合作模式，对IP方来说是风险最低的方式。', example: '泡泡玛特与迪士尼的合作即采用保底授权模式：泡泡玛特先支付一笔保底金给迪士尼，获得米奇、公主系列等IP的盲盒开发权。每卖出一个盲盒，超出保底部分的销售额按8%版税率分成给迪士尼。如果盲盒滞销，迪士尼至少拿到了保底金，风险由泡泡玛特承担。' },
   { id: 'k2', category: '授权模式', term: '分成授权', definition: '不设最低保证金，被授权方按实际销售额的一定比例（通常3%-10%）向IP方支付版税。适合初期测试市场反应的中小品牌，IP方承担的风险更大，但被授权方的资金压力较小。' },
   { id: 'k3', category: '授权模式', term: '买断授权', definition: '被授权方一次性支付固定费用，在约定时间和区域内独家使用IP。买断金额通常远高于保底授权，适合对市场有充分信心的大品牌或核心品类合作伙伴。', example: '名创优品2024年以买断方式获得某个日本动漫IP的中国区独家使用权，一次性支付2000万元。之后名创优品独立开发了50+款SKU，所有销售收入归名创优品，无需再向IP方支付版税。' },
@@ -87,7 +82,6 @@ export function TalksPageClient() {
     const saved = loadTalksData()
     setData(saved ?? {
       articles: LAOJIA_TALKS.map((t) => ({ id: t.id, title: t.title, sourceUrl: t.sourceUrl, publishedAt: t.publishedAt })),
-      knowledge: DEFAULT_KNOWLEDGE,
       podcast: PODCAST_ITEMS,
       courses: COURSE_ITEMS,
     })
@@ -129,7 +123,9 @@ export function TalksPageClient() {
           </div>
         )}
 
-        {active === 'knowledge' && <KnowledgeView terms={data.knowledge} />}
+        {active === 'knowledge' && <KnowledgeView />}
+
+        {active === 'practices' && <IndustryPractices />}
 
         {active === 'podcast' && (
           <div className="talks-list">
@@ -159,31 +155,33 @@ export function TalksPageClient() {
   )
 }
 
-function KnowledgeView({ terms }: { terms: KnowledgeTerm[] }) {
+function KnowledgeView() {
+  const allTerms = getAllKnowledgeTerms()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<KnowledgeTerm | null>(null)
 
+  const filtered = useMemo(() => {
+    return search ? searchKnowledgeTerms(search) : allTerms
+  }, [search, allTerms])
+
   const categories = useMemo(() => {
     const cats = new Map<string, KnowledgeTerm[]>()
-    const filtered = search
-      ? terms.filter((t) => t.term.includes(search) || t.definition.includes(search) || t.category.includes(search))
-      : terms
     for (const t of filtered) {
       const list = cats.get(t.category) ?? []
       list.push(t)
       cats.set(t.category, list)
     }
     return [...cats.entries()]
-  }, [terms, search])
+  }, [filtered])
 
-  const totalCount = categories.reduce((s, [, items]) => s + items.length, 0)
+  const totalCount = filtered.length
 
   const relatedTerms = useMemo(() => {
     if (!selected) return []
-    return terms.filter((t) => t.category === selected.category && t.id !== selected.id).slice(0, 5)
-  }, [selected, terms])
+    return allTerms.filter((t) => t.category === selected.category && t.id !== selected.id).slice(0, 5)
+  }, [selected, allTerms])
 
-  if (terms.length === 0) return <p className="empty-state">暂无知识词条</p>
+  if (allTerms.length === 0) return <p className="empty-state">暂无知识词条</p>
 
   return (
     <div className={`knowledge-view${selected ? ' has-detail' : ''}`}>
