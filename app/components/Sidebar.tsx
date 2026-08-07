@@ -78,7 +78,7 @@ const MOBILE_NAV_ITEMS = [
   },
   {
     href: '/feedback',
-    label: '反馈',
+    label: '问题反馈',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
@@ -156,7 +156,7 @@ export function Sidebar() {
           </Link>
           <Link href="/feedback" className={`sidebar-link${pathname === '/feedback' ? ' active' : ''}`}>
             <span className="sidebar-icon">✎</span>
-            <span>反馈</span>
+            <span>问题反馈</span>
           </Link>
           {loaded && isAdmin && (
             <>
