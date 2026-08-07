@@ -117,7 +117,7 @@ export function TalksAdminClient() {
 
 // ====== 公众号文章编辑器 ======
 
-function ArticleEditor({ articles, editing: externalEditing, update }: { articles: Article[]; editing: Article | null; update: (a: Article[]) => void }) {
+function ArticleEditor({ articles, editing: externalEditing, update }: { articles: Article[]; editing: Article | null; update: (a: Article[]) => Promise<void> }) {
   const [editing, setEditing] = useState<Article | null>(externalEditing)
   useEffect(() => { setEditing(externalEditing) }, [externalEditing])
 
@@ -134,12 +134,12 @@ function ArticleEditor({ articles, editing: externalEditing, update }: { article
         <CsvImportButton
           columns={[{ key: 'title', label: '标题' }, { key: 'sourceUrl', label: '公众号链接' }]}
           sampleCsv={'title,sourceUrl\n文章标题一,https://mp.weixin.qq.com/s/xxxx\n文章标题二,https://mp.weixin.qq.com/s/yyyy'}
-          onImport={(rows) => {
+          onImport={async (rows) => {
             const today = new Date().toISOString().slice(0, 10)
             const imported: Article[] = rows
               .filter((r) => r.title || r.sourceUrl)
               .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), title: r.title, sourceUrl: r.sourceUrl, publishedAt: today }))
-            update([...articles, ...imported])
+            await update([...articles, ...imported])
           }}
         />
         {[...articles].sort((a, b) => Number(b.id) - Number(a.id)).map((a) => (
@@ -177,7 +177,7 @@ function ArticleForm({ item, onSave, onCancel }: { item: Article; onSave: (a: Ar
 
 // ====== 行业知识编辑器（百科词条） ======
 
-function KnowledgeEditor({ terms, update }: { terms: KnowledgeTerm[]; update: (k: KnowledgeTerm[]) => void }) {
+function KnowledgeEditor({ terms, update }: { terms: KnowledgeTerm[]; update: (k: KnowledgeTerm[]) => Promise<void> }) {
   const [editing, setEditing] = useState<KnowledgeTerm | null>(null)
   const [filterCat, setFilterCat] = useState('')
 
@@ -207,11 +207,11 @@ function KnowledgeEditor({ terms, update }: { terms: KnowledgeTerm[]; update: (k
           <CsvImportButton
             columns={[{ key: 'category', label: '分类' }, { key: 'term', label: '词条名称' }, { key: 'definition', label: '名词解释' }, { key: 'example', label: '举例(选填)' }]}
             sampleCsv={'category,term,definition,example\n授权模式,保底授权,授权方与被授权方约定一个最低保证金...,\nIP分级,S级IP,指具有国民级知名度的顶级IP...,'}
-            onImport={(rows) => {
+            onImport={async (rows) => {
               const imported: KnowledgeTerm[] = rows
                 .filter((r) => r.category && r.term)
                 .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), category: r.category, term: r.term, definition: r.definition, example: r.example || undefined }))
-              update([...terms, ...imported])
+              await update([...terms, ...imported])
             }}
           />
         </div>
@@ -271,7 +271,7 @@ function KnowledgeForm({ item, categories, onSave, onCancel }: { item: Knowledge
 
 // ====== 播客编辑器 ======
 
-function PodcastEditor({ items, editing: externalEditing, update }: { items: PodcastItem[]; editing: PodcastItem | null; update: (p: PodcastItem[]) => void }) {
+function PodcastEditor({ items, editing: externalEditing, update }: { items: PodcastItem[]; editing: PodcastItem | null; update: (p: PodcastItem[]) => Promise<void> }) {
   const [editing, setEditing] = useState<PodcastItem | null>(externalEditing)
   useEffect(() => { setEditing(externalEditing) }, [externalEditing])
 
@@ -288,11 +288,11 @@ function PodcastEditor({ items, editing: externalEditing, update }: { items: Pod
         <CsvImportButton
           columns={[{ key: 'title', label: '标题' }, { key: 'date', label: '日期' }, { key: 'url', label: '链接' }]}
           sampleCsv={'title,date,url\nEP07｜标题,2026-08-07,https://www.ximalaya.com/...\nEP08｜另一个标题,2026-08-14,https://www.ximalaya.com/...'}
-          onImport={(rows) => {
+          onImport={async (rows) => {
             const imported: PodcastItem[] = rows
               .filter((r) => r.title)
               .map((r) => ({ title: r.title, date: r.date || new Date().toISOString().slice(0, 10), url: r.url }))
-            update([...items, ...imported])
+            await update([...items, ...imported])
           }}
         />
         {items.map((p) => (
