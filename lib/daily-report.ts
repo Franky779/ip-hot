@@ -335,7 +335,28 @@ function renderReportHtml(report: {
 }): string {
   const parts: string[] = []
 
-  // 摘要
+  // 1. 本期看点（置顶）
+  if (report.highlights) {
+    parts.push('<div class="daily-highlights">')
+    parts.push('<h3 class="daily-highlights-title">本期看点</h3>')
+    parts.push('<ul class="daily-highlights-list">')
+    for (const h of report.highlights.split('\n').filter(Boolean)) {
+      parts.push(`<li>${esc(h.replace(/^[•\-\s]+/, ''))}</li>`)
+    }
+    parts.push('</ul></div>')
+  }
+
+  // 2. 分类速览
+  parts.push('<div class="daily-stats-bar">')
+  parts.push(`<span class="daily-stats-total">共 <strong>${report.totalCount}</strong> 条</span>`)
+  parts.push('<span class="daily-stats-divider"></span>')
+  parts.push('<span class="daily-stats-tags">')
+  for (const g of report.categoryGroups) {
+    parts.push(`<span class="daily-stats-tag">${esc(g.category)} <strong>${g.count}</strong></span>`)
+  }
+  parts.push('</span></div>')
+
+  // 3. 资讯分析
   parts.push('<div class="daily-summary">')
   parts.push(`<h2 class="daily-summary-title">${esc(report.periodLabel)}资讯汇总</h2>`)
   if (report.summary) {
@@ -349,26 +370,7 @@ function renderReportHtml(report: {
   }
   parts.push('</div>')
 
-  // 分类数量
-  parts.push('<div class="daily-category-counts">')
-  parts.push(`<span class="daily-counts-label">共收录 ${report.totalCount} 条资讯：</span>`)
-  for (const g of report.categoryGroups) {
-    parts.push(`<span class="daily-count-item">${esc(g.category)} <strong>${g.count}</strong>条</span>`)
-  }
-  parts.push('</div>')
-
-  // 本期看点
-  if (report.highlights) {
-    parts.push('<div class="daily-highlights">')
-    parts.push('<h3 class="daily-highlights-title">📌 本期看点</h3>')
-    parts.push('<ul class="daily-highlights-list">')
-    for (const h of report.highlights.split('\n').filter(Boolean)) {
-      parts.push(`<li>${esc(h.replace(/^[•\-\s]+/, ''))}</li>`)
-    }
-    parts.push('</ul></div>')
-  }
-
-  // 分类链接
+  // 4. 分类详情
   parts.push('<div class="daily-category-links">')
   for (const g of report.categoryGroups) {
     parts.push('<div class="daily-category-block">')

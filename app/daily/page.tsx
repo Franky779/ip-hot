@@ -259,6 +259,32 @@ export default async function DailyPage({
           <p className="empty-state">该周期暂无资讯。</p>
         ) : report ? (
           <>
+            {/* 1. 本期看点（置顶） */}
+            {report.highlights && (
+              <div className="daily-highlights">
+                <h3 className="daily-highlights-title">本期看点</h3>
+                <ul className="daily-highlights-list">
+                  {report.highlights.split('\n').filter(Boolean).map((h: string, i: number) => (
+                    <li key={i}>{h.replace(/^[•\-\s]+/, '')}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 2. 分类速览 */}
+            <div className="daily-stats-bar">
+              <span className="daily-stats-total">共 <strong>{report.totalCount}</strong> 条</span>
+              <span className="daily-stats-divider" />
+              <span className="daily-stats-tags">
+                {report.categoryGroups.map((g: any) => (
+                  <span key={g.category} className="daily-stats-tag">
+                    {g.category} <strong>{g.count}</strong>
+                  </span>
+                ))}
+              </span>
+            </div>
+
+            {/* 3. 资讯分析 */}
             <div className="daily-summary">
               <h2 className="daily-summary-title">{report.periodLabel}资讯汇总</h2>
               {report.summary ? (
@@ -274,26 +300,7 @@ export default async function DailyPage({
               )}
             </div>
 
-            <div className="daily-category-counts">
-              <span className="daily-counts-label">共收录 {report.totalCount} 条资讯：</span>
-              {report.categoryGroups.map((g: any) => (
-                <span key={g.category} className="daily-count-item">
-                  {g.category} <strong>{g.count}</strong>条
-                </span>
-              ))}
-            </div>
-
-            {report.highlights && (
-              <div className="daily-highlights">
-                <h3 className="daily-highlights-title">📌 本期看点</h3>
-                <ul className="daily-highlights-list">
-                  {report.highlights.split('\n').filter(Boolean).map((h: string, i: number) => (
-                    <li key={i}>{h.replace(/^[•\-\s]+/, '')}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
+            {/* 4. 分类详情 */}
             <div className="daily-category-links">
               {report.categoryGroups.map((g: any) => (
                 <div key={g.category} className="daily-category-block">
