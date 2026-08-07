@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { IndustryPractices } from '@/app/components/IndustryPractices'
 
 interface Article { id: string; title: string; sourceUrl: string; publishedAt: string }
 interface KnowledgeTerm { id: string; category: string; term: string; definition: string; example?: string }
@@ -11,7 +10,6 @@ interface CourseItem { title: string; duration: string; videoUrl: string }
 const TABS = [
   { key: 'articles', label: '公众号文章' },
   { key: 'knowledge', label: '行业知识' },
-  { key: 'practices', label: '行业实操' },
   { key: 'podcast', label: '播客/直播' },
   { key: 'courses', label: '线上课程' },
 ] as const
@@ -63,8 +61,6 @@ export function TalksPageClient({ articles, knowledge, podcast, courses }: Talks
         )}
 
         {active === 'knowledge' && <KnowledgeView terms={knowledge} />}
-
-        {active === 'practices' && <IndustryPractices />}
 
         {active === 'podcast' && (
           <div className="talks-list">
