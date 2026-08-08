@@ -31,7 +31,7 @@ function curlFetchXml(url: string, timeoutMs: number): string {
   return result.stdout
 }
 
-export async function parseFeedUrl(url: string, timeoutMs = 15_000) {
+export async function parseFeedUrl(url: string, timeoutMs = 30_000) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
