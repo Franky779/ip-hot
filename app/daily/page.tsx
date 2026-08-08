@@ -214,7 +214,7 @@ export default async function DailyPage({
       {/* ─── 左侧栏：标题 + tab + 时间列表 + 底端填充 ─── */}
       <aside className="daily-sidebar">
         <div className="daily-sidebar-top">
-          <h1 className="daily-sidebar-title">IP日报</h1>
+          <h1 className="daily-sidebar-title">行业日报</h1>
           {useDemo && <span className="daily-demo-badge">演示</span>}
           <div className="daily-tabs" role="tablist" aria-label="日报周期切换">
             {PERIODS.map(p => {

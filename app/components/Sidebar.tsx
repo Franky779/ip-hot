@@ -18,7 +18,9 @@ const NAV_ITEMS = [
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M4 19h16M4 12h16M4 5h16" />
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="6" x2="12" y2="12" />
+        <line x1="12" y1="12" x2="16" y2="14" />
       </svg>
     ),
   },
@@ -30,7 +32,9 @@ const MOBILE_NAV_ITEMS = [
     label: '快讯',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 19h16M4 12h16M4 5h16" />
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="6" x2="12" y2="12" />
+        <line x1="12" y1="12" x2="16" y2="14" />
       </svg>
     ),
   },
@@ -48,21 +52,22 @@ const MOBILE_NAV_ITEMS = [
   },
   {
     href: '/research',
-    label: '研究',
+    label: '数据',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="7" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
   },
   {
     href: '/talks',
-    label: '有话说',
+    label: '专业',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
       </svg>
     ),
   },
@@ -76,15 +81,6 @@ const MOBILE_NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    href: '/feedback',
-    label: '问题反馈',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" />
-      </svg>
-    ),
-  },
 ]
 
 export function Sidebar() {
@@ -93,7 +89,7 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile top bar (brand only; navigation lives in the bottom tab bar) */}
+      {/* Mobile top bar (brand + theme/admin toggles) */}
       <div className="mobile-topbar">
         <Link href="/" className="mobile-topbar-brand">
           <img
@@ -103,6 +99,10 @@ export function Sidebar() {
           />
           <span className="sidebar-brand-text">新文创老贾聊IP</span>
         </Link>
+        <div className="mobile-topbar-actions">
+          <AdminToggle />
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Desktop sidebar (hidden on mobile) */}
@@ -140,23 +140,35 @@ export function Sidebar() {
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
             </span>
-            <span>IP日报</span>
+            <span>行业日报</span>
           </Link>
           <Link href="/research" className={`sidebar-link${pathname === '/research' ? ' active' : ''}`}>
-            <span className="sidebar-icon">◆</span>
-            <span>深度研究</span>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            </span>
+            <span>数据分析</span>
           </Link>
           <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
-            <span className="sidebar-icon">✎</span>
-            <span>老贾有话说</span>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              </svg>
+            </span>
+            <span>专业知识</span>
           </Link>
           <Link href="/about" className={`sidebar-link${pathname === '/about' ? ' active' : ''}`}>
-            <span className="sidebar-icon">◆</span>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </span>
             <span>关于老贾</span>
-          </Link>
-          <Link href="/feedback" className={`sidebar-link${pathname === '/feedback' ? ' active' : ''}`}>
-            <span className="sidebar-icon">✎</span>
-            <span>问题反馈</span>
           </Link>
           {loaded && isAdmin && (
             <>
@@ -180,14 +192,7 @@ export function Sidebar() {
                     <polyline points="10 9 9 9 8 9" />
                   </svg>
                 </span>
-                <span>管理信息源</span>
-              </Link>
-              <Link
-                href="/admin/talks"
-                className={`sidebar-link${pathname === '/admin/talks' ? ' active' : ''}`}
-              >
-                <span className="sidebar-icon">✎</span>
-                <span>管理有话说</span>
+                <span>[管理]信息源</span>
               </Link>
               <Link
                 href="/monitor"
@@ -208,8 +213,42 @@ export function Sidebar() {
                     <path d="M6 10l4 4 4-5 4 3" />
                   </svg>
                 </span>
-                <span>运营监控</span>
+                <span>[管理]资讯处理</span>
               </Link>
+              <Link
+                href="/admin/talks"
+                className={`sidebar-link${pathname === '/admin/talks' ? ' active' : ''}`}
+              >
+                <span className="sidebar-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </span>
+                <span>[管理]有话说</span>
+              </Link>
+              <a
+                href={process.env.NEXT_PUBLIC_UMAMI_URL || 'http://localhost:3001'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sidebar-link"
+              >
+                <span className="sidebar-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                </span>
+                <span>[管理]数据分析</span>
+              </a>
             </>
           )}
         </nav>
@@ -251,19 +290,6 @@ export function Sidebar() {
               <span className="mobile-bottom-nav-label">信息源</span>
             </Link>
             <Link
-              href="/admin/talks"
-              className={`mobile-bottom-nav-link${pathname === '/admin/talks' ? ' active' : ''}`}
-              aria-current={pathname === '/admin/talks' ? 'page' : undefined}
-            >
-              <span className="mobile-bottom-nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                </svg>
-              </span>
-              <span className="mobile-bottom-nav-label">有话说</span>
-            </Link>
-            <Link
               href="/monitor"
               className={`mobile-bottom-nav-link${pathname === '/monitor' ? ' active' : ''}`}
               aria-current={pathname === '/monitor' ? 'page' : undefined}
@@ -276,8 +302,36 @@ export function Sidebar() {
                   <path d="M6 10l4 4 4-5 4 3" />
                 </svg>
               </span>
-              <span className="mobile-bottom-nav-label">监控</span>
+              <span className="mobile-bottom-nav-label">资讯</span>
             </Link>
+            <Link
+              href="/admin/talks"
+              className={`mobile-bottom-nav-link${pathname === '/admin/talks' ? ' active' : ''}`}
+              aria-current={pathname === '/admin/talks' ? 'page' : undefined}
+            >
+              <span className="mobile-bottom-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </span>
+              <span className="mobile-bottom-nav-label">有话说</span>
+            </Link>
+            <a
+              href={process.env.NEXT_PUBLIC_UMAMI_URL || 'http://localhost:3001'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-bottom-nav-link"
+            >
+              <span className="mobile-bottom-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+              </span>
+              <span className="mobile-bottom-nav-label">数据</span>
+            </a>
           </>
         )}
       </nav>

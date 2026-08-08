@@ -1,14 +1,15 @@
 import { marked } from 'marked'
 import sanitizeHtml from 'sanitize-html'
 
-export const RESEARCH_CATEGORIES = ['品类研究', '品牌/IP与授权营销研究'] as const
+export const RESEARCH_CATEGORIES = ['品类报告', '深度分析'] as const
 export type ResearchCategory = (typeof RESEARCH_CATEGORIES)[number]
-export const LEGACY_RESEARCH_CATEGORIES = ['品牌/IP分析', '授权与营销研究'] as const
+export const LEGACY_RESEARCH_CATEGORIES = ['品类研究', '品牌/IP与授权营销研究', '品牌/IP分析', '授权与营销研究'] as const
 export const RESEARCH_CONTENT_FORMATS = ['markdown', 'html'] as const
 export type ResearchContentFormat = (typeof RESEARCH_CONTENT_FORMATS)[number]
 
 export function normalizeResearchCategory(value: string): ResearchCategory {
-  return value === '品类研究' ? '品类研究' : '品牌/IP与授权营销研究'
+  if (value === '品类报告' || value === '品类研究') return '品类报告'
+  return '深度分析'
 }
 
 export function researchCategoryLink(value: string): { href: string; label: string } {
@@ -302,7 +303,7 @@ function researchBackupFileName(title: string): string {
 }
 
 export function githubResearchPath(category: ResearchCategory, slug: string, contentFormat: ResearchContentFormat = 'markdown', title = ''): string {
-  const folder = category === '品牌/IP与授权营销研究' ? '品牌-IP与授权营销研究' : category
+  const folder = category
   const fileName = contentFormat === 'html' && title ? `${researchBackupFileName(title)}.html` : `${slug}.md`
   return `数据分析/${folder}/${fileName}`
 }

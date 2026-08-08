@@ -32,6 +32,13 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{ __html: setInitialThemeScript }}
         />
+        {process.env.NEXT_PUBLIC_UMAMI_URL && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+          <script
+            defer
+            src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+          />
+        )}
       </head>
       <body className="min-h-full">
         <div className="app-layout">

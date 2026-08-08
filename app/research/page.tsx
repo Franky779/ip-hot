@@ -21,7 +21,7 @@ function readResearchCache(): ResearchReport[] {
 }
 
 export default function ResearchPage() {
-  const [category, setCategory] = useState<ResearchCategory>('品类研究')
+  const [category, setCategory] = useState<ResearchCategory>('品类报告')
   const [reports, setReports] = useState<ResearchReport[]>([])
   const [loaded, setLoaded] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
@@ -70,7 +70,7 @@ export default function ResearchPage() {
     }
   }
   return <>
-    <header className="page-header"><div className="home-header-top"><div><h1 className="page-title font-serif">深度研究</h1><p className="page-sub">从品类趋势、品牌/IP 到授权营销，沉淀可复用的行业观察。</p></div>{adminLoaded && isAdmin && <button className="admin-action-btn research-upload-btn" onClick={() => setShowUpload(true)}>＋ 上传研究报告</button>}</div><div className="research-tabs" role="tablist" aria-label="深度研究分类">{RESEARCH_CATEGORIES.map((item) => <button key={item} className={item === category ? 'active' : ''} onClick={() => setCategory(item)} role="tab" aria-selected={item === category}>{item}</button>)}</div></header>
+    <header className="page-header"><div className="home-header-top"><div><h1 className="page-title font-serif">数据分析</h1><p className="page-sub">品类报告与深度分析，沉淀可复用的行业洞察。</p></div>{adminLoaded && isAdmin && <button className="admin-action-btn research-upload-btn" onClick={() => setShowUpload(true)}>＋ 上传研究报告</button>}</div><div className="research-tabs" role="tablist" aria-label="数据分析分类">{RESEARCH_CATEGORIES.map((item) => <button key={item} className={item === category ? 'active' : ''} onClick={() => setCategory(item)} role="tab" aria-selected={item === category}>{item}</button>)}</div></header>
     <section className="research-page article-section"><div className="research-grid">{!loaded ? <p className="empty-state">正在加载报告…</p> : items.length === 0 ? <p className="empty-state">该分类暂无报告。</p> : items.map((item) => <Link href={`/research/${item.slug}`} className="research-card" key={item.id}><div className="research-card-meta"><span>{item.category}</span><time dateTime={item.published_at}>{item.published_at}</time>{adminLoaded && isAdmin && <button className="research-delete-btn" aria-label="删除报告" disabled={deletingId === item.id} onClick={(event) => { event.preventDefault(); event.stopPropagation(); handleDelete(item) }}>{deletingId === item.id ? '删除中…' : '删除'}</button>}</div><h2>{item.title}</h2><div className="research-card-tags">{researchTags(item).map((tag) => <span className="research-tag" key={tag}>#{tag}</span>)}</div>{adminLoaded && isAdmin && <div className={`research-backup-status ${item.github_backup_status}`}><span>{item.github_backup_status === 'backed_up' ? 'GitHub 已备份' : item.github_backup_status === 'failed' ? 'GitHub 备份失败' : 'GitHub 待备份'}</span>{item.github_backup_status === 'failed' && <button className="research-retry" onClick={async (event) => { event.preventDefault(); event.stopPropagation(); const response = await fetch(`/api/research/${item.id}/backup`, { method: 'POST', headers: { 'x-admin-password': password() } }); if (response.ok) setReports((value) => value.map((report) => report.id === item.id ? { ...report, github_backup_status: 'backed_up' } : report)) }}>重试</button>}</div>}</Link>)}</div></section>
     {showUpload && <ResearchUploadDialog onClose={() => setShowUpload(false)} onCreated={(report) => { setReports((value) => { const next = [report, ...value]; researchMemoryCache = next; try { sessionStorage.setItem('ip-hot-research-reports', JSON.stringify(next)) } catch {} return next }); setCategory(report.category); setShowUpload(false) }} />}
   </>
@@ -79,7 +79,7 @@ export default function ResearchPage() {
 function ResearchUploadDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (report: ResearchReport) => void }) {
   const [mode, setMode] = useState<'markdown' | 'pdf'>('markdown')
   const [title, setTitle] = useState('')
-  const [category, setCategory] = useState<ResearchCategory>('品类研究')
+  const [category, setCategory] = useState<ResearchCategory>('品类报告')
   // Markdown mode
   const [markdown, setMarkdown] = useState('')
   // PDF mode

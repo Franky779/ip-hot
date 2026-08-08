@@ -504,7 +504,7 @@ export default function MonitorPage() {
           <Link href="/" className="sidebar-link" style={{ padding: '0.5rem', width: 'auto' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           </Link>
-          <h1 className="page-title font-serif" style={{ margin: 0 }}>运营监控</h1>
+          <h1 className="page-title font-serif" style={{ margin: 0 }}>资讯处理</h1>
           <div style={{ marginLeft: 'auto' }}>
             <AdminToggle />
           </div>

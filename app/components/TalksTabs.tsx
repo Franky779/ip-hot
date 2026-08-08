@@ -5,7 +5,7 @@ import { LAOJIA_TALKS } from '@/lib/migrated-content'
 
 const TABS = [
   { key: 'articles', label: '公众号文章' },
-  { key: 'knowledge', label: '行业知识' },
+  { key: 'knowledge', label: '专业用语' },
   { key: 'podcast', label: '播客/直播' },
   { key: 'courses', label: '线上课程' },
 ] as const
@@ -48,7 +48,7 @@ export function TalksTabs() {
 
         {active === 'knowledge' && (
           <div className="talks-placeholder">
-            <p className="empty-state">行业知识库建设中，敬请期待。</p>
+            <p className="empty-state">专业用语库建设中，敬请期待。</p>
           </div>
         )}
 

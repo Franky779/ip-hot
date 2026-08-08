@@ -38,7 +38,7 @@ async function saveSection(section: string, data: unknown) {
 
 const ADMIN_TABS = [
   { key: 'articles', label: '公众号文章' },
-  { key: 'knowledge', label: '行业知识' },
+  { key: 'knowledge', label: '专业用语' },
   { key: 'podcast', label: '播客/直播' },
   { key: 'courses', label: '线上课程' },
 ] as const
@@ -175,7 +175,7 @@ function ArticleForm({ item, onSave, onCancel }: { item: Article; onSave: (a: Ar
   )
 }
 
-// ====== 行业知识编辑器（百科词条） ======
+// ====== 专业用语编辑器（百科词条） ======
 
 function KnowledgeEditor({ terms, update }: { terms: KnowledgeTerm[]; update: (k: KnowledgeTerm[]) => Promise<void> }) {
   const [editing, setEditing] = useState<KnowledgeTerm | null>(null)

@@ -3,13 +3,13 @@ import test from 'node:test'
 import { currentShanghaiDate, githubResearchPath, renderResearchMarkdown, researchCategoryLink, researchTags, slugFromTitle, validateResearchInput } from './research.ts'
 
 test('validates report metadata and markdown size', () => {
-  const result = validateResearchInput({ title: '报告', category: '品类研究', published_at: '1999-01-01', markdown_content: '# 正文' })
+  const result = validateResearchInput({ title: '报告', category: '品类报告', published_at: '1999-01-01', markdown_content: '# 正文' })
   assert.equal(result.ok, true)
   if (result.ok) {
     assert.equal('published_at' in result.value, false)
     assert.equal(result.value.content_format, 'markdown')
   }
-  assert.equal(validateResearchInput({ title: '', category: '品类研究', markdown_content: '# 正文' }).ok, false)
+  assert.equal(validateResearchInput({ title: '', category: '品类报告', markdown_content: '# 正文' }).ok, false)
   assert.equal(validateResearchInput({ title: '报告', category: '未知', markdown_content: '# 正文' }).ok, false)
 })
 
@@ -18,28 +18,44 @@ test('creates stable readable slugs', () => {
   assert.match(slugFromTitle('棉花娃娃报告', 'abc'), /^research-report-abc$/)
 })
 
-test('maps the slash-containing category to one GitHub backup folder', () => {
-  assert.equal(githubResearchPath('品牌/IP与授权营销研究', 'report-1'), '数据分析/品牌-IP与授权营销研究/report-1.md')
+test('maps research categories to GitHub backup folders', () => {
+  assert.equal(githubResearchPath('深度分析', 'report-1'), '数据分析/深度分析/report-1.md')
   assert.equal(
-    githubResearchPath('品类研究', 'ignored', 'html', '【品类报告】包挂产业深度研究报告-2026年7月'),
-    '数据分析/品类研究/【品类报告】包挂产业深度研究报告-2026年7月.html',
+    githubResearchPath('品类报告', 'ignored', 'html', '【品类报告】包挂产业深度研究报告-2026年7月'),
+    '数据分析/品类报告/【品类报告】包挂产业深度研究报告-2026年7月.html',
   )
 })
 
 test('links report details back to their selected research category', () => {
-  assert.deepEqual(researchCategoryLink('品牌/IP分析'), {
-    href: '/research?category=%E5%93%81%E7%89%8C%2FIP%E4%B8%8E%E6%8E%88%E6%9D%83%E8%90%A5%E9%94%80%E7%A0%94%E7%A9%B6',
-    label: '← 返回品牌/IP与授权营销研究',
+  assert.deepEqual(researchCategoryLink('品类报告'), {
+    href: '/research?category=%E5%93%81%E7%B1%BB%E6%8A%A5%E5%91%8A',
+    label: '← 返回品类报告',
   })
+  assert.deepEqual(researchCategoryLink('深度分析'), {
+    href: '/research?category=%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90',
+    label: '← 返回深度分析',
+  })
+})
+
+test('normalizes legacy category names to current ones', () => {
+  // Old names should map to new canonical names
   assert.deepEqual(researchCategoryLink('品类研究'), {
-    href: '/research?category=%E5%93%81%E7%B1%BB%E7%A0%94%E7%A9%B6',
-    label: '← 返回品类研究',
+    href: '/research?category=%E5%93%81%E7%B1%BB%E6%8A%A5%E5%91%8A',
+    label: '← 返回品类报告',
+  })
+  assert.deepEqual(researchCategoryLink('品牌/IP与授权营销研究'), {
+    href: '/research?category=%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90',
+    label: '← 返回深度分析',
+  })
+  assert.deepEqual(researchCategoryLink('品牌/IP分析'), {
+    href: '/research?category=%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90',
+    label: '← 返回深度分析',
   })
 })
 
 test('extracts report keyword tags from title templates', () => {
-  assert.deepEqual(researchTags({ title: '【品类报告】棉花娃娃产业深度研究报告', category: '品类研究' }), ['研究报告', '棉花娃娃产业'])
-  assert.deepEqual(researchTags({ title: '【IP评估报告】初音未来', category: '品牌/IP与授权营销研究' }), ['研究报告', '初音未来'])
+  assert.deepEqual(researchTags({ title: '【品类报告】棉花娃娃产业深度研究报告', category: '品类报告' }), ['研究报告', '棉花娃娃产业'])
+  assert.deepEqual(researchTags({ title: '【IP评估报告】初音未来', category: '深度分析' }), ['研究报告', '初音未来'])
 })
 
 test('sanitizes executable markdown HTML while retaining report content', () => {

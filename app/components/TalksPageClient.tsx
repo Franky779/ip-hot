@@ -9,7 +9,7 @@ interface CourseItem { title: string; duration: string; videoUrl: string }
 
 const TABS = [
   { key: 'articles', label: '公众号文章' },
-  { key: 'knowledge', label: '行业知识' },
+  { key: 'knowledge', label: '专业用语' },
   { key: 'podcast', label: '播客/直播' },
   { key: 'courses', label: '线上课程' },
 ] as const
@@ -30,8 +30,8 @@ export function TalksPageClient({ articles, knowledge, podcast, courses }: Talks
     <>
       <header className="page-header">
         <div className="talks-header-row">
-          <h1 className="page-title font-serif">老贾有话说</h1>
-          <p className="page-sub">关于 IP、授权与营销的观察与思考</p>
+          <h1 className="page-title font-serif">专业知识</h1>
+          <p className="page-sub">IP 行业专业用语、观察思考与经验沉淀</p>
         </div>
         <nav className="talks-tab-bar" role="tablist">
           {TABS.map((tab) => (
