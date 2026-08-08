@@ -195,8 +195,15 @@ export default async function DailyPage({
     } else {
       try { cachedHtml = await getCachedReportHtml(period, selectedDate) } catch { /* 忽略 */ }
       if (!cachedHtml) {
-        try { report = await getDailyReport(period, selectedDate) } catch (e) {
+        // 缓存未命中：跳过LLM秒返文章列表，后台异步触发摘要生成
+        try { report = await getDailyReport(period, selectedDate, { skipLLM: true }) } catch (e) {
           console.error('[DailyPage] 加载报告失败:', (e as Error).message)
+        }
+        // 后台触发 backfill 生成 LLM 摘要（不await，fire-and-forget）
+        if (report && report.totalCount > 0) {
+          const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+          fetch(`${baseUrl}/api/admin/backfill-daily?period=${period}&date=${selectedDate}`, { method: 'POST' })
+            .catch(() => { /* 后台任务，忽略错误 */ })
         }
       }
     }

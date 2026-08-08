@@ -218,10 +218,11 @@ export async function getAvailableDates(period: 'daily' | 'weekly' | 'monthly'):
   return result
 }
 
-/** 获取指定周期+日期的日报数据 */
+/** 获取指定周期+日期的日报数据。opts.skipLLM 跳过 LLM 摘要生成（页面秒开用），后台 backfill 再补生成。 */
 export async function getDailyReport(
   period: 'daily' | 'weekly' | 'monthly',
   targetDate: string,
+  opts?: { skipLLM?: boolean },
 ): Promise<DailyReport> {
   const { start, end } = getPeriodRange(period, targetDate)
   const periodLabel = formatPeriodLabel(period, targetDate)
@@ -284,26 +285,33 @@ export async function getDailyReport(
   const categoryCounts: Record<string, number> = {}
   for (const g of categoryGroups) categoryCounts[g.category] = g.count
 
-  // 3. LLM
-  const prompt = buildDailyPrompt(period, categoryGroups, periodLabel)
-  const llmResult = await callDailyLLM(prompt)
-  const summary = llmResult?.summary ?? null
-  const highlights = llmResult?.highlights ?? null
+  // 3. LLM（skipLLM 时跳过，直接返回文章列表，秒开）
+  let summary: string | null = null
+  let highlights: string | null = null
 
-  // 4. 渲染HTML + 写缓存
-  const contentHtml = summary ? renderReportHtml({
-    periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length,
-  }) : null
+  if (!opts?.skipLLM) {
+    const prompt = buildDailyPrompt(period, categoryGroups, periodLabel)
+    const llmResult = await callDailyLLM(prompt)
+    summary = llmResult?.summary ?? null
+    highlights = llmResult?.highlights ?? null
+  }
 
-  try {
-    await db.from('daily_reports').upsert({
-      period, period_date: targetDate, summary, highlights,
-      category_counts: categoryCounts, article_data: JSON.stringify(articles),
-      total_count: articles.length, content_html: contentHtml,
-      created_at: new Date().toISOString(),
-    }, { onConflict: 'period, period_date' })
-  } catch (e) {
-    console.error('[DailyReport] 缓存写入失败:', (e as Error).message)
+  // 4. 渲染HTML + 写缓存（skipLLM 时不写缓存，留给 backfill 补生成）
+  if (!opts?.skipLLM) {
+    const contentHtml = summary ? renderReportHtml({
+      periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length,
+    }) : null
+
+    try {
+      await db.from('daily_reports').upsert({
+        period, period_date: targetDate, summary, highlights,
+        category_counts: categoryCounts, article_data: JSON.stringify(articles),
+        total_count: articles.length, content_html: contentHtml,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'period, period_date' })
+    } catch (e) {
+      console.error('[DailyReport] 缓存写入失败:', (e as Error).message)
+    }
   }
 
   return { period, periodDate: targetDate, periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length }
