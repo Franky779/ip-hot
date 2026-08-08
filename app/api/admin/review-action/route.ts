@@ -55,8 +55,8 @@ export async function POST(request: Request) {
     let correctedCategory: string
 
     if (action === 'select') {
-      updateData = { is_selected: true }
-      correctedCategory = originalCategory === '待人工复核' ? '已分类' : originalCategory
+      updateData = { is_selected: true, category: '已分类' }
+      correctedCategory = '已分类'
     } else if (action === 'delete') {
       updateData = { category: '已过滤', is_selected: false }
       correctedCategory = '已过滤'
