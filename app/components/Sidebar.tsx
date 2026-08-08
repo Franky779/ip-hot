@@ -247,6 +247,28 @@ export function Sidebar() {
                 </span>
                 <span>[管理]数据分析</span>
               </Link>
+              <a
+                href={process.env.NEXT_PUBLIC_UMAMI_URL || 'https://stats.laojia-ip.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sidebar-link"
+              >
+                <span className="sidebar-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 20V10" />
+                    <path d="M12 20V4" />
+                    <path d="M6 20v-6" />
+                  </svg>
+                </span>
+                <span>数据后台</span>
+              </a>
             </>
           )}
         </nav>
@@ -329,6 +351,21 @@ export function Sidebar() {
               </span>
               <span className="mobile-bottom-nav-label">数据</span>
             </Link>
+            <a
+              href={process.env.NEXT_PUBLIC_UMAMI_URL || 'https://stats.laojia-ip.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-bottom-nav-link"
+            >
+              <span className="mobile-bottom-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 20V10" />
+                  <path d="M12 20V4" />
+                  <path d="M6 20v-6" />
+                </svg>
+              </span>
+              <span className="mobile-bottom-nav-label">后台</span>
+            </a>
           </>
         )}
       </nav>
