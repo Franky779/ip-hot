@@ -705,8 +705,13 @@ export default function MonitorPage() {
             {data.reviewQueue && data.reviewQueue.length > 0 && (
               <div>
                 <h2 className="monitor-section-title" style={{ color: '#f59e0b' }}>待人工复核 · {data.reviewQueue.length}</h2>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                  评分 4-5 的边界资讯，以及敏感或未能自动归类的内容。这里只保留需要人工裁决的异常项。
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                  评分 4-5 的边界资讯，以及敏感或未能自动归类的内容。
+                </p>
+                <p style={{ fontSize: '0.8125rem', marginBottom: '0.75rem' }}>
+                  <Link href="/admin/review" style={{ color: 'var(--accent)' }}>
+                    📝 查看全部待复核文章（6,000+）→
+                  </Link>
                 </p>
                 {/* 批量操作工具栏 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
