@@ -7,7 +7,7 @@
 // 必需环境变量：GITHUB_TOKEN
 // 仓库：Franky779/ip-hot / 分支 main（如需改，调整下方 OWNER/REPO/BRANCH）
 
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { request } from 'https';
 import { execFileSync, execSync } from 'child_process';
 
@@ -96,7 +96,7 @@ function api(method, path, data) {
       treeItems.push({ path: file, mode: '100644', type: 'blob', sha: null });
       continue;
     }
-    const content = execFileSync('git', ['show', `HEAD:${file}`]).toString('base64');
+    const content = readFileSync(file).toString('base64');
     const blob = await api('POST', '/git/blobs', { content, encoding: 'base64' });
     console.log(`   blob ${file} -> ${blob.sha}`);
     treeItems.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
