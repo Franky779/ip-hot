@@ -4637,3 +4637,345 @@ body {
     grid-column: 1;
   }
 }
+
+/* ===== Analytics Dashboard ===== */
+.analytics-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.analytics-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+}
+
+.analytics-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0 0 2rem;
+}
+
+/* KPI Cards */
+.analytics-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.analytics-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.analytics-kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-kpi-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.analytics-kpi-change {
+  font-size: 0.75rem;
+  margin-top: 0.375rem;
+  color: var(--text-muted);
+}
+
+.analytics-change-up { color: #2e9d5a; font-weight: 600; }
+.analytics-change-down { color: #e94560; font-weight: 600; }
+.analytics-change-flat { color: var(--text-muted); }
+
+/* Sections */
+.analytics-section {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.375rem;
+}
+
+.analytics-section-desc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+
+/* Two-column layout */
+.analytics-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.analytics-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem;
+  font-size: 0.875rem;
+}
+
+/* SVG Charts */
+.analytics-chart-svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Bar Chart */
+.analytics-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.analytics-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.analytics-bar-label {
+  width: 5.5rem;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-bar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.analytics-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+.analytics-bar-count {
+  width: 3.5rem;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+}
+
+/* Source Rank */
+.analytics-source-rank {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.analytics-source-rank-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.8125rem;
+}
+
+.analytics-source-rank-item:last-child { border-bottom: none; }
+
+.analytics-source-rank-num {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.analytics-source-rank-name {
+  flex: 1;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-source-rank-count {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Donut */
+.analytics-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.analytics-donut-svg {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.analytics-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.analytics-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.analytics-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Funnel */
+.analytics-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.analytics-funnel-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.analytics-funnel-label {
+  width: 4.5rem;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.analytics-funnel-track {
+  flex: 1;
+  height: 32px;
+  background: var(--bg);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.analytics-funnel-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding-right: 0.5rem;
+  transition: width 0.4s ease;
+  min-width: fit-content;
+}
+
+.analytics-funnel-value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  padding-left: 0.5rem;
+}
+
+.analytics-funnel-loss {
+  width: 3.5rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Feedback list */
+.analytics-feedback-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.analytics-feedback-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.analytics-feedback-item:last-child { border-bottom: none; }
+
+.analytics-feedback-content {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin: 0 0 0.25rem;
+  line-height: 1.5;
+}
+
+.analytics-feedback-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+  .analytics-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .analytics-two-col {
+    grid-template-columns: 1fr;
+  }
+  .analytics-bar-label {
+    width: 4rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .analytics-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .analytics-kpi-card {
+    padding: 1rem;
+  }
+  .analytics-kpi-value {
+    font-size: 1.5rem;
+  }
+  .analytics-page {
+    padding: 1rem 0.75rem 3rem;
+  }
+}

@@ -227,11 +227,9 @@ export function Sidebar() {
                 </span>
                 <span>[管理]有话说</span>
               </Link>
-              <a
-                href={process.env.NEXT_PUBLIC_UMAMI_URL || 'http://localhost:3001'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="sidebar-link"
+              <Link
+                href="/admin/analytics"
+                className={`sidebar-link${pathname === '/admin/analytics' ? ' active' : ''}`}
               >
                 <span className="sidebar-icon">
                   <svg
@@ -248,7 +246,7 @@ export function Sidebar() {
                   </svg>
                 </span>
                 <span>[管理]数据分析</span>
-              </a>
+              </Link>
             </>
           )}
         </nav>
@@ -317,11 +315,10 @@ export function Sidebar() {
               </span>
               <span className="mobile-bottom-nav-label">有话说</span>
             </Link>
-            <a
-              href={process.env.NEXT_PUBLIC_UMAMI_URL || 'http://localhost:3001'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mobile-bottom-nav-link"
+            <Link
+              href="/admin/analytics"
+              className={`mobile-bottom-nav-link${pathname === '/admin/analytics' ? ' active' : ''}`}
+              aria-current={pathname === '/admin/analytics' ? 'page' : undefined}
             >
               <span className="mobile-bottom-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -331,7 +328,7 @@ export function Sidebar() {
                 </svg>
               </span>
               <span className="mobile-bottom-nav-label">数据</span>
-            </a>
+            </Link>
           </>
         )}
       </nav>
