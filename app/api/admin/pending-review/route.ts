@@ -17,11 +17,25 @@ export async function GET(request: Request) {
   const offset = (page - 1) * PAGE_SIZE
 
   const supabase = createServiceClient()
-  let query = supabase
+
+  // 先查总数（custom QueryBuilder 的 count 需要 head:true）
+  let countQuery = supabase
+    .from('articles')
+    .select('id', { count: 'exact', head: true })
+    .eq('category', '待人工复核')
+    .not('title_cn', 'is', null)
+
+  if (queryText) {
+    countQuery = countQuery.or(`title.ilike.%${queryText}%,title_cn.ilike.%${queryText}%`)
+  }
+
+  const { count } = await countQuery
+
+  // 再查分页数据
+  let dataQuery = supabase
     .from('articles')
     .select(
-      'id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at',
-      { count: 'exact' }
+      'id, source, url, title, title_cn, summary_cn, commentary, category, relevance_score, published_at, created_at'
     )
     .eq('category', '待人工复核')
     .not('title_cn', 'is', null)
@@ -29,18 +43,20 @@ export async function GET(request: Request) {
     .range(offset, offset + PAGE_SIZE - 1)
 
   if (queryText) {
-    query = query.or(`title.ilike.%${queryText}%,title_cn.ilike.%${queryText}%`)
+    dataQuery = dataQuery.or(`title.ilike.%${queryText}%,title_cn.ilike.%${queryText}%`)
   }
 
-  const { data, count, error } = await query
+  const { data, error } = await dataQuery
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  const total = count ?? 0
+
   return NextResponse.json({
     articles: data ?? [],
-    total: count ?? 0,
+    total,
     page,
-    hasMore: offset + (data?.length ?? 0) < (count ?? 0),
+    hasMore: offset + (data?.length ?? 0) < total,
   })
 }
