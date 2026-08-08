@@ -70,7 +70,7 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
   const [scheduleTier, setScheduleTier] = useState<SourceScheduleTier>(initialSchedule.tier)
   const [saving, setSaving] = useState(false)
 
-  // 分类下拉：与信息源管理页“行业类型”筛选共用同一份分类清单。
+  // 分类下拉：与信息源管理页"行业类型"筛选共用同一份分类清单。
   const allSectionOptions = useMemo(() => {
     const options = [...sectionOptions]
     if (source?.section_id && !options.some((option) => option.id === source.section_id)) {
@@ -186,13 +186,13 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
-          <p className="source-form-hint">与列表上方“来源地区”筛选选项一致。</p>
+          <p className="source-form-hint">与列表上方"来源地区"筛选选项一致。</p>
         </div>
 
         <div className="source-form-field">
           <label>分类 *</label>
           <select value={sectionChoice} onChange={(e) => handleSectionChange(e.target.value)}>
-            <option value="" disabled>请选择分类（与“行业类型”筛选一致）</option>
+            <option value="" disabled>请选择分类（与"行业类型"筛选一致）</option>
             {allSectionOptions.map((section) => (
               <option key={section.id} value={section.id}>{section.title}</option>
             ))}
@@ -257,22 +257,22 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
-          <p className=”source-form-hint”>执行方式为”已暂停”或”人工处理”时不参与自动抓取。</p>
+          <p className="source-form-hint">执行方式为"已暂停"或"人工处理"时不参与自动抓取。</p>
         </div>
 
-        <div className=”source-form-field”>
+        <div className="source-form-field">
           <label>
             <input
-              type=”checkbox”
+              type="checkbox"
               checked={form.is_official ?? false}
               onChange={(e) => setForm({ ...form, is_official: e.target.checked })}
             />
             {' '}官方号
           </label>
-          <p className=”source-form-hint”>勾选后，该来源的所有文章将跳过相关性筛选，LLM 分类后直接展示。</p>
+          <p className="source-form-hint">勾选后，该来源的所有文章将跳过相关性筛选，LLM 分类后直接展示。</p>
         </div>
 
-        <div className=”admin-modal-btns”>
+        <div className="admin-modal-btns">
           <button type="button" onClick={onClose}>取消</button>
           <button type="button" className="admin-submit" onClick={handleSave} disabled={saving}>
             {saving ? '保存中...' : '保存'}
