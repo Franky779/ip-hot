@@ -150,7 +150,7 @@ export function Sidebar() {
                 <line x1="6" y1="20" x2="6" y2="14" />
               </svg>
             </span>
-            <span>数据分析</span>
+            <span>行业报告</span>
           </Link>
           <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
             <span className="sidebar-icon">

@@ -305,5 +305,5 @@ function researchBackupFileName(title: string): string {
 export function githubResearchPath(category: ResearchCategory, slug: string, contentFormat: ResearchContentFormat = 'markdown', title = ''): string {
   const folder = category
   const fileName = contentFormat === 'html' && title ? `${researchBackupFileName(title)}.html` : `${slug}.md`
-  return `数据分析/${folder}/${fileName}`
+  return `行业报告/${folder}/${fileName}`
 }

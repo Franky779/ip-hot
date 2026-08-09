@@ -19,10 +19,10 @@ test('creates stable readable slugs', () => {
 })
 
 test('maps research categories to GitHub backup folders', () => {
-  assert.equal(githubResearchPath('深度分析', 'report-1'), '数据分析/深度分析/report-1.md')
+  assert.equal(githubResearchPath('深度分析', 'report-1'), '行业报告/深度分析/report-1.md')
   assert.equal(
     githubResearchPath('品类报告', 'ignored', 'html', '【品类报告】包挂产业深度研究报告-2026年7月'),
-    '数据分析/品类报告/【品类报告】包挂产业深度研究报告-2026年7月.html',
+    '行业报告/品类报告/【品类报告】包挂产业深度研究报告-2026年7月.html',
   )
 })
 
