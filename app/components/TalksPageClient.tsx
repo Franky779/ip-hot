@@ -273,7 +273,8 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
     const fresh = await loadSection<KnowledgeTerm>('knowledge')
     const updated = fresh.map((x) => (x.category === oldName ? { ...x, category: name } : x))
     setTerms(updated)
-    setExtraCats(extraCats.filter((c) => c !== oldName))
+    // 空分类占位也要跟着改名
+    if (extraCats.includes(oldName)) setExtraCats(extraCats.map((c) => (c === oldName ? name : c)))
     if (filterCat === oldName) setFilterCat(name)
     await saveSection('knowledge', updated)
     showSaved()
