@@ -32,7 +32,7 @@ export function resolveClassificationResult(result: {
 /** 自动清理评分≤4的非官号待复核资讯，返回清理条数 */
 export async function autoCleanupLowScore(supabase: DatabaseClient): Promise<number> {
   const { rowCount } = await supabase.query(
-    `UPDATE articles SET category = $1, is_selected = false WHERE category = $2 AND relevance_score <= 4 AND source NOT ILIKE '官号%'`,
+    `UPDATE articles SET category = $1, is_selected = false WHERE category = $2 AND relevance_score <= 4 AND (source IS NULL OR source NOT ILIKE '官号%')`,
     [FILTERED_CATEGORY, REVIEW_CATEGORY]
   )
   return rowCount

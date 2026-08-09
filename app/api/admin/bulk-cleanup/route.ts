@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
 
   const { rows } = await supabase.query(
-    `SELECT count(*)::integer AS count FROM articles WHERE category = '待人工复核' AND relevance_score <= 4 AND source NOT ILIKE '官号%'`
+    `SELECT count(*)::integer AS count FROM articles WHERE category = '待人工复核' AND relevance_score <= 4 AND (source IS NULL OR source NOT ILIKE '官号%')`
   )
 
   return NextResponse.json({ count: rows[0]?.count ?? 0 })
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   const supabase = createServiceClient()
 
   const { rowCount } = await supabase.query(
-    `UPDATE articles SET category = '已过滤', is_selected = false WHERE category = '待人工复核' AND relevance_score <= 4 AND source NOT ILIKE '官号%'`
+    `UPDATE articles SET category = '已过滤', is_selected = false WHERE category = '待人工复核' AND relevance_score <= 4 AND (source IS NULL OR source NOT ILIKE '官号%')`
   )
 
   return NextResponse.json({ updated: rowCount })
