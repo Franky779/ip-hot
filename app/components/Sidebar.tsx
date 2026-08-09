@@ -227,9 +227,11 @@ export function Sidebar() {
                 </span>
                 <span>[管理]有话说</span>
               </Link>
-              <Link
-                href="/admin/analytics"
-                className={`sidebar-link${pathname === '/admin/analytics' ? ' active' : ''}`}
+              <a
+                href={process.env.NEXT_PUBLIC_UMAMI_URL ? `${process.env.NEXT_PUBLIC_UMAMI_URL}/websites/${process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || 'f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}` : 'https://stats.laojia-ip.com/websites/f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sidebar-link"
               >
                 <span className="sidebar-icon">
                   <svg
@@ -246,7 +248,7 @@ export function Sidebar() {
                   </svg>
                 </span>
                 <span>[管理]数据分析</span>
-              </Link>
+              </a>
               <Link
                 href="/admin/review"
                 className={`sidebar-link${pathname === '/admin/review' ? ' active' : ''}`}
@@ -269,28 +271,6 @@ export function Sidebar() {
                 </span>
                 <span>[管理]人工复核</span>
               </Link>
-              <a
-                href={process.env.NEXT_PUBLIC_UMAMI_URL || 'https://stats.laojia-ip.com'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="sidebar-link"
-              >
-                <span className="sidebar-icon">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M18 20V10" />
-                    <path d="M12 20V4" />
-                    <path d="M6 20v-6" />
-                  </svg>
-                </span>
-                <span>数据后台</span>
-              </a>
             </>
           )}
         </nav>
@@ -359,10 +339,11 @@ export function Sidebar() {
               </span>
               <span className="mobile-bottom-nav-label">有话说</span>
             </Link>
-            <Link
-              href="/admin/analytics"
-              className={`mobile-bottom-nav-link${pathname === '/admin/analytics' ? ' active' : ''}`}
-              aria-current={pathname === '/admin/analytics' ? 'page' : undefined}
+            <a
+              href={process.env.NEXT_PUBLIC_UMAMI_URL ? `${process.env.NEXT_PUBLIC_UMAMI_URL}/websites/${process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || 'f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}` : 'https://stats.laojia-ip.com/websites/f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mobile-bottom-nav-link"
             >
               <span className="mobile-bottom-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -372,7 +353,7 @@ export function Sidebar() {
                 </svg>
               </span>
               <span className="mobile-bottom-nav-label">数据</span>
-            </Link>
+            </a>
             <Link
               href="/admin/review"
               className={`mobile-bottom-nav-link${pathname === '/admin/review' ? ' active' : ''}`}
@@ -386,21 +367,6 @@ export function Sidebar() {
               </span>
               <span className="mobile-bottom-nav-label">复核</span>
             </Link>
-            <a
-              href={process.env.NEXT_PUBLIC_UMAMI_URL || 'https://stats.laojia-ip.com'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mobile-bottom-nav-link"
-            >
-              <span className="mobile-bottom-nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 20V10" />
-                  <path d="M12 20V4" />
-                  <path d="M6 20v-6" />
-                </svg>
-              </span>
-              <span className="mobile-bottom-nav-label">后台</span>
-            </a>
           </>
         )}
       </nav>
