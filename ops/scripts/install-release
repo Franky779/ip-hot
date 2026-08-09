@@ -20,16 +20,16 @@ tar -xzf "$release_archive" -C "$release"
 chown -R iphot:iphot "$release"
 ln -s "$app_root/shared/.env.production.local" "$release/.env.production.local"
 
+runuser -u iphot -- bash -lc "cd '$release' && npm ci && npm run build"
+
 # data/ 持久化：运行期通过 /api/admin/talks 写入的 JSON 不能被发布覆盖。
-# 共享目录已存在则软链进 release；首次发布则把仓库自带 data/ 迁入共享目录做种子。
+# 必须在 build 之后换软链：Turbopack 构建期拒绝指到项目根目录外的符号链接。
 if [[ -d "$app_root/shared/data" ]]; then
   rm -rf "$release/data"
 else
   mv "$release/data" "$app_root/shared/data"
 fi
 ln -s "$app_root/shared/data" "$release/data"
-
-runuser -u iphot -- bash -lc "cd '$release' && npm ci && npm run build"
 
 install -m 0750 "$release/ops/scripts/health-check" /usr/local/sbin/ip-hot-health-check
 install -m 0750 "$release/ops/scripts/ip-hot-backup" /usr/local/sbin/ip-hot-backup
