@@ -9,6 +9,11 @@ interface KnowledgeTerm { id: string; category: string; term: string; definition
 interface PodcastItem { title: string; date: string; url: string }
 interface CourseItem { title: string; duration: string; videoUrl: string }
 
+// 展示用词条名：剥掉尾部英文括号注释，防止长文本撑破卡片（数据里仍保留完整名称）
+function displayTerm(term: string) {
+  return term.replace(/\s*[（(][A-Za-z0-9][^）)]*[）)]\s*$/, '').trim()
+}
+
 const TABS = [
   { key: 'articles', label: '公众号文章' },
   { key: 'knowledge', label: '专业用语' },
@@ -198,8 +203,11 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
   const [selected, setSelected] = useState<KnowledgeTerm | null>(null)
   const [editing, setEditing] = useState<KnowledgeTerm | null>(null)
   const [filterCat, setFilterCat] = useState('')
+  const [extraCats, setExtraCats] = useState<string[]>([])
+  const [dropCat, setDropCat] = useState<string | null>(null)
+  const [dragId, setDragId] = useState<string | null>(null)
 
-  const categories = useMemo(() => [...new Set(terms.map((t) => t.category))].sort(), [terms])
+  const categories = useMemo(() => [...new Set([...terms.map((t) => t.category), ...extraCats])].sort(), [terms, extraCats])
   const filtered = useMemo(() => {
     let list = terms
     if (search) {
@@ -212,13 +220,18 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
 
   const groupedByCat = useMemo(() => {
     const cats = new Map<string, KnowledgeTerm[]>()
+    if (isAdmin && !search) for (const c of extraCats) cats.set(c, [])
     for (const t of filtered) {
       const list = cats.get(t.category) ?? []
       list.push(t)
       cats.set(t.category, list)
     }
+    // 卡内按词条拼音首字母排序
+    for (const [k, list] of cats) {
+      cats.set(k, list.slice().sort((a, b) => displayTerm(a.term).localeCompare(displayTerm(b.term), 'zh-Hans-CN')))
+    }
     return [...cats.entries()]
-  }, [filtered])
+  }, [filtered, extraCats, isAdmin, search])
 
   const relatedTerms = useMemo(() => {
     if (!selected) return []
@@ -240,6 +253,47 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
     setTerms(updated)
     await saveSection('knowledge', updated)
     showSaved()
+  }
+
+  // 拖拽换分类
+  async function moveTerm(id: string, newCat: string) {
+    const t = terms.find((x) => x.id === id)
+    if (!t || t.category === newCat) return
+    const fresh = await loadSection<KnowledgeTerm>('knowledge')
+    const updated = fresh.map((x) => (x.id === id ? { ...x, category: newCat } : x))
+    setTerms(updated)
+    await saveSection('knowledge', updated)
+    showSaved()
+  }
+
+  // 重命名分类：批量更新该分类下所有词条
+  async function renameCategory(oldName: string) {
+    const name = prompt('重命名分类', oldName)?.trim()
+    if (!name || name === oldName) return
+    const fresh = await loadSection<KnowledgeTerm>('knowledge')
+    const updated = fresh.map((x) => (x.category === oldName ? { ...x, category: name } : x))
+    setTerms(updated)
+    setExtraCats(extraCats.filter((c) => c !== oldName))
+    if (filterCat === oldName) setFilterCat(name)
+    await saveSection('knowledge', updated)
+    showSaved()
+  }
+
+  // 删除分类：只允许删空分类，防止误删词条
+  function deleteCategory(cat: string, termCount: number) {
+    if (termCount > 0) {
+      alert(`「${cat}」下还有 ${termCount} 个词条，请先把词条拖到其他分类或逐个删除`)
+      return
+    }
+    setExtraCats(extraCats.filter((c) => c !== cat))
+    if (filterCat === cat) setFilterCat('')
+  }
+
+  function addCategory() {
+    const name = prompt('新分类名称')?.trim()
+    if (!name) return
+    if (categories.includes(name)) { alert('该分类已存在'); return }
+    setExtraCats([...extraCats, name])
   }
 
   if (terms.length === 0 && !isAdmin) return <p className="empty-state">暂无知识词条</p>
@@ -318,6 +372,7 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <button className="talks-admin-add-btn" style={{ margin: 0 }} onClick={() => setEditing({ id: String(Date.now()), category: filterCat || categories[0] || '', term: '', definition: '' })}>+ 新增词条</button>
+            <button className="talks-admin-action-btn" style={{ whiteSpace: 'nowrap' }} onClick={addCategory} title="创建一个空分类，之后可以把词条拖进来">+ 新增分类</button>
             <CsvImportButton
               columns={[
                 { key: 'category', label: '分类', aliases: ['类别', '所属分类'] },
@@ -345,13 +400,34 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
         {groupedByCat.length === 0 && <p className="empty-state">未找到匹配词条，试试其他关键词</p>}
         <div className="knowledge-grid">
           {groupedByCat.map(([cat, items]) => (
-            <div className="knowledge-group-card" key={cat}>
-              <h3 className="knowledge-group-name">{cat}<span className="knowledge-group-badge">{items.length}</span></h3>
+            <div
+              className={`knowledge-group-card${dropCat === cat ? ' drop-target' : ''}`}
+              key={cat}
+              onDragOver={isAdmin ? (e) => { e.preventDefault(); setDropCat(cat) } : undefined}
+              onDragLeave={isAdmin ? () => setDropCat((c) => (c === cat ? null : c)) : undefined}
+              onDrop={isAdmin ? (e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/plain'); setDropCat(null); setDragId(null); if (id) moveTerm(id, cat) } : undefined}
+            >
+              <h3 className="knowledge-group-name">
+                {cat}<span className="knowledge-group-badge">{items.length}</span>
+                {isAdmin && (
+                  <span style={{ display: 'inline-flex', gap: '0.2rem', marginLeft: 'auto' }}>
+                    <button className="talks-admin-action-btn" style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem' }} onClick={() => renameCategory(cat)} title="重命名分类">✎</button>
+                    <button className="talks-admin-action-btn danger" style={{ fontSize: '0.65rem', padding: '0.15rem 0.35rem' }} onClick={() => deleteCategory(cat, items.length)} title="删除分类（仅限空分类）">✕</button>
+                  </span>
+                )}
+              </h3>
               <div className="knowledge-pills">
                 {items.map((t) => (
-                  <div key={t.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <button className={`knowledge-pill${selected?.id === t.id ? ' active' : ''}`} onClick={() => setSelected(selected?.id === t.id ? null : t)}>
-                      {t.term}
+                  <div key={t.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', maxWidth: '100%' }}>
+                    <button
+                      className={`knowledge-pill${selected?.id === t.id ? ' active' : ''}${dragId === t.id ? ' dragging' : ''}`}
+                      onClick={() => setSelected(selected?.id === t.id ? null : t)}
+                      draggable={isAdmin}
+                      onDragStart={isAdmin ? (e) => { e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; setDragId(t.id) } : undefined}
+                      onDragEnd={isAdmin ? () => { setDragId(null); setDropCat(null) } : undefined}
+                      title={isAdmin ? `${t.term}（可拖到其他分类）` : t.term}
+                    >
+                      {displayTerm(t.term)}
                     </button>
                     {isAdmin && (
                       <>

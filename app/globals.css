@@ -742,8 +742,20 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1.2);
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
   will-change: transform;
+}
+
+.knowledge-pill.dragging {
+  opacity: 0.4;
+}
+
+.knowledge-group-card.drop-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light, rgba(0, 180, 138, 0.15));
 }
 
 .knowledge-pill:hover {
