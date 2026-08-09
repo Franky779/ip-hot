@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAdmin } from './AdminToggle'
 import { CsvImportButton } from './CsvImportButton'
 
@@ -49,7 +48,6 @@ async function saveSection(section: string, data: unknown) {
 export function TalksPageClient({ articles: initArticles, knowledge: initKnowledge, podcast: initPodcast, courses: initCourses }: TalksPageClientProps) {
   const [active, setActive] = useState<TabKey>('articles')
   const { isAdmin } = useAdmin()
-  const router = useRouter()
 
   const [articles, setArticles] = useState(initArticles)
   const [knowledge, setKnowledge] = useState(initKnowledge)
@@ -87,10 +85,10 @@ export function TalksPageClient({ articles: initArticles, knowledge: initKnowled
       </header>
 
       <section className="article-section">
-        {active === 'articles' && <ArticleView articles={articles} setArticles={setArticles} isAdmin={isAdmin} showSaved={showSaved} router={router} />}
-        {active === 'knowledge' && <KnowledgeView terms={knowledge} setTerms={setKnowledge} isAdmin={isAdmin} showSaved={showSaved} router={router} />}
-        {active === 'podcast' && <PodcastView items={podcast} setItems={setPodcast} isAdmin={isAdmin} showSaved={showSaved} router={router} />}
-        {active === 'courses' && <CourseView items={courses} setItems={setCourses} isAdmin={isAdmin} showSaved={showSaved} router={router} />}
+        {active === 'articles' && <ArticleView articles={articles} setArticles={setArticles} isAdmin={isAdmin} showSaved={showSaved} />}
+        {active === 'knowledge' && <KnowledgeView terms={knowledge} setTerms={setKnowledge} isAdmin={isAdmin} showSaved={showSaved} />}
+        {active === 'podcast' && <PodcastView items={podcast} setItems={setPodcast} isAdmin={isAdmin} showSaved={showSaved} />}
+        {active === 'courses' && <CourseView items={courses} setItems={setCourses} isAdmin={isAdmin} showSaved={showSaved} />}
       </section>
     </>
   )
@@ -98,8 +96,8 @@ export function TalksPageClient({ articles: initArticles, knowledge: initKnowled
 
 // ====== 公众号文章 ======
 
-function ArticleView({ articles, setArticles, isAdmin, showSaved, router }: {
-  articles: Article[]; setArticles: (a: Article[]) => void; isAdmin: boolean; showSaved: () => void; router: ReturnType<typeof useRouter>
+function ArticleView({ articles, setArticles, isAdmin, showSaved }: {
+  articles: Article[]; setArticles: (a: Article[]) => void; isAdmin: boolean; showSaved: () => void
 }) {
   const [editing, setEditing] = useState<Article | null>(null)
 
@@ -123,7 +121,6 @@ function ArticleView({ articles, setArticles, isAdmin, showSaved, router }: {
     setEditing(null)
     await saveSection('articles', updated)
     showSaved()
-    router.refresh()
   }
 
   async function doDelete(id: string) {
@@ -132,7 +129,6 @@ function ArticleView({ articles, setArticles, isAdmin, showSaved, router }: {
     setArticles(updated)
     await saveSection('articles', updated)
     showSaved()
-    router.refresh()
   }
 
   const today = new Date().toISOString().slice(0, 10)
@@ -153,7 +149,6 @@ function ArticleView({ articles, setArticles, isAdmin, showSaved, router }: {
               setArticles(updated)
               await saveSection('articles', updated)
               showSaved()
-              router.refresh()
             }}
           />
         </div>
@@ -186,8 +181,8 @@ function ArticleView({ articles, setArticles, isAdmin, showSaved, router }: {
 
 // ====== 专业用语 ======
 
-function KnowledgeView({ terms, setTerms, isAdmin, showSaved, router }: {
-  terms: KnowledgeTerm[]; setTerms: (k: KnowledgeTerm[]) => void; isAdmin: boolean; showSaved: () => void; router: ReturnType<typeof useRouter>
+function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
+  terms: KnowledgeTerm[]; setTerms: (k: KnowledgeTerm[]) => void; isAdmin: boolean; showSaved: () => void
 }) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<KnowledgeTerm | null>(null)
@@ -227,7 +222,6 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved, router }: {
     setEditing(null)
     await saveSection('knowledge', updated)
     showSaved()
-    router.refresh()
   }
 
   async function doDelete(id: string) {
@@ -236,7 +230,6 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved, router }: {
     setTerms(updated)
     await saveSection('knowledge', updated)
     showSaved()
-    router.refresh()
   }
 
   if (terms.length === 0 && !isAdmin) return <p className="empty-state">暂无知识词条</p>
@@ -326,7 +319,6 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved, router }: {
                 setTerms(updated)
                 await saveSection('knowledge', updated)
                 showSaved()
-                router.refresh()
               }}
             />
           </div>
@@ -392,8 +384,8 @@ function KnowledgeForm({ item, categories, onSave, onCancel }: { item: Knowledge
 
 // ====== 播客/直播 ======
 
-function PodcastView({ items, setItems, isAdmin, showSaved, router }: {
-  items: PodcastItem[]; setItems: (p: PodcastItem[]) => void; isAdmin: boolean; showSaved: () => void; router: ReturnType<typeof useRouter>
+function PodcastView({ items, setItems, isAdmin, showSaved }: {
+  items: PodcastItem[]; setItems: (p: PodcastItem[]) => void; isAdmin: boolean; showSaved: () => void
 }) {
   const [editing, setEditing] = useState<PodcastItem | null>(null)
 
@@ -418,7 +410,6 @@ function PodcastView({ items, setItems, isAdmin, showSaved, router }: {
     setEditing(null)
     await saveSection('podcast', updated)
     showSaved()
-    router.refresh()
   }
 
   async function doDelete(title: string) {
@@ -427,7 +418,6 @@ function PodcastView({ items, setItems, isAdmin, showSaved, router }: {
     setItems(updated)
     await saveSection('podcast', updated)
     showSaved()
-    router.refresh()
   }
 
   return (
@@ -444,7 +434,6 @@ function PodcastView({ items, setItems, isAdmin, showSaved, router }: {
               setItems(updated)
               await saveSection('podcast', updated)
               showSaved()
-              router.refresh()
             }}
           />
         </div>
@@ -479,8 +468,8 @@ function PodcastView({ items, setItems, isAdmin, showSaved, router }: {
 
 // ====== 线上课程 ======
 
-function CourseView({ items, setItems, isAdmin, showSaved, router }: {
-  items: CourseItem[]; setItems: (c: CourseItem[]) => void; isAdmin: boolean; showSaved: () => void; router: ReturnType<typeof useRouter>
+function CourseView({ items, setItems, isAdmin, showSaved }: {
+  items: CourseItem[]; setItems: (c: CourseItem[]) => void; isAdmin: boolean; showSaved: () => void
 }) {
   const [editing, setEditing] = useState<CourseItem | null>(null)
 
@@ -505,7 +494,6 @@ function CourseView({ items, setItems, isAdmin, showSaved, router }: {
     setEditing(null)
     await saveSection('courses', updated)
     showSaved()
-    router.refresh()
   }
 
   async function doDelete(title: string) {
@@ -514,7 +502,6 @@ function CourseView({ items, setItems, isAdmin, showSaved, router }: {
     setItems(updated)
     await saveSection('courses', updated)
     showSaved()
-    router.refresh()
   }
 
   return (
