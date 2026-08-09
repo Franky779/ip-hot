@@ -215,18 +215,6 @@ export function Sidebar() {
                 </span>
                 <span>[管理]资讯处理</span>
               </Link>
-              <Link
-                href="/admin/talks"
-                className={`sidebar-link${pathname === '/admin/talks' ? ' active' : ''}`}
-              >
-                <span className="sidebar-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
-                </span>
-                <span>[管理]有话说</span>
-              </Link>
               <a
                 href={process.env.NEXT_PUBLIC_UMAMI_URL ? `${process.env.NEXT_PUBLIC_UMAMI_URL}/websites/${process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || 'f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}` : 'https://stats.laojia-ip.com/websites/f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}
                 target="_blank"
@@ -325,19 +313,6 @@ export function Sidebar() {
                 </svg>
               </span>
               <span className="mobile-bottom-nav-label">资讯</span>
-            </Link>
-            <Link
-              href="/admin/talks"
-              className={`mobile-bottom-nav-link${pathname === '/admin/talks' ? ' active' : ''}`}
-              aria-current={pathname === '/admin/talks' ? 'page' : undefined}
-            >
-              <span className="mobile-bottom-nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                </svg>
-              </span>
-              <span className="mobile-bottom-nav-label">有话说</span>
             </Link>
             <a
               href={process.env.NEXT_PUBLIC_UMAMI_URL ? `${process.env.NEXT_PUBLIC_UMAMI_URL}/websites/${process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || 'f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}` : 'https://stats.laojia-ip.com/websites/f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}
