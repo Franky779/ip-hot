@@ -43,6 +43,13 @@ async function saveSection(section: string, data: unknown) {
   if (!res.ok) throw new Error(`Failed to save ${section}`)
 }
 
+// PUT 是全量覆盖：导入前先拉服务器最新数据再合并，避免用打开页面时的旧状态覆盖掉期间的改动
+async function loadSection<T>(section: string): Promise<T[]> {
+  const res = await fetch(`/api/admin/talks?section=${section}`, { cache: 'no-store' })
+  if (!res.ok) throw new Error('读取服务器最新数据失败')
+  return res.json()
+}
+
 // ====== 主组件 ======
 
 export function TalksPageClient({ articles: initArticles, knowledge: initKnowledge, podcast: initPodcast, courses: initCourses }: TalksPageClientProps) {
@@ -145,10 +152,13 @@ function ArticleView({ articles, setArticles, isAdmin, showSaved }: {
               const imported: Article[] = rows
                 .filter((r) => r.title || r.sourceUrl)
                 .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), title: r.title, sourceUrl: r.sourceUrl, publishedAt: today }))
-              const updated = [...articles, ...imported]
+              if (imported.length === 0) throw new Error('没有识别到有效数据行，请检查CSV第一行表头是否为：title,sourceUrl（或：标题,公众号链接）')
+              const fresh = await loadSection<Article>('articles')
+              const updated = [...fresh, ...imported]
               setArticles(updated)
               await saveSection('articles', updated)
               showSaved()
+              return imported.length
             }}
           />
         </div>
@@ -315,10 +325,13 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
                 const imported: KnowledgeTerm[] = rows
                   .filter((r) => r.category && r.term)
                   .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), category: r.category, term: r.term, definition: r.definition, example: r.example || undefined }))
-                const updated = [...terms, ...imported]
+                if (imported.length === 0) throw new Error('没有识别到有效数据行，请检查CSV第一行表头是否为：category,term,definition,example（或：分类,词条名称,名词解释,举例）')
+                const fresh = await loadSection<KnowledgeTerm>('knowledge')
+                const updated = [...fresh, ...imported]
                 setTerms(updated)
                 await saveSection('knowledge', updated)
                 showSaved()
+                return imported.length
               }}
             />
           </div>
@@ -430,10 +443,13 @@ function PodcastView({ items, setItems, isAdmin, showSaved }: {
             sampleCsv={'title,date,url\nEP07｜标题,2026-08-07,https://www.ximalaya.com/...\nEP08｜另一个标题,2026-08-14,https://www.ximalaya.com/...'}
             onImport={async (rows) => {
               const imported: PodcastItem[] = rows.filter((r) => r.title).map((r) => ({ title: r.title, date: r.date || new Date().toISOString().slice(0, 10), url: r.url }))
-              const updated = [...items, ...imported]
+              if (imported.length === 0) throw new Error('没有识别到有效数据行，请检查CSV第一行表头是否为：title,date,url（或：标题,日期,链接）')
+              const fresh = await loadSection<PodcastItem>('podcast')
+              const updated = [...fresh, ...imported]
               setItems(updated)
               await saveSection('podcast', updated)
               showSaved()
+              return imported.length
             }}
           />
         </div>

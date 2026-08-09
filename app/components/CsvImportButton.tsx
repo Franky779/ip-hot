@@ -4,13 +4,13 @@ import { useState, useRef } from 'react'
 
 interface CsvImportProps {
   columns: { key: string; label: string }[]
-  onImport: (rows: Record<string, string>[]) => Promise<void>
+  onImport: (rows: Record<string, string>[]) => Promise<number | void>
   sampleCsv: string
 }
 
 function parseCsv(text: string): string[][] {
   const rows: string[][] = []
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean)
+  const lines = text.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean)
   for (const line of lines) {
     const cols: string[] = []
     let current = ''
@@ -39,6 +39,7 @@ export function CsvImportButton({ columns, onImport, sampleCsv }: CsvImportProps
   const [progress, setProgress] = useState(0)
   const [importing, setImporting] = useState(false)
   const [done, setDone] = useState(false)
+  const [importedCount, setImportedCount] = useState(0)
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -55,14 +56,22 @@ export function CsvImportButton({ columns, onImport, sampleCsv }: CsvImportProps
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      const rows = parseCsv(reader.result as string)
+      const buf = reader.result as ArrayBuffer
+      let text: string
+      try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(buf)
+      } catch {
+        // Excel 在中文 Windows 下导出的 CSV 默认是 GBK 编码
+        text = new TextDecoder('gbk').decode(buf)
+      }
+      const rows = parseCsv(text)
       setPreview(rows)
       setProgress(0)
       setImporting(false)
       setDone(false)
       setError('')
     }
-    reader.readAsText(file, 'UTF-8')
+    reader.readAsArrayBuffer(file)
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -74,7 +83,7 @@ export function CsvImportButton({ columns, onImport, sampleCsv }: CsvImportProps
     const result = dataRows.map((row) => {
       const obj: Record<string, string> = {}
       for (const col of columns) {
-        const idx = header.findIndex((h) => h.trim() === col.key)
+        const idx = header.findIndex((h) => { const t = h.trim(); return t === col.key || t === col.label })
         obj[col.key] = idx >= 0 ? (row[idx] ?? '') : ''
       }
       return obj
@@ -94,9 +103,10 @@ export function CsvImportButton({ columns, onImport, sampleCsv }: CsvImportProps
     const timer = setInterval(tick, 180)
 
     try {
-      await onImport(result)
-    } catch {
-      setError(`导入失败，请重试`)
+      const n = await onImport(result)
+      setImportedCount(typeof n === 'number' ? n : total)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '导入失败，请重试')
       clearInterval(timer)
       setImporting(false)
       return
@@ -162,7 +172,7 @@ export function CsvImportButton({ columns, onImport, sampleCsv }: CsvImportProps
                 )}
                 {done && (
                   <p style={{ margin: '0.35rem 0 0', fontSize: '0.75rem', color: '#2d8a4e' }}>
-                    全部导入完成，共 {count} 条
+                    全部导入完成，共 {importedCount} 条
                   </p>
                 )}
                 {error && (
