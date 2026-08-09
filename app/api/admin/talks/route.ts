@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
+import { revalidatePath } from 'next/cache'
 
 function getDataDir() {
   const dir = join(process.cwd(), 'data')
@@ -50,6 +51,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Body must be an array' }, { status: 400 })
     }
     writeJsonFile(SECTION_FILES[section], body)
+    revalidatePath('/talks')
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
