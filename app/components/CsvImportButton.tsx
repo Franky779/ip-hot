@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 
 interface CsvImportProps {
-  columns: { key: string; label: string }[]
+  columns: { key: string; label: string; aliases?: string[] }[]
   onImport: (rows: Record<string, string>[]) => Promise<number | void>
   sampleCsv: string
 }
@@ -83,7 +83,8 @@ export function CsvImportButton({ columns, onImport, sampleCsv }: CsvImportProps
     const result = dataRows.map((row) => {
       const obj: Record<string, string> = {}
       for (const col of columns) {
-        const idx = header.findIndex((h) => { const t = h.trim(); return t === col.key || t === col.label })
+        const accepted = [col.key, col.label, ...(col.aliases ?? [])]
+        const idx = header.findIndex((h) => accepted.includes(h.trim()))
         obj[col.key] = idx >= 0 ? (row[idx] ?? '') : ''
       }
       return obj

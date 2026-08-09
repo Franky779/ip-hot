@@ -146,7 +146,7 @@ function ArticleView({ articles, setArticles, isAdmin, showSaved }: {
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <button className="talks-admin-add-btn" style={{ flex: 1, margin: 0 }} onClick={() => setEditing({ id: String(Date.now()), title: '', sourceUrl: '', publishedAt: today })}>+ 新增文章</button>
           <CsvImportButton
-            columns={[{ key: 'title', label: '标题' }, { key: 'sourceUrl', label: '公众号链接' }]}
+            columns={[{ key: 'title', label: '标题', aliases: ['文章标题', '名称'] }, { key: 'sourceUrl', label: '公众号链接', aliases: ['链接', '原文地址', 'URL', 'url'] }]}
             sampleCsv={'title,sourceUrl\n文章标题一,https://mp.weixin.qq.com/s/xxxx\n文章标题二,https://mp.weixin.qq.com/s/yyyy'}
             onImport={async (rows) => {
               const imported: Article[] = rows
@@ -319,13 +319,18 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
             </select>
             <button className="talks-admin-add-btn" style={{ margin: 0 }} onClick={() => setEditing({ id: String(Date.now()), category: filterCat || categories[0] || '', term: '', definition: '' })}>+ 新增词条</button>
             <CsvImportButton
-              columns={[{ key: 'category', label: '分类' }, { key: 'term', label: '词条名称' }, { key: 'definition', label: '名词解释' }, { key: 'example', label: '举例(选填)' }]}
+              columns={[
+                { key: 'category', label: '分类', aliases: ['类别', '所属分类'] },
+                { key: 'term', label: '词条名称', aliases: ['术语', '词条', '名词', '名称'] },
+                { key: 'definition', label: '名词解释', aliases: ['定义', '解释', '释义', '含义'] },
+                { key: 'example', label: '举例(选填)', aliases: ['举例', '案例/说明', '案例', '说明', '示例'] },
+              ]}
               sampleCsv={'category,term,definition,example\n授权模式,保底授权,授权方与被授权方约定一个最低保证金...,\nIP分级,S级IP,指具有国民级知名度的顶级IP...,'}
               onImport={async (rows) => {
                 const imported: KnowledgeTerm[] = rows
                   .filter((r) => r.category && r.term)
                   .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), category: r.category, term: r.term, definition: r.definition, example: r.example || undefined }))
-                if (imported.length === 0) throw new Error('没有识别到有效数据行，请检查CSV第一行表头是否为：category,term,definition,example（或：分类,词条名称,名词解释,举例）')
+                if (imported.length === 0) throw new Error('没有识别到有效数据行。支持的表头：分类/类别 + 术语/词条名称/名词 + 定义/名词解释 + 案例/说明/举例')
                 const fresh = await loadSection<KnowledgeTerm>('knowledge')
                 const updated = [...fresh, ...imported]
                 setTerms(updated)
@@ -439,7 +444,7 @@ function PodcastView({ items, setItems, isAdmin, showSaved }: {
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <button className="talks-admin-add-btn" style={{ flex: 1, margin: 0 }} onClick={() => setEditing({ title: '', date: new Date().toISOString().slice(0, 10), url: '' })}>+ 新增播客</button>
           <CsvImportButton
-            columns={[{ key: 'title', label: '标题' }, { key: 'date', label: '日期' }, { key: 'url', label: '链接' }]}
+            columns={[{ key: 'title', label: '标题', aliases: ['名称', '节目标题'] }, { key: 'date', label: '日期', aliases: ['发布时间', '更新日期'] }, { key: 'url', label: '链接', aliases: ['URL', '地址', '播放链接'] }]}
             sampleCsv={'title,date,url\nEP07｜标题,2026-08-07,https://www.ximalaya.com/...\nEP08｜另一个标题,2026-08-14,https://www.ximalaya.com/...'}
             onImport={async (rows) => {
               const imported: PodcastItem[] = rows.filter((r) => r.title).map((r) => ({ title: r.title, date: r.date || new Date().toISOString().slice(0, 10), url: r.url }))
