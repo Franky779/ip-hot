@@ -7,6 +7,7 @@ import {
   getPendingClassificationOutcome,
   PENDING_CATEGORY,
   REVIEW_CATEGORY,
+  autoCleanupLowScore,
 } from '@/lib/pending-classification'
 import { getSelectionThreshold } from '@/lib/selection-threshold'
 
@@ -165,6 +166,10 @@ export async function POST(request: Request) {
       llm_pending: remaining ?? 0,
       details: { action: 'pending_classification', batch_total: articles.length, ...counts },
     }).eq('id', log.id)
+
+    // 自动清理评分≤4的非官号资讯
+    const cleaned = await autoCleanupLowScore(supabase)
+    if (cleaned > 0) console.log(`[process-pending-classification] auto-cleaned ${cleaned} low-score articles`)
 
     return NextResponse.json({ ok: true, ...counts, remaining: remaining ?? 0 })
   } catch (error) {

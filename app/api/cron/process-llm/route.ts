@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { summarizeArticle } from '@/lib/llm'
-import { resolveClassificationResult } from '@/lib/pending-classification'
+import { resolveClassificationResult, autoCleanupLowScore } from '@/lib/pending-classification'
 import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
 import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 
@@ -220,6 +220,10 @@ export async function GET(request: Request) {
       qualityResults: results,
     },
   }).eq('id', logId)
+
+  // 自动清理评分≤4的非官号资讯
+  const cleaned = await autoCleanupLowScore(supabase)
+  if (cleaned > 0) console.log(`[process-llm] auto-cleaned ${cleaned} low-score articles`)
 
   return NextResponse.json({
     ok: failedCount === 0,

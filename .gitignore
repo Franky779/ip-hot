@@ -52,3 +52,9 @@ _source_scores.json
 # python / browser-use
 /.venv/
 /.browser-use-config/
+
+# 服务器交接文档目录（含 root密码.txt，永不提交）
+/a.服务器配置文件/
+
+# 过期构建缓存
+/.next-stale-cache/

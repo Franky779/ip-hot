@@ -54,7 +54,7 @@ export type SourceHealthRow = SourceHealth & {
 export type SourceHealthFilterOption = {
   value: string
   label: string
-  status: Exclude<SourceHealthStatus, 'running'>
+  status: SourceHealthStatus
   runState: 'active' | 'paused'
 }
 
@@ -79,8 +79,10 @@ export const ATTENTION_HEALTH_STATUSES = new Set<SourceHealthStatus>([
 
 export const SOURCE_HEALTH_FILTER_OPTIONS: SourceHealthFilterOption[] = [
   { value: 'active:healthy', label: '启动中 · 正常', status: 'healthy', runState: 'active' },
+  { value: 'active:running', label: '启动中 · 抓取中', status: 'running', runState: 'active' },
   { value: 'active:dead_links', label: '启动中 · 失效链接过多', status: 'dead_links', runState: 'active' },
   { value: 'active:repair', label: '启动中 · 待修复', status: 'repair', runState: 'active' },
+  { value: 'active:untested', label: '启动中 · 尚未验证', status: 'untested', runState: 'active' },
   { value: 'paused:repair', label: '暂停中 · 待修复', status: 'repair', runState: 'paused' },
   { value: 'paused:inactive', label: '暂停中 · 已停用/人工处理', status: 'inactive', runState: 'paused' },
   { value: 'paused:no_articles', label: '暂停中 · 连续无资讯', status: 'no_articles', runState: 'paused' },

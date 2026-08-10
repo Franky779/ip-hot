@@ -7,7 +7,7 @@ import { scrapeNewsList } from '@/lib/scraper'
 import { createFeedParser, parseFeedUrl } from '@/lib/rss'
 import { checkLinks } from '@/lib/link-checker'
 import { parseRequestedSourceIds, selectRequestedSources } from '@/lib/source-run-selection'
-import { resolveClassificationResult } from '@/lib/pending-classification'
+import { resolveClassificationResult, autoCleanupLowScore } from '@/lib/pending-classification'
 import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
 import {
   MANUAL_FETCH_ASYNC_QUERY,
@@ -631,6 +631,10 @@ export async function GET(request: Request) {
       })
       .eq('id', logId)
   }
+
+    // 自动清理评分≤4的非官号资讯
+    const cleaned = await autoCleanupLowScore(supabase)
+    if (cleaned > 0) console.log(`[fetch-and-process] auto-cleaned ${cleaned} low-score articles`)
 
     return NextResponse.json({
       ok: true,

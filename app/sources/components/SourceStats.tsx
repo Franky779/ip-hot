@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { countSourceExecutionModes } from '@/lib/source-schedule'
+import type { SourceHealthStatus } from '@/lib/source-health'
+
+type HealthCounts = Partial<Record<SourceHealthStatus, number>>
 
 interface Source {
   id: string
@@ -26,6 +29,7 @@ function isRssSource(source: Source) {
 
 export function SourceStats({ initialSources }: SourceStatsProps) {
   const [sources, setSources] = useState(initialSources)
+  const [healthCounts, setHealthCounts] = useState<HealthCounts | null>(null)
 
   const refresh = useCallback(async () => {
     const response = await fetch('/api/sources', { cache: 'no-store' })
@@ -48,12 +52,24 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
     }
     const interval = window.setInterval(refresh, 15_000)
 
+    const handleHealthUpdated = (event: Event) => {
+      const rows = (event as CustomEvent<Array<{ status: SourceHealthStatus }>>).detail
+      if (!Array.isArray(rows)) return
+      const counts: HealthCounts = {}
+      for (const row of rows) {
+        counts[row.status] = (counts[row.status] || 0) + 1
+      }
+      setHealthCounts(counts)
+    }
+
     window.addEventListener('sources-updated', handleSourcesUpdated)
+    window.addEventListener('sources-health-updated', handleHealthUpdated)
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       window.clearInterval(interval)
       window.removeEventListener('sources-updated', handleSourcesUpdated)
+      window.removeEventListener('sources-health-updated', handleHealthUpdated)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [refresh])
@@ -145,6 +161,27 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
           <div className="source-stat-metric muted">
             <strong>{stats.untested}</strong>
             <span>未测试</span>
+          </div>
+        </div>
+      </section>
+      <section className="source-stat-group">
+        <span className="source-stat-group-title">抓取状态</span>
+        <div className="source-stat-values">
+          <div className="source-stat-metric active">
+            <strong>{healthCounts ? (healthCounts.healthy ?? 0) : '—'}</strong>
+            <span>正常</span>
+          </div>
+          <div className="source-stat-metric failed">
+            <strong>{healthCounts ? (healthCounts.repair ?? 0) : '—'}</strong>
+            <span>待修复</span>
+          </div>
+          <div className="source-stat-metric failed">
+            <strong>{healthCounts ? (healthCounts.dead_links ?? 0) : '—'}</strong>
+            <span>失效链接过多</span>
+          </div>
+          <div className="source-stat-metric muted">
+            <strong>{healthCounts ? (healthCounts.untested ?? 0) : '—'}</strong>
+            <span>尚未验证</span>
           </div>
         </div>
       </section>

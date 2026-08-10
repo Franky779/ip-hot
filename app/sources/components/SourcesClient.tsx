@@ -163,6 +163,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const abortRef = useRef<AbortController | null>(null)
   const [keyword, setKeyword] = useState('')
   const [regionFilter, setRegionFilter] = useState('all')
+  const [testStatusFilter, setTestStatusFilter] = useState('all')
   const [fetchTypeFilter, setFetchTypeFilter] = useState('all')
   const [executionModeFilter, setExecutionModeFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
@@ -181,6 +182,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       const data = await res.json()
       const rows = (data.health || []) as SourceHealthRow[]
       setHealthBySource(Object.fromEntries(rows.map((row) => [row.sourceId, row])))
+      window.dispatchEvent(new CustomEvent('sources-health-updated', { detail: rows }))
     } catch {}
   }, [])
 
@@ -213,6 +215,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     title: section.title,
   }))
   const normalizedKeyword = keyword.trim().toLowerCase()
+  const testStatusCounts = {
+    success: sources.filter((source) => source.last_test_status === 'success').length,
+    failed: sources.filter((source) => source.last_test_status === 'failed').length,
+  }
+  const untestedCount = sources.length - testStatusCounts.success - testStatusCounts.failed
   const healthFilterCounts = Object.fromEntries(
     SOURCE_HEALTH_FILTER_OPTIONS.map((option) => [option.value, 0])
   ) as Record<string, number>
@@ -228,6 +235,10 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       source.name, source.url, source.type, source.description, source.method,
     ].some((value) => value?.toLowerCase().includes(normalizedKeyword))
     const matchesRegion = regionFilter === 'all' || source.region === regionFilter
+    const matchesTestStatus = testStatusFilter === 'all'
+      || (testStatusFilter === 'untested'
+        ? source.last_test_status !== 'success' && source.last_test_status !== 'failed'
+        : source.last_test_status === testStatusFilter)
     const matchesFetchType = fetchTypeFilter === 'all' || getFetchType(source) === fetchTypeFilter
     const matchesExecutionMode = executionModeFilter === 'all'
       || getSourceSchedule(source).executionMode === executionModeFilter
@@ -237,9 +248,9 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     const matchesStatus = statusFilter === 'all'
       || (!!selectedHealthFilter
         && matchesSourceHealthFilter(source, healthStatus, selectedHealthFilter))
-    return matchesKeyword && matchesRegion && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus
+    return matchesKeyword && matchesRegion && matchesTestStatus && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus
   })
-  const hasFilters = keyword !== '' || regionFilter !== 'all' || fetchTypeFilter !== 'all'
+  const hasFilters = keyword !== '' || regionFilter !== 'all' || testStatusFilter !== 'all' || fetchTypeFilter !== 'all'
     || executionModeFilter !== 'all' || sectionFilter !== 'all' || statusFilter !== 'all'
   const grouped = groupBySection(filteredSources)
   const sectionIds = Object.keys(grouped)
@@ -678,6 +689,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               </select>
             </label>
             <label>
+              <span>测试状态</span>
+              <select value={testStatusFilter} onChange={(event) => setTestStatusFilter(event.target.value)}>
+                <option value="all">{sources.length} 条 · 全部状态</option>
+                <option value="success">{testStatusCounts.success} 条 · 成功</option>
+                <option value="failed">{testStatusCounts.failed} 条 · 失败</option>
+                <option value="untested">{untestedCount} 条 · 未测试</option>
+              </select>
+            </label>
+            <label>
               <span>抓取类型</span>
               <select value={fetchTypeFilter} onChange={(event) => setFetchTypeFilter(event.target.value)}>
                 <option value="all">全部类型</option>
@@ -724,6 +744,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                 onClick={() => {
                   setKeyword('')
                   setRegionFilter('all')
+                  setTestStatusFilter('all')
                   setFetchTypeFilter('all')
                   setExecutionModeFilter('all')
                   setSectionFilter('all')
