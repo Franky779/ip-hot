@@ -2,6 +2,7 @@ import type { NewsSource } from './sources.ts'
 import { parseFeedUrl } from './rss.ts'
 import { scrapeNewsList } from './scraper.ts'
 import { getSourceSchedule, writeSourceSchedule } from './source-schedule.ts'
+import { COLLECT_SOURCE_TYPE } from './manual-collect.ts'
 
 export type RepairCandidate = {
   id: string
@@ -25,8 +26,9 @@ export type RepairDecision =
   | { action: 'test' }
   | { action: 'skip'; reason: string }
 
-/** 只有因测试失败被自动停用的源才允许自动修复重新启用。 */
-export function isRepairCandidate(candidate: Pick<RepairCandidate, 'enabled' | 'last_test_status'>): boolean {
+/** 只有因测试失败被自动停用的源才允许自动修复重新启用；随手收登记的公众号源永不自动启用。 */
+export function isRepairCandidate(candidate: Pick<RepairCandidate, 'enabled' | 'last_test_status' | 'type'>): boolean {
+  if (candidate.type === COLLECT_SOURCE_TYPE) return false
   return candidate.enabled === false && candidate.last_test_status === 'failed'
 }
 

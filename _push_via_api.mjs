@@ -7,7 +7,6 @@
 // 必需环境变量：GITHUB_TOKEN
 // 仓库：Franky779/ip-hot / 分支 main（如需改，调整下方 OWNER/REPO/BRANCH）
 
-import { existsSync, readFileSync } from 'fs';
 import { request } from 'https';
 import { execFileSync, execSync } from 'child_process';
 
@@ -21,6 +20,21 @@ const BRANCH = 'main';
 function gitOut(cmd) {
   try { return execSync(cmd, { encoding: 'utf8' }).trim(); }
   catch { return ''; }
+}
+
+// 读取 HEAD commit 中某文件的原始内容（buffer）。绝不读工作区磁盘，避免把未提交改动推给 GitHub。
+function gitBlob(ref) {
+  return execFileSync('git', ['cat-file', 'blob', ref], { encoding: 'buffer' });
+}
+
+// 判断某文件是否存在于 HEAD commit。
+function hasInHead(file) {
+  try {
+    execFileSync('git', ['cat-file', '-e', `HEAD:${file}`], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const args = process.argv.slice(2);
@@ -91,14 +105,15 @@ function api(method, path, data) {
   console.log('2) 上传 blobs...');
   const treeItems = [];
   for (const file of files) {
-    if (!existsSync(file)) {
-      console.log(`   delete ${file}`);
+    if (!hasInHead(file)) {
+      console.log(`   delete ${file} (not in HEAD)`);
       treeItems.push({ path: file, mode: '100644', type: 'blob', sha: null });
       continue;
     }
-    const content = readFileSync(file).toString('base64');
+    // 内容一律取自已提交的 HEAD（git cat-file blob），绝不读工作区磁盘上的未提交内容
+    const content = gitBlob(`HEAD:${file}`).toString('base64');
     const blob = await api('POST', '/git/blobs', { content, encoding: 'base64' });
-    console.log(`   blob ${file} -> ${blob.sha}`);
+    console.log(`   blob ${file} -> ${blob.sha} (from HEAD)`);
     treeItems.push({ path: file, mode: '100644', type: 'blob', sha: blob.sha });
   }
 

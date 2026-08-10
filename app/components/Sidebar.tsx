@@ -173,6 +173,25 @@ export function Sidebar() {
           {loaded && isAdmin && (
             <>
               <Link
+                href="/collect"
+                className={`sidebar-link${pathname === '/collect' ? ' active' : ''}`}
+              >
+                <span className="sidebar-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+                    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                  </svg>
+                </span>
+                <span>[管理]随手收</span>
+              </Link>
+              <Link
                 href="/sources"
                 className={`sidebar-link${pathname === '/sources' ? ' active' : ''}`}
               >
@@ -287,6 +306,19 @@ export function Sidebar() {
         {loaded && isAdmin && (
           <>
             <Link
+              href="/collect"
+              className={`mobile-bottom-nav-link${pathname === '/collect' ? ' active' : ''}`}
+              aria-current={pathname === '/collect' ? 'page' : undefined}
+            >
+              <span className="mobile-bottom-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+                  <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                </svg>
+              </span>
+              <span className="mobile-bottom-nav-label">随手收</span>
+            </Link>
+            <Link
               href="/sources"
               className={`mobile-bottom-nav-link${pathname === '/sources' ? ' active' : ''}`}
               aria-current={pathname === '/sources' ? 'page' : undefined}
@@ -314,21 +346,6 @@ export function Sidebar() {
               </span>
               <span className="mobile-bottom-nav-label">资讯</span>
             </Link>
-            <a
-              href={process.env.NEXT_PUBLIC_UMAMI_URL ? `${process.env.NEXT_PUBLIC_UMAMI_URL}/websites/${process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || 'f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}` : 'https://stats.laojia-ip.com/websites/f72f33fc-8f83-4e90-a20d-9b2aabed15d5'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mobile-bottom-nav-link"
-            >
-              <span className="mobile-bottom-nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="20" x2="18" y2="10" />
-                  <line x1="12" y1="20" x2="12" y2="4" />
-                  <line x1="6" y1="20" x2="6" y2="14" />
-                </svg>
-              </span>
-              <span className="mobile-bottom-nav-label">数据</span>
-            </a>
             <Link
               href="/admin/review"
               className={`mobile-bottom-nav-link${pathname === '/admin/review' ? ' active' : ''}`}

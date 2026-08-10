@@ -21,10 +21,15 @@ function config(overrides: Partial<NewsSource>): NewsSource {
 }
 
 test('isRepairCandidate only accepts disabled sources with a failed test', () => {
-  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'failed' }), true)
-  assert.equal(isRepairCandidate({ enabled: true, last_test_status: 'failed' }), false)
-  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'success' }), false)
-  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'untested' }), false)
+  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'failed', type: 'web' }), true)
+  assert.equal(isRepairCandidate({ enabled: true, last_test_status: 'failed', type: 'web' }), false)
+  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'success', type: 'web' }), false)
+  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'untested', type: 'web' }), false)
+})
+
+test('isRepairCandidate never re-enables manual-collect sources', () => {
+  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'failed', type: '公众号（随手收）' }), false)
+  assert.equal(isRepairCandidate({ enabled: false, last_test_status: 'untested', type: '公众号（随手收）' }), false)
 })
 
 test('decideRepairAction skips sources the server cannot verify', () => {

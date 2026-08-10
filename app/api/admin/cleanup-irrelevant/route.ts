@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   // 查已处理的文章（按最新优先，评分<=3 或 commentary 明确说无关的都删）
   const { data: articles, error } = await supabase
     .from('articles')
-    .select('id, commentary, relevance_score')
+    .select('id, commentary, relevance_score, is_manual')
     .not('title_cn', 'is', null)
     .not('commentary', 'is', null)
     .order('created_at', { ascending: false })
@@ -28,6 +28,8 @@ export async function POST(request: Request) {
 
   const toDelete: string[] = []
   for (const a of articles || []) {
+    // 手动精选（随手收）永不清理
+    if (a.is_manual) continue
     // 统一标准：LLM 已判定低分（<=3）或 commentary 明确说无关
     if (shouldIgnoreArticle(a.relevance_score, a.commentary)) {
       toDelete.push(a.id)

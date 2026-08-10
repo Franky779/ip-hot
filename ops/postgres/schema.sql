@@ -24,6 +24,7 @@ create table if not exists articles (
   relevance_score smallint,
   is_selected boolean default false,
   selection_threshold smallint default 6,
+  is_manual boolean not null default false,
   published_at timestamptz,
   created_at timestamptz not null default now(),
   commentary text
@@ -34,6 +35,8 @@ update articles set selection_threshold = 6 where selection_threshold is null;
 alter table articles drop constraint if exists articles_selection_threshold_check;
 alter table articles add constraint articles_selection_threshold_check check (selection_threshold between 4 and 10);
 
+alter table articles add column if not exists is_manual boolean not null default false;
+
 create unique index if not exists articles_source_url_unique on articles (source, url);
 create index if not exists idx_articles_created_at on articles (created_at desc);
 create index if not exists idx_articles_published_at on articles (published_at desc);
@@ -42,6 +45,7 @@ create index if not exists idx_articles_pending_classification on articles (cate
   where category = '待分类' and title_cn is not null and summary_cn is not null;
 create index if not exists idx_articles_complete on articles (published_at desc)
   where title_cn is not null and summary_cn is not null and category is not null and commentary is not null;
+create index if not exists idx_articles_is_manual on articles (is_manual) where is_manual;
 
 create table if not exists info_sources (
   id uuid primary key default gen_random_uuid(),
