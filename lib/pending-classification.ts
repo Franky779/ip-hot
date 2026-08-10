@@ -29,13 +29,10 @@ export function resolveClassificationResult(result: {
   return { category: result.category, is_selected: result.is_selected }
 }
 
-/** 自动清理评分≤4的非官号待复核资讯的 SQL（导出以便测试防回归；is_manual 手动精选永不清理） */
-export const AUTO_CLEANUP_LOW_SCORE_SQL = `UPDATE articles SET category = $1, is_selected = false WHERE category = $2 AND relevance_score <= 4 AND (source IS NULL OR source NOT ILIKE '官号%') AND is_manual = false`
-
 /** 自动清理评分≤4的非官号待复核资讯，返回清理条数 */
 export async function autoCleanupLowScore(supabase: DatabaseClient): Promise<number> {
   const { rowCount } = await supabase.query(
-    AUTO_CLEANUP_LOW_SCORE_SQL,
+    `UPDATE articles SET category = $1, is_selected = false WHERE category = $2 AND relevance_score <= 4 AND (source IS NULL OR source NOT ILIKE '官号%')`,
     [FILTERED_CATEGORY, REVIEW_CATEGORY]
   )
   return rowCount
