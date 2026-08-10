@@ -198,7 +198,7 @@ export async function getAvailableDates(period: 'daily' | 'weekly' | 'monthly'):
     `SELECT DISTINCT ${trunc} AS d FROM articles
      WHERE published_at IS NOT NULL
        AND category IS NOT NULL
-       AND category NOT IN ('待分类', '待人工复核')
+       AND category NOT IN ('待分类', '待人工复核', '已过滤')
      ORDER BY d DESC
      LIMIT 200`
   )
@@ -268,6 +268,7 @@ export async function getDailyReport(
     .not('category', 'is', null)
     .neq('category', '待分类')
     .neq('category', '待人工复核')
+    .neq('category', '已过滤')
     .gte('published_at', start.toISOString())
     .lte('published_at', end.toISOString())
     .order('published_at', { ascending: false })
