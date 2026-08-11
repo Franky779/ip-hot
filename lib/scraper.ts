@@ -324,20 +324,72 @@ async function scrapeJinaMarkdownLinks(
   config: Extract<ScrapeConfig, { adapter: 'jina-markdown-links' }>,
   signal: AbortSignal
 ): Promise<ScrapeResult> {
-  const response = await fetch(config.proxyUrl, {
-    headers: {
-      'user-agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
-      accept: 'text/plain, text/markdown, */*',
-    },
-    redirect: 'follow',
-    signal,
-  })
-  if (!response.ok) {
-    return { items: [], rawCount: 0, error: `${sourceName}: proxy HTTP ${response.status}` }
+  let markdown = ''
+  let jinaFailed = false
+  try {
+    const response = await fetch(config.proxyUrl, {
+      headers: {
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+        accept: 'text/plain, text/markdown, */*',
+      },
+      redirect: 'follow',
+      signal,
+    })
+    if (!response.ok) {
+      jinaFailed = true
+    } else {
+      markdown = await response.text()
+      if (!markdown.trim()) jinaFailed = true
+    }
+  } catch {
+    jinaFailed = true
   }
 
-  const markdown = await response.text()
+  // Fallback: when Jina proxy is unreachable, try direct fetch + cheerio
+  if (jinaFailed) {
+    try {
+      const resp = await fetchHtmlWithRetry(sourceUrl, signal)
+      if (resp.ok) {
+        const html = decodeHtml(await resp.arrayBuffer(), resp.headers.get('content-type'))
+        const $ = cheerio.load(html)
+        const linkPattern = config.linkPattern ? new RegExp(config.linkPattern) : null
+        const items: ScrapedNewsItem[] = []
+        const seen = new Set<string>()
+        let rawCount = 0
+        const navPaths = /^\/?(index\.html|login|signup|register|search|sitemap|privacy|terms|contact|about|faq|help|home|tag|category|page\/\d+)?$/i
+        $('a[href]').each((_, el) => {
+          const rawUrl = $(el).attr('href') || ''
+          const title = $(el).text().replace(/\s+/g, ' ').trim()
+          // Skip: empty/short titles, fragment-only, anchor-only
+          if (!title || title.length < 4) return
+          if (rawUrl.startsWith('#') || rawUrl === '') return
+          // Skip: nav menu items (titles matching common nav words)
+          if (/^(ホーム|首页|ＨＯＭＥ|TOP|一覧|概要|お問い合わせ|关于|登录|注册|更多|もっと見る|查看更多)$/i.test(title)) return
+          let url: URL
+          try {
+            url = new URL(rawUrl, sourceUrl)
+          } catch { return }
+          // Skip: fragment-only after resolution, common nav paths
+          if (url.pathname === new URL(sourceUrl).pathname && !url.hash) return
+          if (navPaths.test(url.pathname)) return
+          if (linkPattern && !linkPattern.test(url.pathname)) return
+          if (!linkPattern && url.hostname !== new URL(sourceUrl).hostname) return
+          rawCount++
+          url.protocol = 'https:'
+          url.search = ''
+          url.hash = ''
+          const normalizedUrl = url.toString()
+          if (seen.has(normalizedUrl)) return
+          seen.add(normalizedUrl)
+          items.push({ title, url: normalizedUrl, publishedAt: null })
+          if (items.length >= (config.maxItems ?? 10)) return false
+        })
+        if (items.length > 0) return { items, rawCount }
+      }
+    } catch { /* ignore fallback error */ }
+    return { items: [], rawCount: 0, error: `${sourceName}: Jina proxy unreachable and direct fetch found no article links` }
+  }
   const matches = [
     ...markdown.matchAll(/\[!\[([^\]\n]*)\]\([^)]+\)\s*([^\]\n]*)\]\((https?:\/\/[^)\s]+)(?:\s+["'][^)]*["'])?\)/g),
     ...markdown.matchAll(/\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)(?:\s+["'][^)]*["'])?\)/g),

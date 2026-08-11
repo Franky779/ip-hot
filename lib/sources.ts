@@ -567,7 +567,7 @@ const WEB_SOURCES: NewsSource[] = [
   {
     id: 'tokyotoyshow', name: '东京玩具展', url: 'https://tokyotoyshow.com/',
     language: 'ja', priority: 'P1', type: 'web',
-    scrapeConfig: { itemSelector: 'a[href*="/20"]', titleSelector: '', linkSelector: '', maxItems: 10 },
+    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://tokyotoyshow.com/', sourceHost: 'tokyotoyshow.com', pathPrefix: '/', linkPattern: '', maxItems: 10 },
   },
 
 ]
