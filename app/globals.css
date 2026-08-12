@@ -12,6 +12,8 @@
   --accent-light: rgba(0, 212, 164, 0.1);
   --border: #e5e5e5;
   --border-light: #ededed;
+  --card-border: #e7e7e7;
+  --card-border-hover: #d6d6d6;
   --shadow: 0 2px 8px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
 
@@ -36,6 +38,8 @@
   --accent-light: rgba(0, 212, 164, 0.12);
   --border: #1f1f1f;
   --border-light: #1a1a1a;
+  --card-border: #303030;
+  --card-border-hover: #454545;
   --shadow: 0 2px 8px rgba(0,0,0,0.3);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
 
@@ -60,6 +64,8 @@
     --accent-light: rgba(0, 212, 164, 0.12);
     --border: #1f1f1f;
     --border-light: #1a1a1a;
+    --card-border: #303030;
+    --card-border-hover: #454545;
     --shadow: 0 2px 8px rgba(0,0,0,0.3);
     --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
 
@@ -623,7 +629,7 @@ body {
 }
 
 .knowledge-view.has-detail .knowledge-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  columns: 2;
 }
 
 .knowledge-main {
@@ -685,30 +691,34 @@ body {
 
 /* 分类卡片网格 */
 .knowledge-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
+  columns: 3 260px;
+  column-gap: 1rem;
 }
 
 .knowledge-group-card {
-  border: 1px solid var(--border-light);
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   background: var(--surface);
-  padding: 1.125rem 1.25rem;
+  padding: 1.25rem 1.375rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .knowledge-group-card:hover {
-  border-color: var(--border);
+  border-color: var(--card-border-hover);
   box-shadow: 0 2px 12px rgba(0,0,0,0.04);
   transform: translateY(-1px);
 }
 
 .knowledge-group-name {
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--text);
-  margin: 0 0 0.6rem 0;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -717,11 +727,22 @@ body {
 
 .knowledge-group-badge {
   font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg);
-  padding: 0.15rem 0.45rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 0.15rem 0.5rem;
   border-radius: 999px;
+}
+
+/* 黑夜模式：分类标题用品牌绿，与词条拉开层级 */
+[data-theme="dark"] .knowledge-group-name {
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .knowledge-group-name {
+    color: var(--accent);
+  }
 }
 
 /* 词条徽章 */

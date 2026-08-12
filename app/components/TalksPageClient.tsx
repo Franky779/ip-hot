@@ -230,7 +230,8 @@ function KnowledgeView({ terms, setTerms, isAdmin, showSaved }: {
     for (const [k, list] of cats) {
       cats.set(k, list.slice().sort((a, b) => displayTerm(a.term).localeCompare(displayTerm(b.term), 'zh-Hans-CN')))
     }
-    return [...cats.entries()]
+    // 分类卡片按词条数降序，词条多的排前面
+    return [...cats.entries()].sort((a, b) => b[1].length - a[1].length)
   }, [filtered, extraCats, isAdmin, search])
 
   const relatedTerms = useMemo(() => {
