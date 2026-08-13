@@ -134,16 +134,30 @@ test('retries the toy industry site after solving its acw cookie challenge', asy
 test('moves the verified local CDP sources to cloud execution', () => {
   const sourceIds = [
     'ign-anime', 'animeanime', 'famitsu',
-    'ctoy-industry', 'ctoy-company', 'ctoy-channel',
-    'ctoy-license', 'ctoy-consumer', 'ctoy-toy',
     'ynet', 'dg-gov', 'hz-xh', 'tj-wl', 'cdsb', 'ycwb',
-    'ccdy', 'shxwcb', 'crunchyroll', 'licenseglobal',
+    'ccdy', 'shxwcb', 'licenseglobal',
   ]
 
   for (const id of sourceIds) {
     const source = ALL_SOURCES.find((candidate) => candidate.id === id)
     assert.ok(source, `missing source ${id}`)
     assert.equal(source.needsLocalCdp, undefined, `${id} must run in cloud mode`)
+  }
+})
+
+// 中外玩具网6栏目为 JS 渲染站、Crunchyroll 为 React SPA：jina 代理已失效，
+// 直接抓取无文章链接（2026-08-13 服务器 CDP dry-run 实测各取满 10 条）。
+// 改由 fetch-cdp-local.mjs 本地 CDP 抓取，source-repair 自动跳过。
+test('JS-rendered sources (Ctoy columns, Crunchyroll) stay on local CDP', () => {
+  const cdpSourceIds = [
+    'ctoy-industry', 'ctoy-company', 'ctoy-channel',
+    'ctoy-license', 'ctoy-consumer', 'ctoy-toy', 'crunchyroll',
+  ]
+
+  for (const id of cdpSourceIds) {
+    const source = ALL_SOURCES.find((candidate) => candidate.id === id)
+    assert.ok(source, `missing source ${id}`)
+    assert.equal(source.needsLocalCdp, true, `${id} must run via fetch-cdp-local.mjs`)
   }
 })
 
@@ -193,20 +207,20 @@ test('extracts Morning Post articles from the encrypted public API response', as
 
 test('extracts official article links from the markdown proxy fallback', async (t) => {
   const markdown = Array.from({ length: 12 }, (_, index) => (
-    `### [Crunchyroll proxy article title ${index}](http://www.crunchyroll.com/news/latest/2026/7/24/article-${index})`
+    `### [Polygon proxy article title ${index}](https://www.polygon.com/gaming/article-${index}/)`
   )).join('\n')
   t.mock.method(globalThis, 'fetch', async () => new Response(markdown, {
     status: 200,
     headers: { 'content-type': 'text/plain; charset=utf-8' },
   }))
 
-  const source = ALL_SOURCES.find((candidate) => candidate.id === 'crunchyroll')
+  const source = ALL_SOURCES.find((candidate) => candidate.id === 'polygon')
   assert.ok(source?.scrapeConfig)
   const result = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
 
   assert.equal(result.error, undefined)
   assert.equal(result.items.length, 10)
-  assert.ok(result.items.every((item) => item.url.startsWith('https://www.crunchyroll.com/news/')))
+  assert.ok(result.items.every((item) => item.url.startsWith('https://www.polygon.com/')))
 })
 
 test('checks Cloudflare-blocked article links through the markdown proxy', async (t) => {
@@ -251,28 +265,6 @@ test('checks protected Ctoy article links through the markdown proxy without the
   const result = await checkLink('https://www.ctoy.com.cn/n/d46384.html', 1)
   assert.equal(result.ok, true)
   assert.equal(requests[0]?.url, 'https://r.jina.ai/http://www.ctoy.com.cn/n/d46384.html')
-})
-
-test('extracts all Ctoy cloud columns from the markdown proxy', async (t) => {
-  const markdown = Array.from({ length: 12 }, (_, index) => (
-    `[![  Image ${index + 1}](https://img.ctoy.com.cn/article-${index}.jpg)](http://www.ctoy.com.cn/n/d${46000 + index}.html)\n`
-    + `[Ctoy proxy article title ${index}](http://www.ctoy.com.cn/n/d${46000 + index}.html)`
-  )).join('\n')
-  t.mock.method(globalThis, 'fetch', async () => new Response(markdown, { status: 200 }))
-
-  const sourceIds = [
-    'ctoy-industry', 'ctoy-company', 'ctoy-channel',
-    'ctoy-license', 'ctoy-consumer', 'ctoy-toy',
-  ]
-  for (const id of sourceIds) {
-    const source = ALL_SOURCES.find((candidate) => candidate.id === id)
-    assert.ok(source?.scrapeConfig)
-    const result = await scrapeNewsList(source.name, source.url, source.scrapeConfig)
-    assert.equal(result.error, undefined, id)
-    assert.equal(result.items.length, 10, id)
-    assert.ok(result.items.every((item) => item.title.startsWith('Ctoy proxy article title')), id)
-    assert.ok(result.items.every((item) => /^https:\/\/www\.ctoy\.com\.cn\/n\/d\d+\.html$/.test(item.url)), id)
-  }
 })
 
 test('extracts image-wrapped links and markdown link titles', async (t) => {

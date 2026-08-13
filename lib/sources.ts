@@ -117,7 +117,8 @@ export const RSS_SOURCES: NewsSource[] = [
   // 海外动漫/ACG
   { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
   { id: 'ign-anime', name: 'IGN Anime', url: 'https://sea.ign.com/anime', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'h3 a[href*="/anime/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://sea.ign.com', maxItems: 10 } },
-  { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.crunchyroll.com/news/latest', sourceHost: 'www.crunchyroll.com', pathPrefix: '/news/', maxItems: 10 } },
+  // Crunchyroll 为 React SPA，直接抓取无文章链接，jina 代理已失效 → 转本地 CDP（fetch-cdp-local.mjs 已覆盖）
+  { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true },
   { id: 'cartoonbrew', name: 'Cartoon Brew', url: 'https://www.cartoonbrew.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
 { id: 'animationmag', name: 'Animation Magazine', url: 'https://www.animationmagazine.net/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'licensingsource', name: 'Licensing Source', url: 'https://www.licensingsource.net/feed/', language: 'en', priority: 'P1', type: 'rss', isRss: true },
@@ -195,35 +196,30 @@ const WEB_SOURCES: NewsSource[] = [
     },
   },
   // --- 潮玩/玩具 ---
+  // 中外玩具网系列为 JS 渲染站，jina 代理已失效 → 转本地 CDP（fetch-cdp-local.mjs 已覆盖 6 栏目）
   {
     id: 'ctoy-industry', name: '中外玩具网-产业', url: 'https://www.ctoy.com.cn/n/c3990/',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.ctoy.com.cn/n/c3990/', sourceHost: 'www.ctoy.com.cn', pathPrefix: '/n/', linkPattern: '/n/d\\d+\\.html$', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
     id: 'ctoy-company', name: '中外玩具网-公司', url: 'https://www.ctoy.com.cn/n/c3993/',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.ctoy.com.cn/n/c3993/', sourceHost: 'www.ctoy.com.cn', pathPrefix: '/n/', linkPattern: '/n/d\\d+\\.html$', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
     id: 'ctoy-channel', name: '中外玩具网-渠道', url: 'https://www.ctoy.com.cn/n/c3991/',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.ctoy.com.cn/n/c3991/', sourceHost: 'www.ctoy.com.cn', pathPrefix: '/n/', linkPattern: '/n/d\\d+\\.html$', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
     id: 'ctoy-license', name: '中外玩具网-授权', url: 'https://www.ctoy.com.cn/n/c4009/',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.ctoy.com.cn/n/c4009/', sourceHost: 'www.ctoy.com.cn', pathPrefix: '/n/', linkPattern: '/n/d\\d+\\.html$', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
     id: 'ctoy-consumer', name: '中外玩具网-消费', url: 'https://www.ctoy.com.cn/n/c3992/',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.ctoy.com.cn/n/c3992/', sourceHost: 'www.ctoy.com.cn', pathPrefix: '/n/', linkPattern: '/n/d\\d+\\.html$', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
     id: 'ctoy-toy', name: '中外玩具网-潮玩', url: 'https://www.ctoy.com.cn/n/c4053/',
-    language: 'zh', priority: 'P1', type: 'web',
-    scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.ctoy.com.cn/n/c4053/', sourceHost: 'www.ctoy.com.cn', pathPrefix: '/n/', linkPattern: '/n/d\\d+\\.html$', maxItems: 10 },
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
     id: 'wjyt', name: '玩具产业网', url: 'https://www.wjyt-china.org/',
