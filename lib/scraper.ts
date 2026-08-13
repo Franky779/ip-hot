@@ -884,7 +884,9 @@ export async function scrapeNewsList(
       url.hash = ''
 
       const normalizedUrl = url.toString()
-      if (seen.has(normalizedUrl) || !isLikelyArticle(title, url, sourceUrl)) return
+      const linkPattern = config.linkPattern ? new RegExp(config.linkPattern) : null
+      const urlOk = linkPattern ? linkPattern.test(url.pathname) : isLikelyArticle(title, url, sourceUrl)
+      if (seen.has(normalizedUrl) || !urlOk) return
       seen.add(normalizedUrl)
 
       const publishedAt =

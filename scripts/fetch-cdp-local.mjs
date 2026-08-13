@@ -573,6 +573,14 @@ let SOURCES = [
     loadWait: 15000,
   },
   {
+    id: 'toy52-cdp',
+    name: '52TOYS新闻',
+    url: 'https://www.52toys.com/news',
+    selector: 'a.tit[href*="/news/"]',
+    maxItems: 10,
+    loadWait: 15000,
+  },
+  {
     id: 'ign-anime',
     name: 'IGN Anime',
     url: 'https://sea.ign.com/anime',

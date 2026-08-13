@@ -141,7 +141,7 @@ export const RSS_SOURCES: NewsSource[] = [
   { id: '4gamer', name: '4Gamer', url: 'https://www.4gamer.net/rss/index.xml', language: 'ja', priority: 'P0', type: 'rss', isRss: true },
   { id: 'famitsu', name: 'Famitsu', url: 'https://www.famitsu.com/category/news/page/1', language: 'ja', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/article/"], a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.famitsu.com', maxItems: 10 } },
   // 国内商业媒体
-  { id: '36kr', name: '36氪', url: 'https://36kr.com/feed', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
+  { id: '36kr', name: '36氪', url: 'http://127.0.0.1:1200/36kr/newsflashes', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   { id: 'huxiu', name: '虎嗅', url: 'https://www.huxiu.com/', language: 'zh', priority: 'P1', type: 'web', scrapeConfig: { adapter: 'huxiu-api', apiUrl: 'https://article-api.huxiu.com/web/channel/articleList', maxItems: 10 } },
   { id: 'tmtpost', name: '钛媒体', url: 'https://www.tmtpost.com/rss.xml', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   // D类 RSSHub — 已实测全部不可达（rsshub.app 超时），改为本地CDP直连
@@ -195,6 +195,16 @@ const WEB_SOURCES: NewsSource[] = [
       maxItems: 10,
     },
   },
+  {
+    id: 'yulezibenlun-jiemian', name: '娱乐资本论', url: 'https://www.jiemian.com/account/1158.html',
+    language: 'zh', priority: 'P1', type: 'web', automationEnabled: true,
+    scrapeConfig: {
+      adapter: 'jiemian-account',
+      apiUrl: 'https://papi.jiemian.com/page/api/officialAccount/accountArticles',
+      accountId: '1158',
+      maxItems: 10,
+    },
+  },
   // --- 潮玩/玩具 ---
   // 中外玩具网系列为 JS 渲染站，jina 代理已失效 → 转本地 CDP（fetch-cdp-local.mjs 已覆盖 6 栏目）
   {
@@ -219,6 +229,10 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'ctoy-toy', name: '中外玩具网-潮玩', url: 'https://www.ctoy.com.cn/n/c4053/',
+    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
+  },
+  {
+    id: 'toy52-cdp', name: '52TOYS', aliases: ['52TOYS官网'], url: 'https://www.52toys.com/news',
     language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
   },
   {
@@ -346,6 +360,11 @@ const WEB_SOURCES: NewsSource[] = [
     id: '21jingji', name: '21世纪经济报道', url: 'http://www.21jingji.com',
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.news-list li, article, ul li', titleSelector: 'h3 a, h2 a, a', linkSelector: 'a', linkPrefix: 'http://www.21jingji.com', maxItems: 10 },
+  },
+  {
+    id: 'winshang', name: '赢商网', url: 'http://www.winshang.com/index.html',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: 'a[href*="news.winshang.com/html/"]', titleSelector: '', linkSelector: '', linkPrefix: 'http://news.winshang.com', linkPattern: '^/html/\\d+/\\d+\\.html$', maxItems: 10 },
   },
   {
     id: 'bjnews', name: '新京报', url: 'https://www.bjnews.com.cn',
