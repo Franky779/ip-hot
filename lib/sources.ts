@@ -4,6 +4,7 @@ export type HtmlScrapeConfig = {
   titleSelector: string
   linkSelector: string
   linkPrefix?: string
+  linkPattern?: string
   maxItems?: number
 }
 
@@ -15,6 +16,7 @@ export type BilibiliTimelineConfig = {
 
 export type AutoNewsConfig = {
   adapter: 'auto-news-links'
+  linkPattern?: string
   maxItems?: number
 }
 
