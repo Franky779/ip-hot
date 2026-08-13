@@ -557,6 +557,14 @@ let SOURCES = [
     loadWait: 15000,
   },
   {
+    id: 'fj-wlt',
+    name: '福建省文化和旅游厅',
+    url: 'https://wlt.fujian.gov.cn/',
+    selector: 'a[href*="/202"][href*="t202"], .list li a',
+    maxItems: 5,
+    loadWait: 15000,
+  },
+  {
     id: 'hz-xh',
     name: '杭州市西湖区人民政府',
     url: 'https://www.hzxh.gov.cn/',

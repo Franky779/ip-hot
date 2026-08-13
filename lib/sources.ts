@@ -509,9 +509,8 @@ const WEB_SOURCES: NewsSource[] = [
   },
 
   {
-    id: 'weibo-hot-web', name: '微博热搜', url: 'https://s.weibo.com/top/summary',
-    language: 'zh', priority: 'P2', type: 'web',
-    scrapeConfig: { itemSelector: 'td.td-02 a', titleSelector: 'a', linkSelector: 'a', maxItems: 20 },
+    id: 'weibo-hot-web', name: '微博热搜', url: 'http://127.0.0.1:1200/weibo/search/hot',
+    language: 'zh', priority: 'P2', type: 'rss', isRss: true,
   },
   {
     id: 'zhihu-hot-web', name: '知乎热榜', url: 'https://www.zhihu.com/hot',
@@ -582,7 +581,7 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'cnipa', name: '国家知识产权局', url: 'https://www.cnipa.gov.cn/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://www.cnipa.gov.cn', maxItems: 5 } },
   { id: 'mof', name: '财政部', url: 'https://www.mof.gov.cn/zhengwuxinxi/zhengcefabu/', language: 'zh', priority: 'P1', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   // 省级文旅厅
-{ id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://ct.zj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/col/"][href*="/art/2026/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://ct.zj.gov.cn', maxItems: 5 } },
+{ id: 'zj-wlt', name: '浙江省文旅厅', aliases: ['浙江省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/zj/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'dg-gov', name: '东莞市人民政府', aliases: ['东莞市文化广电旅游体育局'], url: 'https://wglt.dg.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://wglt.dg.gov.cn/', sourceHost: 'wglt.dg.gov.cn', pathPrefix: '/', linkPattern: '/content/post_\\d+\\.html$', maxItems: 5 } },
   { id: 'hz-xh', name: '杭州西湖区政府', aliases: ['杭州市西湖区人民政府'], url: 'https://www.hzxh.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { adapter: 'jina-markdown-links', proxyUrl: 'https://r.jina.ai/http://www.hzxh.gov.cn/', sourceHost: 'www.hzxh.gov.cn', pathPrefix: '/', linkPattern: '/art/202\\d/art_[a-f0-9]+\\.html$', maxItems: 5 } },
   { id: 'xj-wlt', name: '新疆文旅厅', url: 'https://wlt.xinjiang.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.xinjiang.gov.cn', maxItems: 5 } },
@@ -597,7 +596,7 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'hlj-wlt', name: '黑龙江省文旅厅', url: 'https://wlt.hlj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.hlj.gov.cn', maxItems: 5 } },
   { id: 'js-wlt', name: '江苏省文旅厅', aliases: ['江苏省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/js/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'ah-wlt', name: '安徽省文旅厅', aliases: ['安徽省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/ah/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
-  { id: 'fj-wlt', name: '福建省文旅厅', url: 'https://wlt.fujian.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.fujian.gov.cn', maxItems: 5 } },
+  { id: 'fj-wlt', name: '福建省文旅厅', url: 'https://wlt.fujian.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', needsLocalCdp: true },
   { id: 'jx-wlt', name: '江西省文旅厅', aliases: ['江西省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/jx/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'sd-wlt', name: '山东省文旅厅', aliases: ['山东省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/sd/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'henan-wlt', name: '河南省文旅厅', aliases: ['河南省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/hn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
