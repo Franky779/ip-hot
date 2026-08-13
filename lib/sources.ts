@@ -144,6 +144,7 @@ export const RSS_SOURCES: NewsSource[] = [
   { id: 'famitsu', name: 'Famitsu', url: 'https://www.famitsu.com/category/news/page/1', language: 'ja', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/article/"], a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.famitsu.com', maxItems: 10 } },
   // 国内商业媒体
   { id: '36kr', name: '36氪', url: 'http://127.0.0.1:1200/36kr/newsflashes', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
+  { id: 'gamelook', name: 'GameLook', aliases: ['游戏大观'], url: 'http://www.gamelook.com.cn/feed/', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   { id: 'huxiu', name: '虎嗅', url: 'https://www.huxiu.com/', language: 'zh', priority: 'P1', type: 'web', scrapeConfig: { adapter: 'huxiu-api', apiUrl: 'https://article-api.huxiu.com/web/channel/articleList', maxItems: 10 } },
   { id: 'tmtpost', name: '钛媒体', url: 'https://www.tmtpost.com/rss.xml', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   // D类 RSSHub — 已实测全部不可达（rsshub.app 超时），改为本地CDP直连
@@ -337,6 +338,11 @@ const WEB_SOURCES: NewsSource[] = [
     scrapeConfig: { itemSelector: '.news-list li, article, ul li', titleSelector: 'h2 a, h3 a, a', linkSelector: 'a', linkPrefix: 'http://www.youxituoluo.com', maxItems: 10 },
   },
   {
+    id: 'lanxiongsports', name: '懒熊体育', url: 'http://www.lanxiongsports.com/',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: 'a[href*="/posts/view/id/"]', titleSelector: '', linkSelector: '', linkPrefix: 'http://www.lanxiongsports.com', linkPattern: '^/posts/view/id/\\d+\\.html$', maxItems: 10 },
+  },
+  {
     id: 'ithome', name: 'IT之家', url: 'https://www.ithome.com',
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: '.news-list li, .news-item, ul li', titleSelector: 'h2 a, h3 a, a', linkSelector: 'a', linkPrefix: 'https://www.ithome.com', maxItems: 10 },
@@ -348,6 +354,11 @@ const WEB_SOURCES: NewsSource[] = [
   },
 
   // --- 财经/商业 ---
+  {
+    id: 'yuancangip', name: '原仓IP365', aliases: ['原仓IP数据', 'IP365授权行业报告'], url: 'https://www.yuancangip.com/',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: 'a[href*="/indexNewsDetail/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.yuancangip.com', linkPattern: '^/indexNewsDetail/\\d+$', maxItems: 10 },
+  },
   {
     id: 'jiemian', name: '界面新闻', url: 'https://www.jiemian.com',
     language: 'zh', priority: 'P1', type: 'web',
@@ -367,6 +378,11 @@ const WEB_SOURCES: NewsSource[] = [
     id: 'winshang', name: '赢商网', url: 'http://www.winshang.com/index.html',
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: 'a[href*="news.winshang.com/html/"]', titleSelector: '', linkSelector: '', linkPrefix: 'http://news.winshang.com', linkPattern: '^/html/\\d+/\\d+\\.html$', maxItems: 10 },
+  },
+  {
+    id: 'linkshop', name: '联商网', url: 'http://www.linkshop.com/news/',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: { itemSelector: 'a[href*="/news/20"]', titleSelector: '', linkSelector: '', linkPrefix: 'http://www.linkshop.com', linkPattern: '^/news/\\d+\\.shtml$', maxItems: 10 },
   },
   {
     id: 'bjnews', name: '新京报', url: 'https://www.bjnews.com.cn',
