@@ -3257,6 +3257,12 @@ body {
   margin-top: 0.3rem;
 }
 
+.source-stat-values-health {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  row-gap: 0.35rem;
+}
+
 .source-stat-metric {
   min-width: 0;
   text-align: center;

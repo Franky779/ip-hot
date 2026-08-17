@@ -2,9 +2,30 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { countSourceExecutionModes } from '@/lib/source-schedule'
-import type { SourceHealthStatus } from '@/lib/source-health'
+import type { SourceHealthRow } from '@/lib/source-health'
+import {
+  SOURCE_HEALTH_CARD_STATUSES,
+  summarizeSourceHealth,
+  type SourceHealthCardStatus,
+} from '@/lib/source-health-summary'
 
-type HealthCounts = Partial<Record<SourceHealthStatus, number>>
+const CARD_LABELS: Record<SourceHealthCardStatus, string> = {
+  healthy: '正常',
+  repair: '待修复',
+  dead_links: '失效链接',
+  no_articles: '无资讯',
+  overdue: '逾期',
+  untested: '未验证',
+}
+
+const CARD_METRIC_CLASS: Record<SourceHealthCardStatus, string> = {
+  healthy: 'active',
+  repair: 'failed',
+  dead_links: 'failed',
+  no_articles: 'failed',
+  overdue: 'failed',
+  untested: 'muted',
+}
 
 interface Source {
   id: string
@@ -29,7 +50,7 @@ function isRssSource(source: Source) {
 
 export function SourceStats({ initialSources }: SourceStatsProps) {
   const [sources, setSources] = useState(initialSources)
-  const [healthCounts, setHealthCounts] = useState<HealthCounts | null>(null)
+  const [healthRows, setHealthRows] = useState<SourceHealthRow[] | null>(null)
 
   const refresh = useCallback(async () => {
     const response = await fetch('/api/sources', { cache: 'no-store' })
@@ -53,13 +74,9 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
     const interval = window.setInterval(refresh, 15_000)
 
     const handleHealthUpdated = (event: Event) => {
-      const rows = (event as CustomEvent<Array<{ status: SourceHealthStatus }>>).detail
+      const rows = (event as CustomEvent<SourceHealthRow[]>).detail
       if (!Array.isArray(rows)) return
-      const counts: HealthCounts = {}
-      for (const row of rows) {
-        counts[row.status] = (counts[row.status] || 0) + 1
-      }
-      setHealthCounts(counts)
+      setHealthRows(rows)
     }
 
     window.addEventListener('sources-updated', handleSourcesUpdated)
@@ -93,6 +110,11 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
       untested: sources.length - success - failed,
     }
   }, [sources])
+
+  const healthSummary = useMemo(
+    () => summarizeSourceHealth(sources, healthRows),
+    [sources, healthRows]
+  )
 
   return (
     <div className="sources-header-stats" aria-label="信息源状态统计" aria-live="polite">
@@ -166,23 +188,13 @@ export function SourceStats({ initialSources }: SourceStatsProps) {
       </section>
       <section className="source-stat-group">
         <span className="source-stat-group-title">抓取状态</span>
-        <div className="source-stat-values">
-          <div className="source-stat-metric active">
-            <strong>{healthCounts ? (healthCounts.healthy ?? 0) : '—'}</strong>
-            <span>正常</span>
-          </div>
-          <div className="source-stat-metric failed">
-            <strong>{healthCounts ? (healthCounts.repair ?? 0) : '—'}</strong>
-            <span>待修复</span>
-          </div>
-          <div className="source-stat-metric failed">
-            <strong>{healthCounts ? (healthCounts.dead_links ?? 0) : '—'}</strong>
-            <span>失效链接过多</span>
-          </div>
-          <div className="source-stat-metric muted">
-            <strong>{healthCounts ? (healthCounts.untested ?? 0) : '—'}</strong>
-            <span>尚未验证</span>
-          </div>
+        <div className="source-stat-values source-stat-values-health">
+          {SOURCE_HEALTH_CARD_STATUSES.map((status) => (
+            <div key={status} className={`source-stat-metric ${CARD_METRIC_CLASS[status]}`}>
+              <strong>{healthSummary.available ? healthSummary.cards[status] : '—'}</strong>
+              <span>{CARD_LABELS[status]}</span>
+            </div>
+          ))}
         </div>
       </section>
     </div>

@@ -83,11 +83,17 @@ export const SOURCE_HEALTH_FILTER_OPTIONS: SourceHealthFilterOption[] = [
   { value: 'active:dead_links', label: '启动中 · 失效链接过多', status: 'dead_links', runState: 'active' },
   { value: 'active:repair', label: '启动中 · 待修复', status: 'repair', runState: 'active' },
   { value: 'active:untested', label: '启动中 · 尚未验证', status: 'untested', runState: 'active' },
+  { value: 'active:no_articles', label: '启动中 · 连续无资讯', status: 'no_articles', runState: 'active' },
+  { value: 'active:overdue', label: '启动中 · 逾期未抓', status: 'overdue', runState: 'active' },
+  { value: 'active:inactive', label: '启动中 · 已停用/人工处理', status: 'inactive', runState: 'active' },
   { value: 'paused:repair', label: '暂停中 · 待修复', status: 'repair', runState: 'paused' },
   { value: 'paused:inactive', label: '暂停中 · 已停用/人工处理', status: 'inactive', runState: 'paused' },
   { value: 'paused:no_articles', label: '暂停中 · 连续无资讯', status: 'no_articles', runState: 'paused' },
   { value: 'paused:overdue', label: '暂停中 · 逾期未抓', status: 'overdue', runState: 'paused' },
   { value: 'paused:untested', label: '暂停中 · 尚未验证', status: 'untested', runState: 'paused' },
+  { value: 'paused:healthy', label: '暂停中 · 正常', status: 'healthy', runState: 'paused' },
+  { value: 'paused:running', label: '暂停中 · 抓取中', status: 'running', runState: 'paused' },
+  { value: 'paused:dead_links', label: '暂停中 · 失效链接过多', status: 'dead_links', runState: 'paused' },
 ]
 
 function toHealthRun(run: SourceFetchRun): SourceHealthRun {

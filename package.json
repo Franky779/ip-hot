@@ -12,6 +12,7 @@
     "test:deployment": "node --test scripts/deployment-files.test.mjs",
     "test:source-repair": "node --experimental-strip-types --test lib/source-repair.test.ts",
     "test:collect": "node --experimental-strip-types --test lib/manual-collect.test.ts",
+    "test:source-health": "node --experimental-strip-types --test lib/source-health-summary.test.ts",
     "configure:kidscreen": "node scripts/configure-kidscreen-source.mjs",
     "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs"
   },
