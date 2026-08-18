@@ -152,6 +152,17 @@ export function Sidebar() {
             </span>
             <span>行业报告</span>
           </Link>
+          <Link href="/ipbrand" className={`sidebar-link${pathname === '/ipbrand' || pathname?.startsWith('/ipbrand/') ? ' active' : ''}`}>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </span>
+            <span>IP品牌库</span>
+          </Link>
           <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
             <span className="sidebar-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -58,3 +58,5 @@ _source_scores.json
 
 # 过期构建缓存
 /.next-stale-cache/
+# IP品牌库图片目录联接（2.64GB，本地junction/服务器独立部署，永不提交）
+/public/ipbrand/images

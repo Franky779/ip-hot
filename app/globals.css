@@ -5574,3 +5574,577 @@ body {
   color: #2e9d5a;
   font-size: 0.9375rem;
 }
+
+/* ====== IP品牌库（/ipbrand） ====== */
+
+.ipb-page {
+  min-height: 100vh;
+}
+
+/* 第一行：左品牌 / 中搜索(950px) / 右占位 */
+.ipb-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ipb-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.ipb-brand-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.ipb-brand-count {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ipb-search-wrap {
+  width: 950px;
+  max-width: 48vw;
+  position: relative;
+  justify-self: center;
+}
+
+.ipb-search-input {
+  width: 100%;
+  height: 46px;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  padding: 0 1.25rem 0 2.75rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ipb-search-input::placeholder { color: var(--text-muted); }
+
+.ipb-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.ipb-search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.ipb-search-input:focus ~ .ipb-search-icon { stroke: var(--accent); }
+
+.ipb-main {
+  max-width: 1820px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 3rem;
+}
+
+/* 分类胶囊（自动换行） */
+.ipb-cat-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.ipb-cat-btn {
+  flex-shrink: 0;
+  padding: 0.4rem 0.95rem;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.ipb-cat-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.ipb-cat-btn.active {
+  background: var(--accent-light);
+  border-color: transparent;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 首字母（常规字重） */
+.ipb-init-row {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.ipb-init-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.ipb-init-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ipb-init-btn.active {
+  background: var(--accent-light);
+  border-color: transparent;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 卡片网格：正方形封面，一排8个，行距15px（minmax(0,1fr) 防图片撑破列宽） */
+.ipb-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 15px 24px;
+  margin-top: 1rem;
+}
+
+@media (max-width: 1280px) { .ipb-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .ipb-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ipb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 0.75rem; } }
+
+.ipb-card {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ipb-card-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  position: relative;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.ipb-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.ipb-card:hover .ipb-card-cover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.ipb-card:hover .ipb-card-cover img { transform: scale(1.04); }
+
+.ipb-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: var(--text-muted);
+}
+
+.ipb-case-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: var(--text);
+  color: var(--bg);
+  padding: 2px 0.55rem;
+  border-radius: 100px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+
+.ipb-case-badge.zero { opacity: 0.65; }
+
+.ipb-card-name {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+  transition: color 0.2s;
+}
+
+.ipb-card:hover .ipb-card-name { color: var(--text); }
+
+.ipb-empty, .ipb-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-muted);
+}
+
+.ipb-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+.ipb-empty-text { font-size: 0.9rem; color: var(--text-secondary); }
+.ipb-empty-sub { font-size: 0.75rem; margin-top: 0.5rem; }
+
+@media (max-width: 900px) {
+  .ipb-topbar { grid-template-columns: auto 1fr; }
+  .ipb-search-wrap { width: 100%; max-width: none; }
+  .ipb-brand-count { display: none; }
+}
+
+/* ====== IP品牌库 · 详情页（/ipbrand/detail） ====== */
+
+.ipd-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ipd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.95rem;
+  border: 1px solid var(--card-border);
+  border-radius: 100px;
+  transition: border-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.ipd-back:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.ipd-back svg { width: 16px; height: 16px; }
+
+.ipd-topbar-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ipd-source-link {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.ipd-source-link:hover { color: var(--accent); }
+
+.ipd-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.ipd-hero {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.ipd-hero-cover {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+}
+
+.ipd-hero-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ipd-hero-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  color: var(--text-muted);
+}
+
+.ipd-hero-info h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.ipd-name-en {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.ipd-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ipd-meta-item {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.ipd-meta-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.ipd-meta-value {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ipd-section { margin-bottom: 3rem; }
+
+.ipd-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ipd-section-head .ipd-section-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.ipd-more-link {
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.ipd-more-link:hover { text-decoration: underline; }
+
+.ipd-section-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ipd-intro-text {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+/* 对外展示图 */
+.ipd-gallery-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--card-border) transparent;
+}
+
+.ipd-gallery-row::-webkit-scrollbar { height: 4px; }
+.ipd-gallery-row::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 2px; }
+
+.ipd-gallery-item {
+  flex-shrink: 0;
+  width: 220px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  cursor: zoom-in;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.ipd-gallery-item:hover {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+.ipd-gallery-item img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+/* 授权案例：一行6卡 */
+.ipd-case-list {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.ipd-case-item {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ipd-case-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+.ipd-case-body { padding: 0.75rem; }
+
+.ipd-case-title {
+  font-size: 0.78rem;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 0.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ipd-case-date {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1100px) { .ipd-case-list { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 720px) {
+  .ipd-hero { grid-template-columns: 1fr; }
+  .ipd-case-list { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) { .ipd-case-list { grid-template-columns: repeat(2, 1fr); } }
+
+/* 相关新闻 */
+.ipd-news-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.ipd-news-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.ipd-news-item:hover { border-color: var(--accent); color: var(--text); }
+
+.ipd-news-title {
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.ipd-news-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ipd-empty-block {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--card-border);
+  border-radius: 10px;
+}
+
+.ipd-status {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.ipd-status a { color: var(--accent); }
