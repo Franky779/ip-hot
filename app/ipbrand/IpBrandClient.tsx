@@ -2,35 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-
-export type IpImage = { type: string; local: string }
-export type IpCase = { title?: string; image?: string; date?: string }
-export type IpNews = { title?: string; date?: string; url?: string }
-
-export type IpRecord = {
-  id: number
-  name_cn: string
-  name_en: string
-  initial: string
-  cover: string
-  images: IpImage[]
-  case_len: number
-  category: string
-  place_origin: string
-  company: string
-  one_line_intro: string
-  ip_intro: string
-  company_intro: string
-  areas: string[]
-  ages: string[]
-  industries: string[]
-  listing_date: string
-  auth_start: string
-  auth_end: string
-  licensor_case_list: IpCase[]
-  news_list: IpNews[]
-  source_url: string
-}
+import { useAdmin, ADMIN_PW_KEY } from '../components/AdminToggle'
+import { mergeIpRecords, EMPTY_ADMIN, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
 
 const LETTERS = ['', '#', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
@@ -41,16 +14,43 @@ export function IpBrandClient() {
   const [inputValue, setInputValue] = useState('')
   const [cat, setCat] = useState('')
   const [init, setInit] = useState('')
+  const [confirmDel, setConfirmDel] = useState<IpRecord | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const { isAdmin, loaded: adminLoaded } = useAdmin()
 
   useEffect(() => {
-    fetch('/ipbrand/ips.json')
-      .then(r => {
+    Promise.all([
+      fetch('/ipbrand/ips.json').then(r => {
         if (!r.ok) throw new Error(String(r.status))
-        return r.json()
-      })
-      .then((d: IpRecord[]) => setData(d))
+        return r.json() as Promise<IpRecord[]>
+      }),
+      fetch('/api/ipbrand/overrides').then(r => (r.ok ? r.json() : Promise.resolve(EMPTY_ADMIN))),
+    ])
+      .then(([records, admin]) => setData(mergeIpRecords(records, admin)))
       .catch(() => setLoadError(true))
   }, [])
+
+  // 管理员删除 IP：确认框 → 调接口 → 本地即时移除
+  const handleDelete = async () => {
+    if (!confirmDel) return
+    setDeleting(true)
+    try {
+      const pw = localStorage.getItem(ADMIN_PW_KEY) || ''
+      const res = await fetch('/api/admin/ipbrand/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+        body: JSON.stringify({ id: confirmDel.id }),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      setData(prev => (prev ? prev.filter(x => x.id !== confirmDel.id) : prev))
+      setConfirmDel(null)
+    } catch {
+      alert('删除失败，请重试')
+      setConfirmDel(null)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   // 搜索防抖 80ms
   useEffect(() => {
@@ -105,7 +105,11 @@ export function IpBrandClient() {
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </div>
-        <div />
+        <div className="ipb-topbar-right">
+          {adminLoaded && isAdmin && (
+            <Link href="/ipbrand/new" className="ipb-add-btn">＋ 新增 IP</Link>
+          )}
+        </div>
       </div>
 
       <div className="ipb-main">
@@ -164,12 +168,45 @@ export function IpBrandClient() {
                 <span className={`ipb-case-badge${d.case_len ? '' : ' zero'}`}>
                   {d.case_len ? `案例 ${d.case_len}` : '暂无案例'}
                 </span>
+                {adminLoaded && isAdmin && (
+                  <button
+                    className="ipb-del-btn"
+                    title="删除此 IP"
+                    onClick={e => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setConfirmDel(d)
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
               <div className="ipb-card-name">{d.name_cn || d.name_en || '(未命名)'}</div>
             </Link>
           ))}
         </div>
       </div>
+
+      {confirmDel && (
+        <div className="ipb-confirm-mask" onClick={() => !deleting && setConfirmDel(null)}>
+          <div className="ipb-confirm-box" onClick={e => e.stopPropagation()}>
+            <div className="ipb-confirm-title">删除确认</div>
+            <div className="ipb-confirm-text">
+              确定从 IP品牌库中删除「{confirmDel.name_cn || confirmDel.name_en}」吗？
+              <div className="ipb-confirm-sub">删除后此 IP 不再在列表和搜索中出现，且不可撤销。</div>
+            </div>
+            <div className="ipb-confirm-actions">
+              <button className="ipb-confirm-cancel" onClick={() => setConfirmDel(null)} disabled={deleting}>
+                取消
+              </button>
+              <button className="ipb-confirm-ok" onClick={handleDelete} disabled={deleting}>
+                {deleting ? '删除中…' : '确认删除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

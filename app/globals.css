@@ -5835,6 +5835,98 @@ body {
 .ipb-empty-text { font-size: 0.9rem; color: var(--text-secondary); }
 .ipb-empty-sub { font-size: 0.75rem; margin-top: 0.5rem; }
 
+/* 管理员删除按钮：卡片右上角 */
+.ipb-del-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(15, 15, 15, 0.78);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.18s, background 0.18s;
+  z-index: 2;
+}
+.ipb-card:hover .ipb-del-btn { opacity: 1; }
+.ipb-del-btn:hover { background: #e5484d; }
+
+/* 删除确认弹窗 */
+.ipb-confirm-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.ipb-confirm-box {
+  width: 380px;
+  max-width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.ipb-confirm-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+.ipb-confirm-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+}
+.ipb-confirm-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+.ipb-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+.ipb-confirm-cancel {
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipb-confirm-cancel:hover { border-color: var(--accent); color: var(--text); }
+.ipb-confirm-ok {
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
+  border: none;
+  background: #e5484d;
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.ipb-confirm-ok:hover { opacity: 0.88; }
+.ipb-confirm-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
 @media (max-width: 900px) {
   .ipb-topbar { grid-template-columns: auto 1fr; }
   .ipb-search-wrap { width: 100%; max-width: none; }
@@ -6148,3 +6240,520 @@ body {
 }
 
 .ipd-status a { color: var(--accent); }
+
+/* ====== IP品牌库 · 详情页编辑模式 ====== */
+
+.ipd-edit-topbtn {
+  flex-shrink: 0;
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.ipd-edit-topbtn:hover { border-color: var(--accent); color: var(--text); }
+.ipd-edit-topbtn.active { background: var(--accent-light); border-color: transparent; color: var(--accent); font-weight: 600; }
+
+.ipd-main.editing { padding-bottom: 7rem; }
+
+.ipd-edit-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ipd-edit-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+.ipd-edit-input::placeholder { color: var(--text-muted); }
+
+.ipd-edit-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+.ipd-edit-namen { font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-muted); }
+
+.ipd-edit-sec-title {
+  max-width: 360px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ipd-edit-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.ipd-edit-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 1rem;
+}
+
+.ipd-edit-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.ipd-edit-sec-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ipd-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipd-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.ipd-gallery-item-edit { cursor: default; }
+.ipd-gallery-item-edit:hover { transform: none; }
+.ipd-gallery-ops {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem;
+}
+.ipd-gallery-ops button {
+  flex: 1;
+  padding: 0.3rem 0;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipd-gallery-ops button:hover { border-color: var(--accent); color: var(--accent); }
+.ipd-gallery-ops button.danger:hover { border-color: #e5484d; color: #e5484d; }
+
+.ipd-edit-case-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+@media (max-width: 900px) { .ipd-edit-case-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .ipd-edit-case-grid { grid-template-columns: 1fr; } }
+
+.ipd-edit-case {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+.ipd-edit-case-img { position: relative; }
+.ipd-edit-case-img img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.ipd-edit-case-delimg {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border: none;
+  border-radius: 6px;
+  background: rgba(15, 15, 15, 0.75);
+  color: #fff;
+  font-size: 0.68rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ipd-edit-case-delimg:hover { background: #e5484d; }
+.ipd-edit-delcase {
+  align-self: flex-start;
+  padding: 0.25rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ipd-edit-delcase:hover { border-color: #e5484d; color: #e5484d; }
+
+.ipd-custom-card {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ipd-mini-btn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipd-mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ipd-mini-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ipd-mini-btn.danger:hover { border-color: #e5484d; color: #e5484d; }
+
+.ipd-add-card-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px dashed var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipd-add-card-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 品牌手册图集 */
+.ipd-manual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.ipd-manual-img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  display: block;
+}
+.ipd-manual-item { position: relative; }
+.ipd-manual-item img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  display: block;
+}
+.ipd-manual-ops {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+  border-radius: 0 0 8px 8px;
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.ipd-manual-item:hover .ipd-manual-ops { opacity: 1; }
+.ipd-manual-op {
+  flex: 1;
+  text-align: center;
+  padding: 0.3rem 0;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255,255,255,0.92);
+  color: #111;
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ipd-manual-op:hover { background: #fff; }
+.ipd-manual-op.danger { background: #e5484d; color: #fff; }
+.ipd-manual-op.danger:hover { opacity: 0.88; }
+
+/* 底部保存栏 */
+.ipd-edit-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.ipd-edit-bar-hint {
+  margin-right: auto;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.ipd-edit-cancel {
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipd-edit-cancel:hover { border-color: var(--accent); color: var(--text); }
+.ipd-edit-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+.ipd-edit-save {
+  padding: 0.55rem 1.6rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.ipd-edit-save:hover { opacity: 0.88; }
+.ipd-edit-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ====== IP品牌库 · 列表页新增按钮 ====== */
+
+.ipb-topbar-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.ipb-add-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 100px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.ipb-add-btn:hover { opacity: 0.9; }
+
+/* ====== IP品牌库 · 详情页维度信息编辑 ====== */
+
+.ipd-meta-edit { margin-top: 1rem; }
+.ipd-meta-edit-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.6rem;
+}
+.ipd-meta-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+@media (max-width: 720px) { .ipd-meta-edit-grid { grid-template-columns: 1fr; } }
+
+.ipd-meta-edit-item {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+}
+.ipd-meta-edit-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.06em;
+}
+.ipd-meta-edit-ctrl {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.ipd-meta-edit-ctrl.col { flex-direction: column; align-items: stretch; }
+.ipd-meta-edit-ctrl .ipd-edit-input { flex: 1; min-width: 0; }
+.ipd-meta-edit-sep { color: var(--text-muted); flex-shrink: 0; }
+.ipd-meta-edit-multi { display: flex; gap: 0.4rem; align-items: center; }
+.ipd-meta-edit-addrow { display: flex; gap: 0.4rem; align-items: center; }
+.ipd-meta-edit-label-in { width: 100px; flex-shrink: 0; font-size: 0.8rem !important; }
+.ipd-meta-edit-addcard { grid-column: 1 / -1; }
+.ipd-meta-edit-addcard .ipd-add-card-btn { padding: 0.55rem; }
+
+/* ====== IP品牌库 · 新增 IP 页 ====== */
+
+.ipn-main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+.ipn-card {
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.ipn-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.ipn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+@media (max-width: 720px) { .ipn-row { grid-template-columns: 1fr; } }
+.ipn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.ipn-label { font-size: 0.75rem; color: var(--text-muted); }
+.ipn-req { color: #e5484d; margin-left: 2px; }
+.ipn-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  padding: 0.55rem 0.75rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ipn-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+.ipn-input::placeholder { color: var(--text-muted); }
+.ipn-textarea { resize: vertical; min-height: 5rem; line-height: 1.8; }
+.ipn-upload {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1rem;
+  border: 1px dashed var(--card-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipn-upload:hover { border-color: var(--accent); color: var(--accent); }
+.ipn-upload-remove {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ipn-upload-remove:hover { color: #e5484d; }
+.ipn-range { display: flex; gap: 0.4rem; align-items: center; }
+.ipn-range .ipn-input { flex: 1; min-width: 0; }
+.ipn-range-sep { color: var(--text-muted); flex-shrink: 0; }
+.ipn-multi { display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+.ipn-multi .ipn-input { flex: 1; }
+.ipn-mini-btn {
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipn-mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ipn-mini-btn.danger:hover { border-color: #e5484d; color: #e5484d; }
+.ipn-add-btn {
+  align-self: flex-start;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  border: 1px dashed var(--card-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.ipn-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ipn-case {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+@media (max-width: 720px) { .ipn-case { grid-template-columns: 1fr; } }
+.ipn-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 1rem;
+  text-align: center;
+  border: 1px dashed var(--card-border);
+  border-radius: 8px;
+}
+.ipn-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.ipn-error {
+  background: rgba(229, 72, 77, 0.1);
+  border: 1px solid rgba(229, 72, 77, 0.4);
+  color: #e5484d;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.ipn-save-topbtn {
+  flex-shrink: 0;
+  padding: 0.45rem 1.2rem;
+  border-radius: 100px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.ipn-save-topbtn:hover { opacity: 0.9; }
+.ipn-save-topbtn:disabled { opacity: 0.5; cursor: not-allowed; }
