@@ -14,6 +14,12 @@ type FeedArticle = {
   created_at: string | null
 }
 
+// 提取 IP 核心名用于快讯搜索：去掉冒号/括号后的副标题后缀，去掉书名号，避免完整名匹配不到快讯标题
+function coreSearchName(name: string): string {
+  const seg = name.split(/[：:·—–]|[（(【［]/)[0]
+  return seg.replace(/[《》「」『』]/g, '').trim()
+}
+
 export function IpDetailClient({ initialId }: { initialId: number }) {
   const [data, setData] = useState<IpRecord[] | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -39,8 +45,10 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
 
   // 拉取全球快讯中该 IP 的最新 10 条相关资讯（失败/为空时回退到静态新闻列表）
   useEffect(() => {
-    if (!d || !d.name_cn) return
-    fetch(`/api/articles/search?q=${encodeURIComponent(d.name_cn)}`)
+    if (!d) return
+    const kw = coreSearchName(d.name_cn || d.name_en || '')
+    if (!kw) return
+    fetch(`/api/articles/search?q=${encodeURIComponent(kw)}`)
       .then(r => (r.ok ? r.json() : { articles: [] }))
       .then((res: { articles?: FeedArticle[] }) => setFeedNews(res.articles || []))
       .catch(() => setFeedNews([]))
@@ -147,7 +155,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
           <div className="ipd-section-head">
             <div className="ipd-section-title">相关新闻</div>
             {feedNews.length > 0 && (
-              <a className="ipd-more-link" href={`/?q=${encodeURIComponent(d.name_cn)}`}>
+              <a className="ipd-more-link" href={`/?q=${encodeURIComponent(coreSearchName(d.name_cn || d.name_en || ''))}`}>
                 更多相关快讯 »
               </a>
             )}
