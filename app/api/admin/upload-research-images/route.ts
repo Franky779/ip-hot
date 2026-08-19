@@ -10,7 +10,7 @@ import { resolve } from 'node:path'
 export const dynamic = 'force-dynamic'
 
 const IMAGE_BASE = '/srv/www/research-images'
-const BASE_URL = 'https://hot.laojia-ip.com/research-images'
+const BASE_URL = 'https://www.laojia-ip.com/research-images'
 const MAX_PAGES = 200
 
 export async function POST(request: Request) {

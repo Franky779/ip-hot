@@ -36,7 +36,7 @@ function readRegistrySecret() {
 
 loadEnvFile(resolve(process.cwd(), '.env.local'));
 
-const ENDPOINT = process.env.LLM_WORKER_URL || 'https://hot.laojia-ip.com/api/cron/process-llm';
+const ENDPOINT = process.env.LLM_WORKER_URL || 'https://www.laojia-ip.com/api/cron/process-llm';
 const CRON_SECRET = process.env.LLM_WORKER_SECRET || process.env.CRON_SECRET || readRegistrySecret();
 const NORMAL_INTERVAL_MS = 3 * 60 * 1000;
 const BACKLOG_INTERVAL_MS = 5 * 1000;
