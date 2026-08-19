@@ -653,6 +653,14 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
+  {
+    id: 'artnet',
+    name: 'Artnet News',
+    url: 'https://news.artnet.com/art-world',
+    maxItems: 10,
+    loadWait: 20000,
+    extractJs: "JSON.stringify(Array.from(document.querySelectorAll('a[href*=\"news.artnet.com/art-world/\"]')).map(a => ({title: (a.textContent || '').trim().replace(/\\s+/g,' ').slice(0,100), url: a.href})).filter(item => /-\\d{4,}$/.test(item.url) && item.title.length > 5).slice(0,10))",
+  },
 ];
 
 const requestedIndex = Number(process.argv[2]);

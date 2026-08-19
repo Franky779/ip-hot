@@ -120,6 +120,11 @@
     "section_title": "财经 / 商业 / 综合"
   },
   {
+    "name": "经济观察报",
+    "url": "http://127.0.0.1:1200/eeo/kuaixun",
+    "section_title": "财经 / 商业 / 综合"
+  },
+  {
     "name": "虎嗅",
     "url": "https://www.huxiu.com",
     "section_title": "财经 / 商业 / 综合"

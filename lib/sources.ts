@@ -134,6 +134,8 @@ export const RSS_SOURCES: NewsSource[] = [
   // 文化/博物馆/艺术
   { id: 'hyperallergic', name: 'Hyperallergic', url: 'https://hyperallergic.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   // IP授权/潮玩/玩具
+  // Licensing Corner 官网 www 子域已挂起，裸域名 licensingcorner.com/feed 正常（服务器端实测6条）
+  { id: 'licensingcorner', name: 'Licensing Corner', aliases: ['Licensing Corner (RSS)'], url: 'https://licensingcorner.com/feed/', language: 'en', priority: 'P1', type: 'rss', isRss: true },
   { id: 'toybook', name: 'The Toy Book', url: 'https://toybook.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'spankystokes', name: 'Spanky Stokes', url: 'https://www.spankystokes.com/feeds/posts/default', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'weareresonate', name: 'Resonate', url: 'https://www.weareresonate.com/feed/', language: 'en', priority: 'P1', type: 'rss', isRss: true },
@@ -144,6 +146,8 @@ export const RSS_SOURCES: NewsSource[] = [
   { id: 'famitsu', name: 'Famitsu', url: 'https://www.famitsu.com/category/news/page/1', language: 'ja', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/article/"], a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.famitsu.com', maxItems: 10 } },
   // 国内商业媒体
   { id: '36kr', name: '36氪', url: 'http://127.0.0.1:1200/36kr/newsflashes', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
+  // 经济观察报官方 rss.xml 服务器端被 CDN 拦截（返回脏XML）→ 改服务器本地 RSSHub 同路径（服务器端实测50条）
+  { id: 'eeo', name: '经济观察报', aliases: ['经济观察网'], url: 'http://127.0.0.1:1200/eeo/kuaixun', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   { id: 'gamelook', name: 'GameLook', aliases: ['游戏大观'], url: 'http://www.gamelook.com.cn/feed/', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   { id: 'huxiu', name: '虎嗅', url: 'https://www.huxiu.com/', language: 'zh', priority: 'P1', type: 'web', scrapeConfig: { adapter: 'huxiu-api', apiUrl: 'https://article-api.huxiu.com/web/channel/articleList', maxItems: 10 } },
   { id: 'tmtpost', name: '钛媒体', url: 'https://www.tmtpost.com/rss.xml', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
@@ -543,6 +547,12 @@ const WEB_SOURCES: NewsSource[] = [
     id: 'kidscreen-consumer-products', name: 'Kidscreen Consumer Products', url: 'https://kidscreen.com/category/consumer-products/',
     language: 'en', priority: 'P1', type: 'web', needsLocalCdp: true,
     scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href], a[href*="/20"][href*="kidscreen.com/20"]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
+  },
+  // Artnet News 官方 feed 被 Cloudflare 拦服务器 IP（返回 HTML 挑战页）→ 转本地 CDP 抓 art-world 栏目页
+  {
+    id: 'artnet', name: 'Artnet News', url: 'https://news.artnet.com/art-world',
+    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
+    scrapeConfig: { itemSelector: 'a[href*="/art-world/"][href*="-"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://news.artnet.com', maxItems: 10 },
   },
 
   {
