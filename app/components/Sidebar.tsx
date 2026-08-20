@@ -172,7 +172,7 @@ export function Sidebar() {
                 <path d="M9 9h.01M15 9h.01M9 12h.01M15 12h.01" />
               </svg>
             </span>
-            <span>IP工厂供应链</span>
+            <span>工厂/供应链</span>
           </Link>
           <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
             <span className="sidebar-icon">
