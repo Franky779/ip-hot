@@ -163,6 +163,17 @@ export function Sidebar() {
             </span>
             <span>IP品牌库</span>
           </Link>
+          <Link href="/factory" className={`sidebar-link${pathname === '/factory' || pathname?.startsWith('/factory/') ? ' active' : ''}`}>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21h18" />
+                <path d="M5 21V7l7-4 7 4v14" />
+                <path d="M9 21v-6h6v6" />
+                <path d="M9 9h.01M15 9h.01M9 12h.01M15 12h.01" />
+              </svg>
+            </span>
+            <span>IP工厂供应链</span>
+          </Link>
           <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
             <span className="sidebar-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

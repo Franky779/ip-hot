@@ -1,0 +1,178 @@
+[
+  {
+    "id": 1,
+    "name": "演示·星河造物社",
+    "images": [
+      {
+        "local": "images/demo-1/cover.svg"
+      },
+      {
+        "local": "images/demo-1/detail.svg"
+      }
+    ],
+    "one_line": "东莞石排 · 潮玩盲盒与IP周边定制",
+    "categories": [
+      "盲盒",
+      "PVC手办",
+      "软胶"
+    ],
+    "hub": "东莞",
+    "location": "东莞石排",
+    "own_brand": false,
+    "ip_project_count": 18,
+    "qr_images": [
+      "images/demo-1/qr.svg"
+    ],
+    "verified": true,
+    "supply_types": [
+      "ODM",
+      "自有品牌"
+    ]
+  },
+  {
+    "id": 2,
+    "name": "演示·绒光研究所",
+    "images": [
+      {
+        "local": "images/demo-2/cover.svg"
+      },
+      {
+        "local": "images/demo-2/detail.svg"
+      }
+    ],
+    "one_line": "东莞茶山 · 原创毛绒产品研发与生产",
+    "categories": [
+      "毛绒",
+      "服装"
+    ],
+    "hub": "东莞",
+    "location": "东莞茶山",
+    "own_brand": true,
+    "ip_project_count": 12,
+    "qr_images": [
+      "images/demo-2/qr.svg"
+    ],
+    "verified": true,
+    "supply_types": [
+      "自有品牌"
+    ]
+  },
+  {
+    "id": 3,
+    "name": "演示·拾光文创工场",
+    "images": [
+      {
+        "local": "images/demo-3/cover.svg"
+      },
+      {
+        "local": "images/demo-3/detail.svg"
+      }
+    ],
+    "one_line": "义乌稠城 · 徽章亚克力与文具定制",
+    "categories": [
+      "文具",
+      "徽章",
+      "亚克力"
+    ],
+    "hub": "义乌",
+    "location": "义乌稠城",
+    "own_brand": false,
+    "ip_project_count": 27,
+    "qr_images": [
+      "images/demo-3/qr.svg"
+    ],
+    "verified": false,
+    "supply_types": [
+      "OEM",
+      "ODM"
+    ]
+  },
+  {
+    "id": 4,
+    "name": "演示·木星摆件社",
+    "images": [
+      {
+        "local": "images/demo-4/cover.svg"
+      },
+      {
+        "local": "images/demo-4/detail.svg"
+      }
+    ],
+    "one_line": "深圳龙岗 · 树脂摆件与桌面收藏品开发",
+    "categories": [
+      "树脂",
+      "木制",
+      "盲盒"
+    ],
+    "hub": "深圳",
+    "location": "深圳龙岗",
+    "own_brand": true,
+    "ip_project_count": 9,
+    "qr_images": [
+      "images/demo-4/qr.svg"
+    ],
+    "verified": true,
+    "supply_types": [
+      "ODM"
+    ]
+  },
+  {
+    "id": 5,
+    "name": "演示·潮汐软饰工坊",
+    "images": [
+      {
+        "local": "images/demo-5/cover.svg"
+      },
+      {
+        "local": "images/demo-5/detail.svg"
+      }
+    ],
+    "one_line": "澄海 · 软胶挂件与潮流小物一站式定制",
+    "categories": [
+      "软胶",
+      "电子配件",
+      "PVC手办"
+    ],
+    "hub": "澄海",
+    "location": "汕头澄海",
+    "own_brand": false,
+    "ip_project_count": 21,
+    "qr_images": [
+      "images/demo-5/qr.svg"
+    ],
+    "verified": false,
+    "supply_types": [
+      "OEM"
+    ]
+  },
+  {
+    "id": 6,
+    "name": "演示·纸上星球品牌",
+    "images": [
+      {
+        "local": "images/demo-6/cover.svg"
+      },
+      {
+        "local": "images/demo-6/detail.svg"
+      }
+    ],
+    "one_line": "广州番禺 · IP纸品与生活方式周边研发",
+    "categories": [
+      "文具",
+      "服装",
+      "木制"
+    ],
+    "hub": "广州",
+    "location": "广州番禺",
+    "own_brand": true,
+    "ip_project_count": 15,
+    "qr_images": [
+      "images/demo-6/qr.svg"
+    ],
+    "verified": true,
+    "supply_types": [
+      "自有品牌",
+      "OEM"
+    ]
+  }
+]
