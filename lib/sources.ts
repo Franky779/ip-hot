@@ -263,8 +263,9 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'en', priority: 'P0', type: 'rss', isRss: true,
   },
   {
-    id: 'vinylpulse', name: 'Vinyl Pulse', url: 'https://www.vinylpulse.com/feed',
-    language: 'en', priority: 'P0', type: 'rss', isRss: true,
+    id: 'vinylpulse', name: 'Vinyl Pulse', url: 'https://www.vinylpulse.com/',
+    language: 'en', priority: 'P0', type: 'web',
+    scrapeConfig: { adapter: 'auto-news-links', maxItems: 10 },
   },
   {
     id: 'total-licensing', name: 'Total Licensing', url: 'https://www.totallicensing.com/feed',

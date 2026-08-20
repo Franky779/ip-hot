@@ -14,6 +14,16 @@ export function createFeedParser(timeout?: number) {
   })
 }
 
+/**
+ * 修复 XML 中未转义的裸 `&`（如 `<image>...code=abc&</image>`）。
+ * 把 `&` 后跟的不是合法实体（&amp; &lt; &gt; &quot; &apos; 或数字/十六进制实体）的裸 `&` 转义为 `&amp;`。
+ * 部分站点（如爱范儿）会在 image/description 里带裸 `&`，导致 xml2js 报
+ * "Invalid character in entity name"。此函数是通用容错，不影响其它源。
+ */
+export function sanitizeAmpersand(xml: string): string {
+  return xml.replace(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g, '&amp;')
+}
+
 const parser = createFeedParser()
 
 function curlFetchXml(url: string, timeoutMs: number): string {
@@ -46,13 +56,13 @@ export async function parseFeedUrl(url: string, timeoutMs = 30_000) {
       signal: controller.signal,
     })
     if (!response.ok) throw new Error('RSS HTTP ' + response.status)
-    return parser.parseString(await response.text())
+    return parser.parseString(sanitizeAmpersand(await response.text()))
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('RSS 请求超时（' + (timeoutMs / 1000) + ' 秒）')
     }
     try {
-      return parser.parseString(curlFetchXml(url, timeoutMs))
+      return parser.parseString(sanitizeAmpersand(curlFetchXml(url, timeoutMs)))
     } catch {
       throw error
     }
