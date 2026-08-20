@@ -12,9 +12,56 @@
 //   "new_records": [ <完整 IpRecord>, ... ]        // 管理员新增的 IP 记录
 // }
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { EMPTY_ADMIN, type IpBrandAdminData } from './ipbrand-types'
+import { EMPTY_ADMIN, type IpBrandAdminData } from './ipbrand-types.ts'
+
+type IpBrandOptionState = { added: string[]; removed: string[] }
+
+function normalizedOption(value: string, label: string): string {
+  const normalized = value.trim()
+  if (!normalized) throw new Error(`${label}不能为空`)
+  return normalized
+}
+
+function copyOptionState(state: IpBrandOptionState): IpBrandOptionState {
+  return { added: [...state.added], removed: [...state.removed] }
+}
+
+export function createOption(state: IpBrandOptionState, value: string): IpBrandOptionState {
+  const normalized = normalizedOption(value, '选项')
+  if (state.added.includes(normalized) || state.removed.includes(normalized)) {
+    throw new Error(`选项“${normalized}”重复`)
+  }
+  const next = copyOptionState(state)
+  next.added.push(normalized)
+  return next
+}
+
+export function renameOption(state: IpBrandOptionState, from: string, to: string): IpBrandOptionState {
+  const oldValue = normalizedOption(from, '原选项')
+  const newValue = normalizedOption(to, '新选项')
+  if (oldValue === newValue) throw new Error('新旧选项不能相同')
+  if (state.added.includes(newValue) || state.removed.includes(newValue)) {
+    throw new Error(`选项“${newValue}”重复`)
+  }
+  const next = copyOptionState(state)
+  next.added = next.added.filter(value => value !== oldValue)
+  if (!next.removed.includes(oldValue)) next.removed.push(oldValue)
+  next.added.push(newValue)
+  return next
+}
+
+export function removeOption(state: IpBrandOptionState, value: string, usageCount: number): IpBrandOptionState {
+  const normalized = normalizedOption(value, '选项')
+  if (usageCount > 0) {
+    throw new Error(`还有 ${usageCount} 条信息与该选项关联，请批量调整`)
+  }
+  const next = copyOptionState(state)
+  next.added = next.added.filter(item => item !== normalized)
+  if (!next.removed.includes(normalized)) next.removed.push(normalized)
+  return next
+}
 
 // 管理员增量数据文件（本地/生产都走 process.cwd()/data，生产 data 由 install-release symlink 到 shared/data）
 function adminFilePath(): string {
@@ -31,7 +78,9 @@ export function loadIpBrandAdmin(): IpBrandAdminData {
       deleted: Array.isArray(parsed.deleted) ? parsed.deleted : [],
       edits: parsed.edits && typeof parsed.edits === 'object' ? parsed.edits : {},
       manuals: parsed.manuals && typeof parsed.manuals === 'object' ? parsed.manuals : {},
+      event_plans: parsed.event_plans && typeof parsed.event_plans === 'object' ? parsed.event_plans : {},
       new_records: Array.isArray(parsed.new_records) ? parsed.new_records : [],
+      options: parsed.options && typeof parsed.options === 'object' ? parsed.options : {},
     }
   } catch {
     return structuredClone(EMPTY_ADMIN)
@@ -41,7 +90,9 @@ export function loadIpBrandAdmin(): IpBrandAdminData {
 export function saveIpBrandAdmin(data: IpBrandAdminData): void {
   const p = adminFilePath()
   mkdirSync(resolve(process.cwd(), 'data'), { recursive: true })
-  writeFileSync(p, JSON.stringify(data, null, 2), 'utf8')
+  const tempPath = `${p}.${process.pid}.${Date.now()}.tmp`
+  writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf8')
+  renameSync(tempPath, p)
 }
 
 // 上传目录（本地 dev → public/，生产 → /srv/apps/ip-hot/shared/）
