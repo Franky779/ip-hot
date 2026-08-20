@@ -615,9 +615,37 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     abortRef.current = controller
     setBulkAction('fetch')
     setBulkNotice('')
+    setBulkProgress({ completed: 0, total: 0 })
+
+    const pw = localStorage.getItem('ip-hot-admin-pw') || ''
+    let pollTimer: ReturnType<typeof setInterval> | null = null
+
+    const pollProgress = async () => {
+      if (controller.signal.aborted) return
+      try {
+        const res = await fetch('/api/admin/cron-logs', {
+          headers: { 'x-admin-password': pw },
+          signal: controller.signal,
+        })
+        if (!res.ok) return
+        const { logs } = await res.json()
+        type FetchStageDetail = { stage?: string; sourcesCompleted?: number; totalSources?: number }
+        const run = (logs as Array<{ details?: FetchStageDetail }> | null)?.find(
+          (l) => l?.details?.stage === 'fetch'
+        )
+        if (run?.details) {
+          setBulkProgress({
+            completed: run.details.sourcesCompleted ?? 0,
+            total: run.details.totalSources ?? 0,
+          })
+        }
+      } catch {
+        // 轮询失败忽略，抓取结果仍以主请求为准
+      }
+    }
+    pollTimer = setInterval(pollProgress, 2000)
 
     try {
-      const pw = localStorage.getItem('ip-hot-admin-pw') || ''
       const response = await fetch('/api/cron/fetch-and-process', {
         headers: { 'x-admin-password': pw },
         signal: controller.signal,
@@ -638,6 +666,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
         setBulkNotice(`一键抓取失败：${error instanceof Error ? error.message : String(error)}`)
       }
     } finally {
+      if (pollTimer) clearInterval(pollTimer)
       if (abortRef.current === controller) abortRef.current = null
       setBulkAction(null)
     }
@@ -795,7 +824,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
               style={{ background: '#8b5cf6' }}
               title={bulkAction === 'fetch' ? '再次点击取消' : '对当前筛选结果中已启用的信息源执行全面抓取'}
             >
-              {bulkAction === 'fetch' ? '抓取中...' : '一键抓取'}
+              {bulkAction === 'fetch'
+                ? bulkProgress.total > 0
+                  ? `抓取中 ${bulkProgress.completed}/${bulkProgress.total}`
+                  : '抓取中...'
+                : '一键抓取'}
             </button>
             <button
               className="search-btn"
