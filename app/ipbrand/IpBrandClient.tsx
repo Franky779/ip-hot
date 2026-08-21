@@ -16,6 +16,9 @@ export function IpBrandClient() {
   const [init, setInit] = useState('')
   const [confirmDel, setConfirmDel] = useState<IpRecord | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [selected, setSelected] = useState<number[]>([])
+  const [confirmBulk, setConfirmBulk] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState<{ total: number; done: number } | null>(null)
   const { isAdmin, loaded: adminLoaded } = useAdmin()
 
   useEffect(() => {
@@ -50,6 +53,36 @@ export function IpBrandClient() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  // 多选：切换某张卡片的选中状态
+  const toggleSelect = (id: number) => {
+    setSelected(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
+  }
+
+  // 批量删除：确认后逐个调删除接口，按钮上显示进度
+  const runBulkDelete = async () => {
+    const ids = [...selected]
+    setConfirmBulk(false)
+    setSelected([])
+    setBulkDeleting({ total: ids.length, done: 0 })
+    const succeeded: number[] = []
+    const pw = localStorage.getItem(ADMIN_PW_KEY) || ''
+    for (const id of ids) {
+      try {
+        const res = await fetch('/api/admin/ipbrand/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+          body: JSON.stringify({ id }),
+        })
+        if (res.ok) succeeded.push(id)
+      } catch { /* 单个失败继续下一个 */ }
+      setBulkDeleting({ total: ids.length, done: succeeded.length })
+    }
+    setBulkDeleting(null)
+    setData(prev => (prev ? prev.filter(x => succeeded.includes(x.id)) : prev))
+    const failed = ids.length - succeeded.length
+    if (failed) alert(`完成：成功删除 ${succeeded.length}/${ids.length}，失败 ${failed} 个`)
   }
 
   // 搜索防抖 80ms
@@ -89,7 +122,10 @@ export function IpBrandClient() {
       <div className="ipb-topbar">
         <div className="ipb-brand">
           <div className="ipb-brand-title">IP 品牌库</div>
-          <div className="ipb-brand-count">{data ? `共 ${data.length} 个 IP` : '—'}</div>
+          <div className="ipb-brand-meta">
+            <div className="ipb-brand-count">{data ? `共 ${data.length} 个 IP` : '—'}</div>
+            <div className="ipb-brand-standard">平台IP收录标准：全网粉丝5W+，授权案例5个+</div>
+          </div>
         </div>
         <div className="ipb-search-wrap">
           <input
@@ -107,8 +143,16 @@ export function IpBrandClient() {
         </div>
         <div className="ipb-topbar-right">
           {adminLoaded && isAdmin && (
-            <Link href="/ipbrand/new" className="ipb-add-btn">＋ 新增 IP</Link>
+            <button
+              className="ipb-bulk-del-btn"
+              onClick={() => setConfirmBulk(true)}
+              disabled={!selected.length || !!bulkDeleting}
+              title="删除选中的 IP"
+            >
+              {bulkDeleting ? `删除中 ${bulkDeleting.done}/${bulkDeleting.total}…` : `批量删除（${selected.length}）`}
+            </button>
           )}
+          <Link href="/ipbrand/new" className="ipb-add-btn">＋ 新增 IP</Link>
         </div>
       </div>
 
@@ -157,9 +201,19 @@ export function IpBrandClient() {
               <div className="ipb-empty-sub">试试换关键词、清除分类或换首字母</div>
             </div>
           )}
-          {data && filtered.map(d => (
-            <Link key={d.id} href={`/ipbrand/detail?id=${d.id}`} className="ipb-card" title={d.name_cn}>
+          {data && filtered.map(d => {
+            const isSelected = selected.includes(d.id)
+            return (
+            <Link key={d.id} href={`/ipbrand/detail?id=${d.id}`} className={`ipb-card${isSelected ? ' selected' : ''}`} title={d.name_cn}>
               <div className="ipb-card-cover">
+                {adminLoaded && isAdmin && (
+                  <span
+                    className={`ipb-select-box${isSelected ? ' on' : ''}`}
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); toggleSelect(d.id) }}
+                  >
+                    {isSelected ? '✓' : ''}
+                  </span>
+                )}
                 {d.cover ? (
                   <img src={`/ipbrand/${d.cover}`} alt={d.name_cn} loading="lazy" />
                 ) : (
@@ -184,7 +238,8 @@ export function IpBrandClient() {
               </div>
               <div className="ipb-card-name">{d.name_cn || d.name_en || '(未命名)'}</div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -203,6 +258,22 @@ export function IpBrandClient() {
               <button className="ipb-confirm-ok" onClick={handleDelete} disabled={deleting}>
                 {deleting ? '删除中…' : '确认删除'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmBulk && (
+        <div className="ipb-confirm-mask" onClick={() => setConfirmBulk(false)}>
+          <div className="ipb-confirm-box" onClick={e => e.stopPropagation()}>
+            <div className="ipb-confirm-title">批量删除确认</div>
+            <div className="ipb-confirm-text">
+              确定从 IP品牌库中删除选中的 {selected.length} 个 IP 吗？
+              <div className="ipb-confirm-sub">删除后这些 IP 不再在列表和搜索中出现，且不可撤销。</div>
+            </div>
+            <div className="ipb-confirm-actions">
+              <button className="ipb-confirm-cancel" onClick={() => setConfirmBulk(false)}>取消</button>
+              <button className="ipb-confirm-ok" onClick={runBulkDelete}>确认删除</button>
             </div>
           </div>
         </div>

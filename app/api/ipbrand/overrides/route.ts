@@ -9,6 +9,7 @@ export async function GET(_request: NextRequest) {
   try {
     return NextResponse.json(loadIpBrandAdmin())
   } catch {
-    return NextResponse.json({ deleted: [], edits: {}, manuals: {} })
+    // 异常时补齐完整结构，保证前端 mergeIpRecords 和词库读取不崩
+    return NextResponse.json({ deleted: [], edits: {}, manuals: {}, new_records: [], options: {} })
   }
 }
