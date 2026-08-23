@@ -437,53 +437,14 @@ async function recordSourceFetchRun(source, result, inserted) {
 }
 
 // ============ 源配置 ============
-// 2026-08-23 起，绝大多数源已云端化（DB execution_mode=cloud，由服务器定时抓取），本地脚本仅保留：
-//   1) 浙江日报/潮新闻、中国文化报、北青网、红星新闻 —— 代码有云端配置但 DB 无启用行，当前内容靠本脚本抓取
-//   2) 漫客栈 —— 脚本专属源（DB 无行）
-// 52TOYS 已于 2026-08-23 改走 Firecrawl 云端渲染，本地条目移除。
-// 已移除的云端化源：52TOYS、License Global、玩具产业网、新闻晨报、金羊网、东莞、天津、福建、杭州、IGN、AnimeAnime、Famitsu、中外玩具网×6、Crunchyroll、ToyBook、AWN、KidScreen、Kidscreen Consumer、Artnet
-let SOURCES = [
-  {
-    name: '中国文化报',
-    url: 'http://www.ccdy.cn',
-    selector: 'a[href*="/details/"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    id: 'zjol',
-    name: '浙江日报/潮新闻',
-    url: 'https://www.zjol.com.cn/',
-    selector: '.newslist a[href]',
-    maxItems: 10,
-    loadWait: 12000,
-  },
-  {
-    id: 'ynet',
-    name: '北青网',
-    url: 'https://www.ynet.com',
-    selector: 'a[href*="ynet.com/20"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    id: 'cdsb',
-    name: '红星新闻',
-    url: 'https://www.cdsb.com',
-    selector: 'a[href*="/micropub/Articles/"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    id: 'mkzhan-cdp',
-    name: '漫客栈',
-    url: 'https://www.mkzhan.com/category/?order=2',
-    selector: 'a[href*="/"][href*="comic"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
-];
+// 2026-08-24 起，全部来源已云端化（DB execution_mode=cloud，由服务器定时抓取），本脚本已无源可抓。
+// 原 17 个本地 CDP 源全部迁移：
+//   - 官方RSS：AWN / KidScreen / Crunchyroll / ToyBook / License Global / IGN / AnimeAnime / Famitsu / 金羊网 / 新闻晨报 等
+//   - Google News RSS：Artnet / 中外玩具网(6栏目合并) / License Global
+//   - 静态抓取：福建文旅厅 / 浙江日报 / 中国文化报 / 北青网 / 红星新闻
+//   - Firecrawl 渲染：52TOYS / 漫客栈
+// 本地 Windows schtasks（每天 22:45）已无意义，可停用。
+let SOURCES = [];
 
 const requestedIndex = Number(process.argv[2]);
 if (Number.isInteger(requestedIndex) && requestedIndex >= 0 && requestedIndex < SOURCES.length) {

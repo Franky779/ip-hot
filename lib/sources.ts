@@ -231,6 +231,13 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'zh', priority: 'P1', type: 'web',
     scrapeConfig: { adapter: 'firecrawl-markdown-links', linkPattern: '^/news/\\d+$', maxItems: 10 },
   },
+  // 漫客栈为 JS 渲染站（服务器直抓链接全是 {{ item.comic_id }} 模板占位符）→ Firecrawl 云端渲染
+  // （2026-08-24 实测抓取 32 个 /<数字>/ 漫画链接）
+  {
+    id: 'mkzhan', name: '漫客栈', url: 'https://www.mkzhan.com/category/?order=2',
+    language: 'zh', priority: 'P2', type: 'web',
+    scrapeConfig: { adapter: 'firecrawl-markdown-links', linkPattern: '^/\\d+/$', maxItems: 10 },
+  },
   {
     id: 'wjyt', name: '玩具产业网', url: 'https://www.wjyt-china.org/',
     language: 'zh', priority: 'P1', type: 'web',

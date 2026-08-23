@@ -144,6 +144,8 @@ test('moves the verified local CDP sources to cloud execution', () => {
     'crunchyroll', 'toybook-licensing', 'fj-wlt', 'ctoy-news',
     // 2026-08-23 52TOYS 官网 nginx 按IP拦 → Firecrawl 云端渲染 adapter
     'toy52',
+    // 2026-08-24 漫客栈 JS 渲染 → Firecrawl 云端渲染
+    'mkzhan',
   ]
 
   for (const id of sourceIds) {
