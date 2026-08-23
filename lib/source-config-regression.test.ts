@@ -140,6 +140,8 @@ test('moves the verified local CDP sources to cloud execution', () => {
     'awn', 'kidscreen', 'kidscreen-consumer-products',
     // 2026-08-23 服务器实测：artnet 官网/官方feed/jina代理均被 Cloudflare 拦，改走 Google News RSS
     'artnet',
+    // 2026-08-23 第二批云端化：crunchyroll/toybook 官方 RSS，fj-wlt 静态可抓，ctoy 合并 Google News RSS
+    'crunchyroll', 'toybook-licensing', 'fj-wlt', 'ctoy-news',
   ]
 
   for (const id of sourceIds) {
@@ -149,14 +151,10 @@ test('moves the verified local CDP sources to cloud execution', () => {
   }
 })
 
-// 中外玩具网6栏目为 JS 渲染站、Crunchyroll 为 React SPA：jina 代理已失效，
-// 直接抓取无文章链接（2026-08-13 服务器 CDP dry-run 实测各取满 10 条）。
-// 改由 fetch-cdp-local.mjs 本地 CDP 抓取，source-repair 自动跳过。
-test('JS-rendered sources (Ctoy columns, Crunchyroll) stay on local CDP', () => {
-  const cdpSourceIds = [
-    'ctoy-industry', 'ctoy-company', 'ctoy-channel',
-    'ctoy-license', 'ctoy-consumer', 'ctoy-toy', 'crunchyroll',
-  ]
+// 52TOYS 官网按服务器 IP 拦截（nginx 403，非 UA 问题），官方RSS/Google News/jina 均不可用，
+// 唯一云端出路是 Firecrawl 渲染（待接入 key）。暂保留本地 CDP，source-repair 自动跳过。
+test('52TOYS stays on local CDP', () => {
+  const cdpSourceIds = ['toy52-cdp']
 
   for (const id of cdpSourceIds) {
     const source = ALL_SOURCES.find((candidate) => candidate.id === id)

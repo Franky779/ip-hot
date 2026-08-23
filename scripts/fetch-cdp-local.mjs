@@ -446,48 +446,7 @@ let SOURCES = [
     maxItems: 10,
     loadWait: 15000,
   },
-  {
-    name: '中外玩具网-产业',
-    url: 'https://www.ctoy.com.cn/n/c3990/',
-    selector: 'a[href*="/n/d"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: '中外玩具网-公司',
-    url: 'https://www.ctoy.com.cn/n/c3993/',
-    selector: 'a[href*="/n/d"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: '中外玩具网-渠道',
-    url: 'https://www.ctoy.com.cn/n/c3991/',
-    selector: 'a[href*="/n/d"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: '中外玩具网-授权',
-    url: 'https://www.ctoy.com.cn/n/c4009/',
-    selector: 'a[href*="/n/d"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: '中外玩具网-消费',
-    url: 'https://www.ctoy.com.cn/n/c3992/',
-    selector: 'a[href*="/n/d"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: '中外玩具网-潮玩',
-    url: 'https://www.ctoy.com.cn/n/c4053/',
-    selector: 'a[href*="/n/d"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
+  // 中外玩具网 6 栏目：2026-08-23 起改走云端 Google News RSS（ctoy-news，全站合并 1 源），本地条目移除
   {
     name: '玩具产业网',
     url: 'https://www.wjyt-china.org/',
@@ -589,15 +548,7 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
-  {
-    id: 'crunchyroll',
-    name: 'Crunchyroll News',
-    url: 'https://www.crunchyroll.com/news/latest',
-    selector: 'a[href*="/news/"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
+  // crunchyroll：2026-08-23 起改走云端官方 RSS（/rss/ 服务器可直抓 50 条），本地条目移除
   {
     id: 'animeanime',
     name: 'Anime Anime',
@@ -617,15 +568,7 @@ let SOURCES = [
     needsScroll: true,
   },
   // 2026-08-23 起 awn 改走云端 RSS（awn.com/rss.xml 服务器可直抓），本地条目移除
-  {
-    id: 'toybook-licensing',
-    name: 'ToyBook Licensing',
-    url: 'https://toybook.com/category/news/licensing/',
-    selector: 'article a[href], h2 a[href], h3 a[href], a[href*="/2026/"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
+  // toybook-licensing：2026-08-23 起改走云端官方 RSS（toybook.com/feed 可直抓 10 条），本地条目移除
   // 2026-08-23 起 kidscreen-consumer-products 改走云端静态抓取，本地条目移除
   {
     id: 'mkzhan-cdp',

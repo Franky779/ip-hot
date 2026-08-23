@@ -119,8 +119,8 @@ export const RSS_SOURCES: NewsSource[] = [
   // 海外动漫/ACG
   { id: 'ann', name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://www.animenewsnetwork.com', maxItems: 10 } },
   { id: 'ign-anime', name: 'IGN Anime', url: 'https://sea.ign.com/anime', language: 'en', priority: 'P0', type: 'web', scrapeConfig: { itemSelector: 'h3 a[href*="/anime/"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://sea.ign.com', maxItems: 10 } },
-  // Crunchyroll 为 React SPA，直接抓取无文章链接，jina 代理已失效 → 转本地 CDP（fetch-cdp-local.mjs 已覆盖）
-  { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/news/latest', language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true },
+  // Crunchyroll 官方 RSS（/rss/）服务器可直抓 50 条（2026-08-23 实测），不再需要本地 CDP
+  { id: 'crunchyroll', name: 'Crunchyroll News', url: 'https://www.crunchyroll.com/rss/', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'cartoonbrew', name: 'Cartoon Brew', url: 'https://www.cartoonbrew.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
 { id: 'animationmag', name: 'Animation Magazine', url: 'https://www.animationmagazine.net/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
   { id: 'licensingsource', name: 'Licensing Source', url: 'https://www.licensingsource.net/feed/', language: 'en', priority: 'P1', type: 'rss', isRss: true },
@@ -213,31 +213,9 @@ const WEB_SOURCES: NewsSource[] = [
     },
   },
   // --- 潮玩/玩具 ---
-  // 中外玩具网系列为 JS 渲染站，jina 代理已失效 → 转本地 CDP（fetch-cdp-local.mjs 已覆盖 6 栏目）
-  {
-    id: 'ctoy-industry', name: '中外玩具网-产业', url: 'https://www.ctoy.com.cn/n/c3990/',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-  },
-  {
-    id: 'ctoy-company', name: '中外玩具网-公司', url: 'https://www.ctoy.com.cn/n/c3993/',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-  },
-  {
-    id: 'ctoy-channel', name: '中外玩具网-渠道', url: 'https://www.ctoy.com.cn/n/c3991/',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-  },
-  {
-    id: 'ctoy-license', name: '中外玩具网-授权', url: 'https://www.ctoy.com.cn/n/c4009/',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-  },
-  {
-    id: 'ctoy-consumer', name: '中外玩具网-消费', url: 'https://www.ctoy.com.cn/n/c3992/',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-  },
-  {
-    id: 'ctoy-toy', name: '中外玩具网-潮玩', url: 'https://www.ctoy.com.cn/n/c4053/',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
-  },
+  // 中外玩具网 6 栏目均为 JS 渲染站，服务器直接抓/jina 均无效 → 改用 Google News RSS（site:ctoy.com.cn，2026-08-23 实测收录 100 条）。
+  // 全站合并为 1 个源（无法分栏目），DB 原 6 个 ctoy 栏目行保留 1 个启用、其余禁用。
+  { id: 'ctoy-news', name: '中外玩具网', url: 'https://news.google.com/rss/search?q=site%3Actoy.com.cn&hl=zh-CN&gl=CN&ceid=CN%3Azh-Hans', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
   {
     id: 'toy52-cdp', name: '52TOYS', aliases: ['52TOYS官网'], url: 'https://www.52toys.com/news',
     language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
@@ -539,9 +517,8 @@ const WEB_SOURCES: NewsSource[] = [
 
   // --- CDP本地抓取源（JS渲染页面，需本地CDP，无需登录） ---
   {
-    id: 'toybook-licensing', name: 'ToyBook Licensing', url: 'https://toybook.com/category/news/licensing/',
-    language: 'en', priority: 'P1', type: 'web', needsLocalCdp: true,
-    scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href], a[href*="/2026/"]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
+    id: 'toybook-licensing', name: 'ToyBook Licensing', url: 'https://toybook.com/feed/',
+    language: 'en', priority: 'P1', type: 'rss', isRss: true,
   },
   {
     id: 'kidscreen-consumer-products', name: 'Kidscreen Consumer Products', url: 'https://kidscreen.com/category/consumer-products/',
@@ -643,7 +620,7 @@ const GOV_SOURCES: NewsSource[] = [
   { id: 'hlj-wlt', name: '黑龙江省文旅厅', url: 'https://wlt.hlj.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: '.list li, table tr, ul li', titleSelector: 'a', linkSelector: 'a', linkPrefix: 'https://wlt.hlj.gov.cn', maxItems: 5 } },
   { id: 'js-wlt', name: '江苏省文旅厅', aliases: ['江苏省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/js/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'ah-wlt', name: '安徽省文旅厅', aliases: ['安徽省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/ah/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
-  { id: 'fj-wlt', name: '福建省文旅厅', url: 'https://wlt.fujian.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', needsLocalCdp: true },
+  { id: 'fj-wlt', name: '福建省文旅厅', url: 'https://wlt.fujian.gov.cn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="t202"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://wlt.fujian.gov.cn', maxItems: 5 } },
   { id: 'jx-wlt', name: '江西省文旅厅', aliases: ['江西省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/jx/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'sd-wlt', name: '山东省文旅厅', aliases: ['山东省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/sd/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
   { id: 'henan-wlt', name: '河南省文旅厅', aliases: ['河南省文化和旅游厅'], url: 'https://www.mct.gov.cn/whzx/qgwhxxlb/hn/', language: 'zh', priority: 'P2', type: 'gov', scrapeConfig: { itemSelector: 'a[href*="/202"][href*="t202"]', titleSelector: '', linkSelector: '', maxItems: 5 } },
