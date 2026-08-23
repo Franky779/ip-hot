@@ -321,7 +321,12 @@ export async function GET(request: Request) {
     (scheduleSlot >= 0 ? scheduleSlot : fallbackSlot)
   const requestedSelection = selectRequestedSources(loadedSources, requestedSourceIds)
   if (requestedSelection.missingSourceIds.length > 0) {
-    throw new Error(`指定信息源不存在或不支持云端抓取：${requestedSelection.missingSourceIds.join(', ')}`)
+    // coverageRepair 模式下，候选源可能被 loadSources 按代码配置（loginRequired/needsLocalCdp）过滤掉，
+    // 这属于例行情况，跳过即可；只有管理员手动指定时才视为错误（防止手滑写错 ID）。
+    if (!coverageRepair) {
+      throw new Error(`指定信息源不存在或不支持云端抓取：${requestedSelection.missingSourceIds.join(', ')}`)
+    }
+    console.warn('[CoverageRepair] 以下源不在云端可抓集合中，跳过:', requestedSelection.missingSourceIds.join(', '))
   }
   const eligibleSources = requestedSourceIds.length > 0
     ? requestedSelection.selectedSources
