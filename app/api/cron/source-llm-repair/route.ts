@@ -80,7 +80,7 @@ export async function GET(request: Request) {
         .from('source_fetch_runs')
         .select('source_id, source_url')
         .in('status', ['success', 'empty'])
-        .gt('fetched_count', 0)
+        .gte('fetched_count', 1)
         .gte('started_at', overdueCutoff),
     ])
     const okIds = new Set((recentOkRuns ?? []).map((run) => run.source_id).filter(Boolean))
