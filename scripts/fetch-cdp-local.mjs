@@ -437,23 +437,12 @@ async function recordSourceFetchRun(source, result, inserted) {
 }
 
 // ============ 源配置 ============
-// selector 命中后直接提取 href and textContent
+// 2026-08-23 起，绝大多数源已云端化（DB execution_mode=cloud，由服务器定时抓取），本地脚本仅保留：
+//   1) 52TOYS —— 官网按服务器IP拦截（nginx 403），云端唯一出路是 Firecrawl（待接入 key），暂本地 CDP
+//   2) 浙江日报/潮新闻、中国文化报、北青网、红星新闻 —— 代码有云端配置但 DB 无启用行，当前内容靠本脚本抓取
+//   3) 漫客栈 —— 脚本专属源（DB 无行）
+// 已移除的云端化源：License Global、玩具产业网、新闻晨报、金羊网、东莞、天津、福建、杭州、IGN、AnimeAnime、Famitsu、中外玩具网×6、Crunchyroll、ToyBook、AWN、KidScreen、Kidscreen Consumer、Artnet
 let SOURCES = [
-  {
-    name: 'License Global',
-    url: 'https://www.licenseglobal.com/latest-news',
-    selector: '.VerticalCard-Title_displayOption_default',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  // 中外玩具网 6 栏目：2026-08-23 起改走云端 Google News RSS（ctoy-news，全站合并 1 源），本地条目移除
-  {
-    name: '玩具产业网',
-    url: 'https://www.wjyt-china.org/',
-    selector: 'a[href*="detail?id="]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
   {
     name: '中国文化报',
     url: 'http://www.ccdy.cn',
@@ -468,20 +457,6 @@ let SOURCES = [
     selector: '.newslist a[href]',
     maxItems: 10,
     loadWait: 12000,
-  },
-  {
-    name: '新闻晨报',
-    url: 'https://www.shxwcb.com',
-    selector: 'a[href*="/detail/"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    name: '金羊网',
-    url: 'https://www.ycwb.com',
-    selector: 'a[href*="content_"]',
-    maxItems: 10,
-    loadWait: 15000,
   },
   {
     id: 'ynet',
@@ -500,38 +475,6 @@ let SOURCES = [
     loadWait: 15000,
   },
   {
-    id: 'dg-gov',
-    name: '东莞市文化广电旅游体育局',
-    url: 'https://wglt.dg.gov.cn/',
-    selector: 'a[href*="/content/post_"]',
-    maxItems: 5,
-    loadWait: 15000,
-  },
-  {
-    id: 'tj-wl',
-    name: '天津市文化和旅游局',
-    url: 'https://whly.tj.gov.cn/',
-    selector: 'a[href*="/202"][href*="t202"]',
-    maxItems: 5,
-    loadWait: 15000,
-  },
-  {
-    id: 'fj-wlt',
-    name: '福建省文化和旅游厅',
-    url: 'https://wlt.fujian.gov.cn/',
-    selector: 'a[href*="/202"][href*="t202"], .list li a',
-    maxItems: 5,
-    loadWait: 15000,
-  },
-  {
-    id: 'hz-xh',
-    name: '杭州市西湖区人民政府',
-    url: 'https://www.hzxh.gov.cn/',
-    selector: 'a[href*="/art/"]',
-    maxItems: 5,
-    loadWait: 15000,
-  },
-  {
     id: 'toy52-cdp',
     name: '52TOYS新闻',
     url: 'https://www.52toys.com/news',
@@ -539,37 +482,6 @@ let SOURCES = [
     maxItems: 10,
     loadWait: 15000,
   },
-  {
-    id: 'ign-anime',
-    name: 'IGN Anime',
-    url: 'https://sea.ign.com/anime',
-    selector: 'h3 a[href*="/anime/"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
-  // crunchyroll：2026-08-23 起改走云端官方 RSS（/rss/ 服务器可直抓 50 条），本地条目移除
-  {
-    id: 'animeanime',
-    name: 'Anime Anime',
-    url: 'https://animeanime.jp/category/news/',
-    selector: 'a[href*="/article/"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
-  {
-    id: 'famitsu',
-    name: 'Famitsu',
-    url: 'https://www.famitsu.com/category/news/page/1',
-    selector: 'a[href*="/article/"], a[href*="/news/"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
-  // 2026-08-23 起 awn 改走云端 RSS（awn.com/rss.xml 服务器可直抓），本地条目移除
-  // toybook-licensing：2026-08-23 起改走云端官方 RSS（toybook.com/feed 可直抓 10 条），本地条目移除
-  // 2026-08-23 起 kidscreen-consumer-products 改走云端静态抓取，本地条目移除
   {
     id: 'mkzhan-cdp',
     name: '漫客栈',
@@ -579,7 +491,6 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
-  // artnet：2026-08-23 起改走云端 Google News RSS（官网/官方feed/jina 均被 CF 拦服务器IP），本地条目移除
 ];
 
 const requestedIndex = Number(process.argv[2]);
