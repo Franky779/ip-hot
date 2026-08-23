@@ -86,7 +86,7 @@ async function callRepairLlm(
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.2,
+        // 不传 temperature：kimi-for-coding 端点只允许 temperature=1，省略时各家均用默认值（2026-08-23 服务器实测）
         max_tokens: 2000,
       }),
     })
