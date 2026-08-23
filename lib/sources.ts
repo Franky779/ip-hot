@@ -533,12 +533,11 @@ const WEB_SOURCES: NewsSource[] = [
   // --- 社交/UGC ---
   // 豆瓣 → 已移除（需登录+反爬严格，不适合自动化）
 
+  // --- 原CDP源转云端（2026-08-23 服务器实测可直抓，RSS/静态HTML均通）---
+  { id: 'kidscreen', name: 'KidScreen', url: 'https://kidscreen.com/feed', language: 'en', priority: 'P0', type: 'rss', isRss: true },
+  { id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/rss.xml', language: 'en', priority: 'P0', type: 'rss', isRss: true },
+
   // --- CDP本地抓取源（JS渲染页面，需本地CDP，无需登录） ---
-  {
-    id: 'awn', name: 'Animation World Network', url: 'https://www.awn.com/',
-    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
-    scrapeConfig: { itemSelector: 'a[href*="/news/"]', titleSelector: '', linkSelector: '', maxItems: 10 },
-  },
   {
     id: 'toybook-licensing', name: 'ToyBook Licensing', url: 'https://toybook.com/category/news/licensing/',
     language: 'en', priority: 'P1', type: 'web', needsLocalCdp: true,
@@ -546,7 +545,7 @@ const WEB_SOURCES: NewsSource[] = [
   },
   {
     id: 'kidscreen-consumer-products', name: 'Kidscreen Consumer Products', url: 'https://kidscreen.com/category/consumer-products/',
-    language: 'en', priority: 'P1', type: 'web', needsLocalCdp: true,
+    language: 'en', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href], a[href*="/20"][href*="kidscreen.com/20"]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
   },
   // Artnet News 官方 feed 被 Cloudflare 拦服务器 IP（返回 HTML 挑战页）→ 转本地 CDP 抓 art-world 栏目页

@@ -616,16 +616,7 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
-  {
-    id: 'awn',
-    name: 'Animation World Network',
-    url: 'https://www.awn.com/',
-    selector: 'a[href*="/news/"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-    extractJs: "JSON.stringify(Array.from(document.querySelectorAll('a[href*=\"/news/\"]')).map(a => ({title: (a.textContent || a.querySelector('img')?.alt || a.querySelector('img')?.title || a.title || a.getAttribute('aria-label') || '').trim().slice(0,100), url: a.href})).filter(x => x.title.length > 10 && x.title.length < 150 && !['Headline','Flash','Signup','view full','Login','Register','News','Season Lineup','Anime Awards','Mikikazu Komatsu','All Entertainment','Grand Theft Auto','人气榜','榜单'].some(w => x.title.includes(w))).slice(0,10))",
-  },
+  // 2026-08-23 起 awn 改走云端 RSS（awn.com/rss.xml 服务器可直抓），本地条目移除
   {
     id: 'toybook-licensing',
     name: 'ToyBook Licensing',
@@ -635,15 +626,7 @@ let SOURCES = [
     loadWait: 20000,
     needsScroll: true,
   },
-  {
-    id: 'kidscreen-consumer-products',
-    name: 'Kidscreen Consumer Products',
-    url: 'https://kidscreen.com/category/consumer-products/',
-    selector: 'article a[href], h2 a[href], h3 a[href], a[href*="/20"][href*="kidscreen.com/20"]',
-    maxItems: 10,
-    loadWait: 20000,
-    needsScroll: true,
-  },
+  // 2026-08-23 起 kidscreen-consumer-products 改走云端静态抓取，本地条目移除
   {
     id: 'mkzhan-cdp',
     name: '漫客栈',

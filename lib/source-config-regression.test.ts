@@ -136,6 +136,8 @@ test('moves the verified local CDP sources to cloud execution', () => {
     'ign-anime', 'animeanime', 'famitsu',
     'ynet', 'dg-gov', 'hz-xh', 'tj-wl', 'cdsb', 'ycwb',
     'ccdy', 'shxwcb', 'licenseglobal',
+    // 2026-08-23 服务器实测可直抓：awn/kidscreen 官方 RSS + kidscreen 栏目页静态HTML
+    'awn', 'kidscreen', 'kidscreen-consumer-products',
   ]
 
   for (const id of sourceIds) {
