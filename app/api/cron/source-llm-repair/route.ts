@@ -5,14 +5,17 @@ import {
   applyRepairProposal,
   type LlmRepairProposal,
 } from '@/lib/source-llm-repair'
-import { decideRepairAction, isRepairCandidate, type RepairCandidate } from '@/lib/source-repair'
+import { decideRepairAction, isRepairCandidate, runSourceTest, type RepairCandidate } from '@/lib/source-repair'
 import { findSourceConfiguration } from '@/lib/sources'
+import { getSourceSchedule } from '@/lib/source-schedule'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
 const DEFAULT_LIMIT = 5
 const LOCK_MINUTES = 120
+/** 启用中的云端源连续 N 天无成功抓取，纳入 LLM 修复候选 */
+const OVERDUE_DAYS = 3
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -66,10 +69,41 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: rowsError.message }, { status: 500 })
     }
 
+    // 长期逾期的启用中云端源：连续 OVERDUE_DAYS 天无成功抓取（本地CDP/登录源天然不在服务器跑，排除）
+    const overdueCutoff = new Date(now.getTime() - OVERDUE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    const [{ data: enabledRows }, { data: recentOkRuns }] = await Promise.all([
+      supabase
+        .from('info_sources')
+        .select('id, name, url, type, method, fetch_type, enabled, last_test_status, last_test_message')
+        .eq('enabled', true),
+      supabase
+        .from('source_fetch_runs')
+        .select('source_id, source_url')
+        .in('status', ['success', 'empty'])
+        .gt('fetched_count', 0)
+        .gte('started_at', overdueCutoff),
+    ])
+    const okIds = new Set((recentOkRuns ?? []).map((run) => run.source_id).filter(Boolean))
+    const okUrls = new Set((recentOkRuns ?? []).map((run) => run.source_url).filter(Boolean))
+    const overdueRows = (enabledRows ?? []).filter((row) => {
+      if (row.type === '公众号（随手收）') return false
+      if (okIds.has(row.id) || okUrls.has(row.url)) return false
+      const configured = findSourceConfiguration(row.url, row.name)
+      if (configured?.needsLocalCdp || configured?.loginRequired) return false
+      const schedule = getSourceSchedule({
+        id: row.id, name: row.name, url: row.url,
+        method: row.method, type: row.type, enabled: row.enabled,
+      })
+      return schedule.executionMode === 'cloud'
+    })
+    const overdueIds = new Set(overdueRows.map((row) => row.id))
+    const candidateRows = [...(rows ?? []), ...overdueRows].slice(0, limit)
+
     const outcomes = []
-    for (const row of rows ?? []) {
+    for (const row of candidateRows) {
       const candidate = row as RepairCandidate
-      if (!isRepairCandidate(candidate)) continue
+      const isOverdueCandidate = overdueIds.has(candidate.id)
+      if (!isOverdueCandidate && !isRepairCandidate(candidate)) continue
       const configured = findSourceConfiguration(candidate.url, candidate.name)
       const decision = decideRepairAction(candidate, configured)
       if (decision.action === 'skip') {
@@ -81,6 +115,28 @@ export async function GET(request: Request) {
           reason: decision.reason,
         })
         continue
+      }
+
+      // 逾期候选先用现有配置确定性重测：能过说明源没坏（只是调度漏了），不烧 LLM
+      if (isOverdueCandidate) {
+        const preTest = await runSourceTest(candidate, configured)
+        if (preTest.ok) {
+          if (!dryRun) {
+            await supabase.from('info_sources').update({
+              last_test_status: 'success',
+              last_tested_at: now.toISOString(),
+              last_test_message: `逾期自查通过：${preTest.message}`.slice(0, 500),
+            }).eq('id', candidate.id)
+          }
+          outcomes.push({
+            id: candidate.id,
+            name: candidate.name,
+            url: candidate.url,
+            action: 'self_healed',
+            verified: preTest,
+          })
+          continue
+        }
       }
 
       // LLM 诊断 + 建议
@@ -154,13 +210,14 @@ export async function GET(request: Request) {
       .single()
     const logId = logData?.id ?? null
 
-    const counts = { applied: 0, notApplied: 0, needsHuman: 0, llmFailed: 0, skipped: 0, failed: 0 }
+    const counts = { applied: 0, notApplied: 0, needsHuman: 0, llmFailed: 0, skipped: 0, failed: 0, selfHealed: 0 }
     for (const o of outcomes) {
       if (o.action === 'applied') counts.applied += 1
       else if (o.action === 'not_applied') counts.notApplied += 1
       else if (o.action === 'needs_human') counts.needsHuman += 1
       else if (o.action === 'llm_failed') counts.llmFailed += 1
       else if (o.action === 'skip') counts.skipped += 1
+      else if (o.action === 'self_healed') counts.selfHealed += 1
       else counts.failed += 1
     }
 
