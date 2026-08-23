@@ -438,10 +438,10 @@ async function recordSourceFetchRun(source, result, inserted) {
 
 // ============ 源配置 ============
 // 2026-08-23 起，绝大多数源已云端化（DB execution_mode=cloud，由服务器定时抓取），本地脚本仅保留：
-//   1) 52TOYS —— 官网按服务器IP拦截（nginx 403），云端唯一出路是 Firecrawl（待接入 key），暂本地 CDP
-//   2) 浙江日报/潮新闻、中国文化报、北青网、红星新闻 —— 代码有云端配置但 DB 无启用行，当前内容靠本脚本抓取
-//   3) 漫客栈 —— 脚本专属源（DB 无行）
-// 已移除的云端化源：License Global、玩具产业网、新闻晨报、金羊网、东莞、天津、福建、杭州、IGN、AnimeAnime、Famitsu、中外玩具网×6、Crunchyroll、ToyBook、AWN、KidScreen、Kidscreen Consumer、Artnet
+//   1) 浙江日报/潮新闻、中国文化报、北青网、红星新闻 —— 代码有云端配置但 DB 无启用行，当前内容靠本脚本抓取
+//   2) 漫客栈 —— 脚本专属源（DB 无行）
+// 52TOYS 已于 2026-08-23 改走 Firecrawl 云端渲染，本地条目移除。
+// 已移除的云端化源：52TOYS、License Global、玩具产业网、新闻晨报、金羊网、东莞、天津、福建、杭州、IGN、AnimeAnime、Famitsu、中外玩具网×6、Crunchyroll、ToyBook、AWN、KidScreen、Kidscreen Consumer、Artnet
 let SOURCES = [
   {
     name: '中国文化报',
@@ -471,14 +471,6 @@ let SOURCES = [
     name: '红星新闻',
     url: 'https://www.cdsb.com',
     selector: 'a[href*="/micropub/Articles/"]',
-    maxItems: 10,
-    loadWait: 15000,
-  },
-  {
-    id: 'toy52-cdp',
-    name: '52TOYS新闻',
-    url: 'https://www.52toys.com/news',
-    selector: 'a.tit[href*="/news/"]',
     maxItems: 10,
     loadWait: 15000,
   },

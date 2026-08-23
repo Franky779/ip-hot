@@ -142,6 +142,8 @@ test('moves the verified local CDP sources to cloud execution', () => {
     'artnet',
     // 2026-08-23 第二批云端化：crunchyroll/toybook 官方 RSS，fj-wlt 静态可抓，ctoy 合并 Google News RSS
     'crunchyroll', 'toybook-licensing', 'fj-wlt', 'ctoy-news',
+    // 2026-08-23 52TOYS 官网 nginx 按IP拦 → Firecrawl 云端渲染 adapter
+    'toy52',
   ]
 
   for (const id of sourceIds) {
@@ -151,16 +153,13 @@ test('moves the verified local CDP sources to cloud execution', () => {
   }
 })
 
-// 52TOYS 官网按服务器 IP 拦截（nginx 403，非 UA 问题），官方RSS/Google News/jina 均不可用，
-// 唯一云端出路是 Firecrawl 渲染（待接入 key）。暂保留本地 CDP，source-repair 自动跳过。
-test('52TOYS stays on local CDP', () => {
-  const cdpSourceIds = ['toy52-cdp']
-
-  for (const id of cdpSourceIds) {
-    const source = ALL_SOURCES.find((candidate) => candidate.id === id)
-    assert.ok(source, `missing source ${id}`)
-    assert.equal(source.needsLocalCdp, true, `${id} must run via fetch-cdp-local.mjs`)
-  }
+// 52TOYS 官网 nginx 按服务器 IP 拦截，官方RSS/Google News/jina 均不可用，
+// 2026-08-23 起改走 Firecrawl 云端渲染（firecrawl-markdown-links adapter，linkPattern 匹配 /news/NNN）
+test('52TOYS uses Firecrawl markdown adapter', () => {
+  const source = ALL_SOURCES.find((candidate) => candidate.id === 'toy52')
+  assert.ok(source, 'missing source toy52')
+  assert.equal(source.needsLocalCdp, undefined, 'toy52 must run in cloud mode')
+  assert.equal(source.scrapeConfig?.adapter, 'firecrawl-markdown-links')
 })
 
 test('extracts China Culture Daily articles from the digital paper API', async (t) => {

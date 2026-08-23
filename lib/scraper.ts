@@ -438,6 +438,83 @@ async function scrapeJinaMarkdownLinks(
   }
 }
 
+/**
+ * Firecrawl 云端渲染抓取：调用 Firecrawl v2 API 渲染目标页（真浏览器+住宅IP），
+ * 从返回的 links + markdown 提取新闻链接。用于服务器直连被 nginx/Cloudflare 按 IP 拦截、
+ * 且无法用 RSS/Google News/jina 解决的 JS 站点（如 52TOYS 官网）。
+ * API Key 从环境变量 FIRECRAWL_API_KEY 读取。
+ */
+async function scrapeFirecrawlMarkdownLinks(
+  sourceName: string,
+  sourceUrl: string,
+  config: Extract<ScrapeConfig, { adapter: 'firecrawl-markdown-links' }>,
+  signal: AbortSignal
+): Promise<ScrapeResult> {
+  const apiKey = process.env.FIRECRAWL_API_KEY
+  if (!apiKey) {
+    return { items: [], rawCount: 0, error: `${sourceName}: FIRECRAWL_API_KEY 未配置，无法走 Firecrawl` }
+  }
+  let data: { links?: unknown; markdown?: unknown } | undefined
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: sourceUrl, formats: ['links', 'markdown'], onlyMainContent: false }),
+      signal,
+    })
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      return { items: [], rawCount: 0, error: `${sourceName}: Firecrawl HTTP ${response.status}: ${text.slice(0, 120)}` }
+    }
+    const payload = await response.json() as { data?: { links?: unknown; markdown?: unknown } }
+    data = payload.data
+  } catch (error) {
+    return { items: [], rawCount: 0, error: `${sourceName}: Firecrawl 请求失败: ${error instanceof Error ? error.message : String(error)}` }
+  }
+
+  const links = Array.isArray(data?.links) ? data.links.filter((l): l is string => typeof l === 'string') : []
+  const markdown = typeof data?.markdown === 'string' ? data.markdown : ''
+  const linkPattern = new RegExp(config.linkPattern)
+
+  // 从 markdown 建立 url → title 映射，避免只有 URL 没有标题
+  const titleByUrl = new Map<string, string>()
+  for (const m of markdown.matchAll(/\[([^\]\n]{2,})\]\s*\(\s*(https?:\/\/[^)\s]+)(?:\s+["'][^)]*["'])?\)/g)) {
+    const title = m[1].replace(/\s+/g, ' ').trim()
+    const rawUrl = m[2].trim().split(/\s+/)[0]
+    if (title && rawUrl) titleByUrl.set(rawUrl, title)
+  }
+
+  const items: ScrapedNewsItem[] = []
+  const seen = new Set<string>()
+  for (const rawUrl of links) {
+    if (items.length >= (config.maxItems ?? 10)) break
+    let url: URL
+    try {
+      url = new URL(rawUrl)
+    } catch {
+      continue
+    }
+    url.search = ''
+    url.hash = ''
+    if (!linkPattern.test(url.pathname)) continue
+    const normalizedUrl = url.toString()
+    if (seen.has(normalizedUrl)) continue
+    seen.add(normalizedUrl)
+    const title = titleByUrl.get(normalizedUrl) || titleByUrl.get(rawUrl)
+      || decodeURIComponent(url.pathname.split('/').filter(Boolean).pop() || '') || url.pathname
+    items.push({ title, url: normalizedUrl, publishedAt: null })
+  }
+
+  return {
+    items,
+    rawCount: links.length,
+    error: items.length === 0 ? `${sourceName}: Firecrawl 未提取到匹配链接` : undefined,
+  }
+}
+
 async function scrapeSitemapArticleLinks(
   sourceName: string,
   config: Extract<ScrapeConfig, { adapter: 'sitemap-article-links' }>,
@@ -784,7 +861,9 @@ export async function scrapeNewsList(
   config: ScrapeConfig
 ): Promise<ScrapeResult> {
   const controller = new AbortController()
-  const timeoutMs = config.adapter === 'jina-markdown-links' ? 60_000 : REQUEST_TIMEOUT_MS
+  const timeoutMs = config.adapter === 'jina-markdown-links' || config.adapter === 'firecrawl-markdown-links'
+    ? 60_000
+    : REQUEST_TIMEOUT_MS
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
@@ -811,6 +890,9 @@ export async function scrapeNewsList(
     }
     if (config.adapter === 'jina-markdown-links') {
       return await scrapeJinaMarkdownLinks(sourceName, sourceUrl, config, controller.signal)
+    }
+    if (config.adapter === 'firecrawl-markdown-links') {
+      return await scrapeFirecrawlMarkdownLinks(sourceName, sourceUrl, config, controller.signal)
     }
     if (config.adapter === 'sitemap-article-links') {
       return await scrapeSitemapArticleLinks(sourceName, config, controller.signal)

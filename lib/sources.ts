@@ -75,6 +75,13 @@ export type SitemapArticleLinksConfig = {
   maxItems?: number
 }
 
+export type FirecrawlMarkdownLinksConfig = {
+  adapter: 'firecrawl-markdown-links'
+  /** 命中新闻链接的 pathname 正则（如 '^/news/\\d+$'） */
+  linkPattern: string
+  maxItems?: number
+}
+
 export type ScrapeConfig =
   | HtmlScrapeConfig
   | BilibiliTimelineConfig
@@ -87,6 +94,7 @@ export type ScrapeConfig =
   | ShxwcbHomeConfig
   | JinaMarkdownLinksConfig
   | SitemapArticleLinksConfig
+  | FirecrawlMarkdownLinksConfig
 
 export type NewsSource = {
   id: string
@@ -216,9 +224,12 @@ const WEB_SOURCES: NewsSource[] = [
   // 中外玩具网 6 栏目均为 JS 渲染站，服务器直接抓/jina 均无效 → 改用 Google News RSS（site:ctoy.com.cn，2026-08-23 实测收录 100 条）。
   // 全站合并为 1 个源（无法分栏目），DB 原 6 个 ctoy 栏目行保留 1 个启用、其余禁用。
   { id: 'ctoy-news', name: '中外玩具网', url: 'https://news.google.com/rss/search?q=site%3Actoy.com.cn&hl=zh-CN&gl=CN&ceid=CN%3Azh-Hans', language: 'zh', priority: 'P1', type: 'rss', isRss: true },
+  // 52TOYS 官网对服务器 IP nginx 403（非 UA 问题），官方RSS/Google News/jina 均不可用
+  // → 走 Firecrawl 云端渲染（2026-08-23 实测抓取 80 个 /news/ 链接）
   {
-    id: 'toy52-cdp', name: '52TOYS', aliases: ['52TOYS官网'], url: 'https://www.52toys.com/news',
-    language: 'zh', priority: 'P1', type: 'web', needsLocalCdp: true,
+    id: 'toy52', name: '52TOYS', aliases: ['52TOYS官网'], url: 'https://www.52toys.com/news',
+    language: 'zh', priority: 'P1', type: 'web',
+    scrapeConfig: { adapter: 'firecrawl-markdown-links', linkPattern: '^/news/\\d+$', maxItems: 10 },
   },
   {
     id: 'wjyt', name: '玩具产业网', url: 'https://www.wjyt-china.org/',
