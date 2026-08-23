@@ -23,14 +23,15 @@ function gitOut(cmd) {
 }
 
 // 读取 HEAD commit 中某文件的原始内容（buffer）。绝不读工作区磁盘，避免把未提交改动推给 GitHub。
+// maxBuffer 放大到 64MB：ips.json 等大数据文件单次可达数 MB，默认 1MB 会触发 ENOBUFS。
 function gitBlob(ref) {
-  return execFileSync('git', ['cat-file', 'blob', ref], { encoding: 'buffer' });
+  return execFileSync('git', ['cat-file', 'blob', ref], { encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 });
 }
 
 // 判断某文件是否存在于 HEAD commit。
 function hasInHead(file) {
   try {
-    execFileSync('git', ['cat-file', '-e', `HEAD:${file}`], { stdio: 'ignore' });
+    execFileSync('git', ['cat-file', '-e', `HEAD:${file}`], { stdio: 'ignore', maxBuffer: 64 * 1024 * 1024 });
     return true;
   } catch {
     return false;

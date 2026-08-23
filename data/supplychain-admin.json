@@ -1,5 +1,12 @@
 {
-  "deleted": [],
+  "deleted": [
+    9999,
+    5,
+    6,
+    1,
+    2,
+    4
+  ],
   "edits": {},
   "new_records": [],
   "config": {
