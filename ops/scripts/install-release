@@ -68,6 +68,7 @@ systemctl enable --now ip-hot-health.timer
 systemctl enable --now ip-hot-pending-classification.timer
 systemctl enable --now ip-hot-coverage-repair.timer
 systemctl enable --now ip-hot-source-repair.timer
+systemctl enable --now ip-hot-source-llm-repair.timer
 systemctl reload nginx
 
 health_ok=false

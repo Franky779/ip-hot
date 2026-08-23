@@ -1,0 +1,9 @@
+[Unit]
+Description=LLM-assisted repair of failed IP Hot information sources
+After=network-online.target ip-hot.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=iphot
+ExecStart=/usr/bin/curl --config /srv/apps/ip-hot/shared/curl-auth.conf --fail-with-body --silent --show-error --max-time 300 http://127.0.0.1:3101/api/cron/source-llm-repair

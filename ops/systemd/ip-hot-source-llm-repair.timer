@@ -1,0 +1,12 @@
+[Unit]
+Description=LLM-assisted repair of failed IP Hot information sources twice daily
+
+[Timer]
+OnCalendar=*-*-* 09:15:00
+OnCalendar=*-*-* 21:15:00
+RandomizedDelaySec=300
+Persistent=true
+Unit=ip-hot-source-llm-repair.service
+
+[Install]
+WantedBy=timers.target
