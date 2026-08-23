@@ -138,6 +138,8 @@ test('moves the verified local CDP sources to cloud execution', () => {
     'ccdy', 'shxwcb', 'licenseglobal',
     // 2026-08-23 服务器实测可直抓：awn/kidscreen 官方 RSS + kidscreen 栏目页静态HTML
     'awn', 'kidscreen', 'kidscreen-consumer-products',
+    // 2026-08-23 服务器实测：artnet 官网/官方feed/jina代理均被 Cloudflare 拦，改走 Google News RSS
+    'artnet',
   ]
 
   for (const id of sourceIds) {

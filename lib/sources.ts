@@ -548,11 +548,11 @@ const WEB_SOURCES: NewsSource[] = [
     language: 'en', priority: 'P1', type: 'web',
     scrapeConfig: { itemSelector: 'article a[href], h2 a[href], h3 a[href], a[href*="/20"][href*="kidscreen.com/20"]', titleSelector: 'a', linkSelector: 'a', maxItems: 10 },
   },
-  // Artnet News 官方 feed 被 Cloudflare 拦服务器 IP（返回 HTML 挑战页）→ 转本地 CDP 抓 art-world 栏目页
+  // Artnet News 官网+官方feed均被 Cloudflare 拦服务器IP，jina 代理同样 403（2026-08-23 服务器实测）
+  // → 改用 Google News RSS 绕行（同 licenseglobal 先例），实测 100 条稳定返回
   {
-    id: 'artnet', name: 'Artnet News', url: 'https://news.artnet.com/art-world',
-    language: 'en', priority: 'P0', type: 'web', needsLocalCdp: true,
-    scrapeConfig: { itemSelector: 'a[href*="/art-world/"][href*="-"]', titleSelector: '', linkSelector: '', linkPrefix: 'https://news.artnet.com', maxItems: 10 },
+    id: 'artnet', name: 'Artnet News', url: 'https://news.google.com/rss/search?q=site%3Anews.artnet.com&hl=en-US&gl=US&ceid=US%3Aen',
+    language: 'en', priority: 'P0', type: 'rss', isRss: true,
   },
 
   {
