@@ -87,7 +87,7 @@ async function callRepairLlm(
           { role: 'user', content: userPrompt },
         ],
         // 不传 temperature：kimi-for-coding 端点只允许 temperature=1，省略时各家均用默认值（2026-08-23 服务器实测）
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     })
     if (!res.ok) {
@@ -95,7 +95,9 @@ async function callRepairLlm(
       throw new Error(`API ${res.status}: ${text.slice(0, 200)}`)
     }
     const data = await res.json()
-    const raw: string = data.choices?.[0]?.message?.content ?? ''
+    const message = data.choices?.[0]?.message
+    // 推理型模型可能把正文放在 content，也可能 token 用尽只剩 reasoning_content；取不到正文时退用 reasoning 摘要
+    const raw: string = message?.content || message?.reasoning_content || ''
     if (!raw) throw new Error('Empty response')
     const jsonMatch = raw.match(/\{[\s\S]*?\}/)
     if (!jsonMatch) throw new Error(`No JSON in: ${raw.slice(0, 120)}`)
