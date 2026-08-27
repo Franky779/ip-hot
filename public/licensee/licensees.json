@@ -1,0 +1,121 @@
+[
+  {
+    "id": 1,
+    "name": "演示·金添食品",
+    "name_en": "Jintian Foods",
+    "images": [
+      { "local": "images/demo-1/cover.svg" },
+      { "local": "images/demo-1/detail.svg" }
+    ],
+    "one_line": "东莞 · IP授权儿童食品品牌",
+    "company": "东莞金添食品有限公司",
+    "founded": "2015",
+    "hub": "东莞",
+    "location": "东莞东城",
+    "categories": ["食品", "饮料"],
+    "biz_types": ["品牌方"],
+    "channels": ["商超/KA", "母婴店", "天猫", "抖音电商"],
+    "audiences": ["儿童", "家庭亲子"],
+    "intro": "专注儿童零食赛道的品牌方，自身不设工厂，以IP授权为核心增长策略：签下头部IP后，按品类拆分给不同食品代工厂生产，自建渠道团队铺商超与母婴店。",
+    "licensing_cases": [
+      {
+        "ip_id": 110,
+        "ip_name": "经典奥特曼",
+        "category": "食品",
+        "license_type": "商品授权",
+        "factory_id": 0,
+        "factory_name": "东莞某食品厂（待入库）",
+        "launch_date": "2026-03",
+        "sales_note": "奥特曼造型饼干+糖果组合装，首批铺货3000家母婴店"
+      },
+      {
+        "ip_id": 605,
+        "ip_name": "蜡笔小新 クレヨンしんちゃん",
+        "category": "食品",
+        "license_type": "促销授权",
+        "factory_id": 0,
+        "factory_name": "东莞某食品厂（待入库）",
+        "launch_date": "2026-06",
+        "sales_note": "果汁软糖暑期档，配合动画档期投放"
+      }
+    ],
+    "qr_images": ["images/demo-1/qr.svg"],
+    "verified": true
+  },
+  {
+    "id": 2,
+    "name": "演示·萌趣文具",
+    "name_en": "MoeQu Stationery",
+    "images": [
+      { "local": "images/demo-2/cover.svg" },
+      { "local": "images/demo-2/detail.svg" }
+    ],
+    "one_line": "义乌 · IP联名文具与学生周边品牌",
+    "company": "义乌萌趣文化用品有限公司",
+    "founded": "2018",
+    "hub": "义乌",
+    "location": "义乌稠城",
+    "categories": ["文具", "徽章", "亚克力"],
+    "biz_types": ["品牌方"],
+    "channels": ["天猫", "拼多多", "商超/KA"],
+    "audiences": ["青少年", "年轻女性"],
+    "intro": "以学生文具为主线的授权品牌方，擅长把IP形象转化为开学季爆品，设计与打样外包给产业带工厂，自己把控选品、IP谈判与电商运营。",
+    "licensing_cases": [
+      {
+        "ip_id": 605,
+        "ip_name": "蜡笔小新 クレヨンしんちゃん",
+        "category": "文具",
+        "license_type": "商品授权",
+        "factory_id": 3,
+        "factory_name": "演示·拾光文创工场",
+        "launch_date": "2026-02",
+        "sales_note": "开学季文具礼盒，天猫单品月销2万+"
+      },
+      {
+        "ip_id": 640,
+        "ip_name": "哆啦A梦：大雄的地球交响乐",
+        "category": "文具",
+        "license_type": "促销授权",
+        "factory_id": 3,
+        "factory_name": "演示·拾光文创工场",
+        "launch_date": "2026-04",
+        "sales_note": "配合电影上映的手账本+徽章套装"
+      }
+    ],
+    "qr_images": ["images/demo-2/qr.svg"],
+    "verified": true
+  },
+  {
+    "id": 3,
+    "name": "演示·酷玩集合",
+    "name_en": "Kuwan Select",
+    "images": [
+      { "local": "images/demo-3/cover.svg" },
+      { "local": "images/demo-3/detail.svg" }
+    ],
+    "one_line": "深圳 · 潮玩集合渠道自有品牌",
+    "company": "深圳酷玩集合商业有限公司",
+    "founded": "2021",
+    "hub": "深圳",
+    "location": "深圳南山",
+    "categories": ["盲盒", "PVC手办"],
+    "biz_types": ["渠道商自有品牌"],
+    "channels": ["潮玩集合店", "抖音电商", "小红书商城"],
+    "audiences": ["年轻女性", "收藏玩家"],
+    "intro": "从潮玩集合店起家的渠道品牌，以自有品牌名义签IP授权做限定款盲盒，生产全部外包给东莞产业带工厂，门店即渠道。",
+    "licensing_cases": [
+      {
+        "ip_id": 640,
+        "ip_name": "哆啦A梦：大雄的地球交响乐",
+        "category": "盲盒",
+        "license_type": "商品授权",
+        "factory_id": 1,
+        "factory_name": "演示·星河造物社",
+        "launch_date": "2026-05",
+        "sales_note": "门店限定盲盒第一弹，首周末售罄"
+      }
+    ],
+    "qr_images": ["images/demo-3/qr.svg"],
+    "verified": false
+  }
+]

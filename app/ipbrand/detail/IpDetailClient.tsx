@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { mergeIpRecords, dedupeIpNews, EMPTY_ADMIN, type IpBrandEdit, type IpBrandOptionField, type IpCustomCard, type IpNews, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
+import { licenseesByIp, mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
 
 type FeedArticle = IpNews
 
@@ -47,6 +48,7 @@ function secTitle(d: IpRecord | null | undefined, key: string): string {
 export function IpDetailClient({ initialId }: { initialId: number }) {
   const [data, setData] = useState<IpRecord[] | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [linkedLicensees, setLinkedLicensees] = useState<LicenseeRecord[]>([])
   const [feedNews, setFeedNews] = useState<FeedArticle[]>([])
   const [newsBusy, setNewsBusy] = useState(false)
   const [newsError, setNewsError] = useState('')
@@ -87,6 +89,20 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       })
       .catch(() => {})
   }, [])
+
+  // 反向联动：拉品牌方库，筛出授权案例里关联了当前 IP 的品牌方（失败则隐藏该区块）
+  useEffect(() => {
+    if (!ipId || ipId <= 0) return
+    Promise.all([
+      fetch('/licensee/licensees.json').then(r => (r.ok ? r.json() as Promise<LicenseeRecord[]> : [])),
+      fetch('/api/licensee/overrides').then(r => (r.ok ? r.json() : Promise.resolve(null))),
+    ])
+      .then(([records, admin]) => {
+        const merged = admin ? mergeLicenseeRecords(records, admin as LicenseeAdminData) : records
+        setLinkedLicensees(licenseesByIp(merged, ipId))
+      })
+      .catch(() => setLinkedLicensees([]))
+  }, [ipId])
 
   const d = data && ipId && ipId > 0 ? data.find(x => x.id === ipId) : undefined
   const title = d ? d.name_cn || d.name_en || '(未命名)' : 'IP 详情'
@@ -1030,6 +1046,20 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
             <div className="ipd-empty-block">暂无授权案例记录</div>
           )}
         </div>
+
+        {linkedLicensees.length > 0 && (
+          <div className="ipd-section">
+            <div className="ipd-section-title">授权该IP的品牌方 ({linkedLicensees.length})</div>
+            <div className="lic-chip-row">
+              {linkedLicensees.map(item => (
+                <Link key={item.id} href={`/licensee/detail?id=${item.id}`} className="lic-chip lic-chip-ip">
+                  {item.name}
+                  <span>{(item.licensing_cases || []).filter(c => c.ip_id === ipId).map(c => c.category).filter(Boolean).join(' / ') || '品牌方档案'} »</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {customCards.map(c => (
           <div key={c.id} className="ipd-section">
