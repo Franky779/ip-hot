@@ -254,7 +254,7 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
 
       {linkedIps(d).length > 0 && (
         <section className="factory-detail-section">
-          <div className="factory-section-heading">授权IP墙</div>
+          <div className="factory-section-heading">授权IP列表（包含已合作/正在合作中的IP）</div>
           <div className="lic-chip-row">
             {linkedIps(d).map(ip => <Link key={ip.id} href={`/ipbrand/detail?id=${ip.id}`} className="lic-chip lic-chip-ip">{ip.name}<span>IP档案 »</span></Link>)}
           </div>
@@ -269,14 +269,14 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
               <div className="lic-case-card" key={i}>
                 <div className="lic-case-chain">
                   {c.ip_id > 0
-                    ? <Link href={`/ipbrand/detail?id=${c.ip_id}`} className="lic-chain-node lic-chain-ip"><b>{c.ip_name}</b><span>IP方</span></Link>
-                    : <div className="lic-chain-node lic-chain-ip"><b>{c.ip_name}</b><span>IP方</span></div>}
-                  <div className="lic-chain-arrow">授权{c.license_type ? ` · ${c.license_type}` : ''} »</div>
-                  <div className="lic-chain-node lic-chain-self"><b>{d.name}</b><span>品牌方</span></div>
-                  <div className="lic-chain-arrow">代工生产 »</div>
+                    ? <Link href={`/ipbrand/detail?id=${c.ip_id}`} className="lic-chain-node lic-chain-ip"><span className="lic-role lic-role-ip">IP方</span><b>{c.ip_name}</b></Link>
+                    : <div className="lic-chain-node lic-chain-ip"><span className="lic-role lic-role-ip">IP方</span><b>{c.ip_name}</b></div>}
+                  <div className="lic-chain-link">授权{c.license_type ? ` · ${c.license_type}` : ''}</div>
+                  <div className="lic-chain-node lic-chain-self"><span className="lic-role lic-role-self">品牌方</span><b>{d.name}</b></div>
+                  <div className="lic-chain-link">代工生产</div>
                   {c.factory_id > 0
-                    ? <Link href={`/factory/detail?id=${c.factory_id}`} className="lic-chain-node lic-chain-factory"><b>{c.factory_name}</b><span>工厂</span></Link>
-                    : <div className="lic-chain-node lic-chain-factory lic-chain-off"><b>{c.factory_name || '未关联'}</b><span>工厂</span></div>}
+                    ? <Link href={`/factory/detail?id=${c.factory_id}`} className="lic-chain-node lic-chain-factory"><span className="lic-role lic-role-factory">工厂</span><b>{c.factory_name}</b></Link>
+                    : <div className="lic-chain-node lic-chain-factory lic-chain-off"><span className="lic-role lic-role-factory">工厂</span><b>{c.factory_name || '未关联'}</b></div>}
                 </div>
                 <div className="lic-case-meta">
                   {c.category && <span>{c.category}</span>}

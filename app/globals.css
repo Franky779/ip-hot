@@ -8297,72 +8297,79 @@ textarea.factory-form-input { resize: vertical; }
 }
 
 /* ====== 品牌方库（/licensee）—— 布局复用 factory-* 类，以下仅为三方联动与案例卡片新增样式 ====== */
-.lic-name-en { color: #8b93a3; font-size: 14px; margin: 2px 0 0; }
-.lic-intro { color: #3c4454; line-height: 1.9; font-size: 15px; margin: 0; white-space: pre-wrap; }
+.lic-name-en { color: var(--text-muted); font-size: 14px; margin: 2px 0 0; }
+.lic-intro { color: var(--text-secondary); line-height: 1.9; font-size: 15px; margin: 0; white-space: pre-wrap; }
 
-/* 授权IP墙 / 合作供应链 芯片 */
+/* 授权IP列表 / 合作供应链 芯片 */
 .lic-chip-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .lic-chip {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 9px 14px; border-radius: 999px; text-decoration: none;
-  font-size: 14px; font-weight: 600; border: 1px solid #e3e7ee;
-  background: #fff; color: #2a3140; transition: all .15s ease;
+  font-size: 14px; font-weight: 600; border: 1px solid var(--card-border);
+  background: var(--surface); color: var(--text); transition: all .15s ease;
 }
-.lic-chip span { font-size: 12px; font-weight: 400; color: #8b93a3; }
-.lic-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(23, 32, 42, .08); }
-.lic-chip-ip { border-color: #ecd9ac; background: #fdf8ec; }
-.lic-chip-ip:hover { border-color: #e0b95c; }
-.lic-chip-factory { border-color: #c9dde4; background: #f0f7f9; }
-.lic-chip-factory:hover { border-color: #527b89; }
+.lic-chip span { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.lic-chip:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.lic-chip-ip { border-color: rgba(201, 162, 74, .5); }
+.lic-chip-ip:hover { border-color: #c9a24a; }
+.lic-chip-factory { border-color: rgba(95, 151, 166, .5); }
+.lic-chip-factory:hover { border-color: #5f97a6; }
 
-/* 授权合作案例：三方链条卡 */
+/* 授权合作案例：三方链条卡（轻量流程图，无卡片套卡片） */
 .lic-case-list { display: flex; flex-direction: column; gap: 14px; }
 .lic-case-card {
-  border: 1px solid #e8ecf2; border-radius: 14px; padding: 16px 18px;
-  background: linear-gradient(180deg, #fff, #fbfcfe);
+  border: 1px solid var(--border-light); border-radius: 16px; padding: 18px 20px;
+  background: var(--surface); box-shadow: var(--shadow);
 }
-.lic-case-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 8px; }
+.lic-case-chain { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
 .lic-chain-node {
-  display: flex; flex-direction: column; justify-content: center; gap: 2px;
-  padding: 10px 14px; border-radius: 10px; min-width: 120px; max-width: 220px;
-  text-decoration: none; border: 1px solid transparent;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 2px; min-width: 0; max-width: 200px; text-decoration: none;
 }
-.lic-chain-node b { font-size: 14px; color: #2a3140; font-weight: 600; line-height: 1.35; word-break: break-all; }
-.lic-chain-node span { font-size: 11px; color: #98a0ae; letter-spacing: 2px; }
-.lic-chain-ip { background: #fdf8ec; border-color: #ecd9ac; }
-a.lic-chain-ip:hover, a.lic-chain-factory:hover { border-color: #c9a24a; box-shadow: 0 3px 10px rgba(23, 32, 42, .08); }
-.lic-chain-self { background: #17202a; }
-.lic-chain-self b { color: #f2e6cf; }
-.lic-chain-self span { color: #8b93a3; }
-.lic-chain-factory { background: #f0f7f9; border-color: #c9dde4; }
-.lic-chain-off { opacity: .65; border-style: dashed; }
-.lic-chain-arrow { display: flex; align-items: center; font-size: 12px; color: #98a0ae; white-space: nowrap; padding: 0 2px; }
-.lic-case-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.lic-chain-node b { font-size: 14px; color: var(--text); font-weight: 600; line-height: 1.4; word-break: break-word; }
+.lic-role {
+  display: inline-flex; align-items: center; font-size: 11px; font-weight: 600;
+  letter-spacing: 1px; padding: 2px 9px; border-radius: 999px; line-height: 1.5; white-space: nowrap;
+}
+.lic-role-ip { color: #c9a24a; background: rgba(201, 162, 74, .15); }
+.lic-role-self { color: var(--accent); background: var(--accent-light); }
+.lic-role-factory { color: #5f97a6; background: rgba(95, 151, 166, .15); }
+a.lic-chain-ip:hover b { color: #c9a24a; }
+a.lic-chain-factory:hover b { color: #5f97a6; }
+.lic-chain-off { opacity: .55; }
+.lic-chain-link {
+  display: flex; align-items: center; gap: 7px; padding: 0 2px;
+  color: var(--text-muted); font-size: 11px; letter-spacing: .5px; white-space: nowrap;
+}
+.lic-chain-link::before { content: ""; width: 16px; height: 1px; background: var(--card-border-hover); }
+.lic-chain-link::after { content: "›"; font-size: 15px; line-height: 1; color: var(--card-border-hover); }
+.lic-case-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .lic-case-meta span {
-  font-size: 12px; color: #527b89; background: #eef4f6;
-  padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; color: var(--text-secondary); background: var(--surface-hover);
+  border: 1px solid var(--border-light); padding: 3px 10px; border-radius: 999px;
 }
-.lic-case-note { margin-top: 8px; font-size: 13px; color: #5a6372; line-height: 1.7; }
+.lic-case-note { margin-top: 8px; font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
 
 /* 编辑态：案例编辑器 */
-.lic-case-edit { border: 1px solid #e8ecf2; border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #fbfcfe; }
-.lic-case-edit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #3c4454; }
-.lic-case-edit-head button { background: none; border: none; color: #c05353; cursor: pointer; font-size: 12px; }
+.lic-case-edit { border: 1px solid var(--border-light); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: var(--surface); }
+.lic-case-edit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.lic-case-edit-head button { background: none; border: none; color: #e5484d; cursor: pointer; font-size: 12px; }
 .lic-case-edit-head button:hover { text-decoration: underline; }
 .lic-case-edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 14px; margin-top: 8px; }
-.lic-case-edit-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6a7280; }
+.lic-case-edit-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
 .lic-ip-search { margin-top: 8px; }
-.lic-ip-hits { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; border: 1px solid #e8ecf2; border-radius: 10px; padding: 6px; background: #fff; }
+.lic-ip-hits { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; border: 1px solid var(--border-light); border-radius: 10px; padding: 6px; background: var(--bg); }
 .lic-ip-hits button {
   display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px;
   border: none; background: none; border-radius: 8px; cursor: pointer;
-  font-size: 13px; color: #2a3140; text-align: left;
+  font-size: 13px; color: var(--text); text-align: left;
 }
-.lic-ip-hits button:hover { background: #f4f6fa; }
-.lic-ip-hits button span { color: #98a0ae; font-size: 12px; }
+.lic-ip-hits button:hover { background: var(--surface-hover); }
+.lic-ip-hits button span { color: var(--text-muted); font-size: 12px; }
 
 @media (max-width: 720px) {
-  .lic-case-chain { flex-direction: column; }
+  .lic-case-chain { flex-direction: column; align-items: stretch; gap: 2px; }
   .lic-chain-node { max-width: none; }
-  .lic-chain-arrow { justify-content: center; }
+  .lic-chain-link { padding: 4px 0; }
+  .lic-chain-link::before { width: 22px; }
 }
