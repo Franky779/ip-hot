@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { loadIpBrandAdmin, saveIpBrandAdmin, getIpbrandImageDir, ipFolderName, uniqueFileName, imageLocalPath } from '@/lib/ipbrand-admin'
 import { isImageFileName, type IpRecord, type IpCase } from '@/lib/ipbrand-types'
+import { normalizeIpName, pinyinInitial } from '@/lib/pinyin-initial'
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '无法解析上传数据' }, { status: 400 })
   }
 
-  const nameCn = String(form.get('name_cn') || '').trim()
+  const nameCn = normalizeIpName(String(form.get('name_cn') || '').trim())
   if (!nameCn) {
     return NextResponse.json({ error: '缺少 IP 名称' }, { status: 400 })
   }
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
       id: newId,
       name_cn: nameCn,
       name_en: str('name_en'),
-      initial: str('initial') || '#',
+      initial: pinyinInitial(nameCn),
       cover,
       images,
       case_len: cases.length,

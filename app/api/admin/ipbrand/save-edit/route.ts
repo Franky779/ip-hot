@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import { loadIpBrandAdmin, saveIpBrandAdmin } from '@/lib/ipbrand-admin'
 import { dedupeIpNews, type IpBrandEdit, type IpNews } from '@/lib/ipbrand-types'
+import { normalizeIpName, pinyinInitial } from '@/lib/pinyin-initial'
 
 // 相关新闻条目允许保留的字段（其余一律丢弃）
 const NEWS_FIELDS: Array<keyof IpNews> = ['id', 'source', 'url', 'title', 'title_cn', 'summary_cn', 'published_at', 'created_at', 'date']
@@ -52,11 +53,20 @@ export async function POST(request: Request) {
     edit.related_news = sanitizeRelatedNews(edit.related_news)
   }
 
+  // 中文名改名：去掉书名号并同步重算首字母，保证列表按“新名字的首字母”归类
+  if (typeof edit.name_cn === 'string') {
+    edit.name_cn = normalizeIpName(edit.name_cn)
+    edit.initial = pinyinInitial(edit.name_cn)
+  }
+
   try {
     const admin = loadIpBrandAdmin()
     admin.edits[String(id)] = edit
     saveIpBrandAdmin(admin)
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({
+      ok: true,
+      ...(typeof edit.name_cn === 'string' ? { name_cn: edit.name_cn, initial: edit.initial } : {}),
+    })
   } catch (e) {
     return NextResponse.json({ error: `保存失败: ${(e as Error).message}` }, { status: 500 })
   }

@@ -60,6 +60,7 @@ export type IpRecord = {
 export type IpBrandEdit = Partial<{
   name_cn: string
   name_en: string
+  initial: string
   one_line_intro: string
   ip_intro: string
   company_intro: string

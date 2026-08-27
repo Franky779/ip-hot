@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../components/AdminToggle'
 import { mergeIpRecords, EMPTY_ADMIN, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
+import { deriveIpInitials } from '@/lib/pinyin-initial'
 
 const LETTERS = ['', '#', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
@@ -29,7 +30,7 @@ export function IpBrandClient() {
       }),
       fetch('/api/ipbrand/overrides').then(r => (r.ok ? r.json() : Promise.resolve(EMPTY_ADMIN))),
     ])
-      .then(([records, admin]) => setData(mergeIpRecords(records, admin)))
+      .then(([records, admin]) => setData(deriveIpInitials(mergeIpRecords(records, admin))))
       .catch(() => setLoadError(true))
   }, [])
 

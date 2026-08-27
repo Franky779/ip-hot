@@ -661,7 +661,8 @@
       "custom_cards": [],
       "cards_order": [],
       "section_titles": {},
-      "custom_meta": []
+      "custom_meta": [],
+      "initial": "S"
     },
     "651": {
       "name_cn": "NPG 国家肖像艺术馆",
@@ -720,7 +721,8 @@
       "custom_cards": [],
       "cards_order": [],
       "section_titles": {},
-      "custom_meta": []
+      "custom_meta": [],
+      "initial": "N"
     },
     "1302": {
       "name_cn": "奥特曼",
@@ -853,7 +855,8 @@
       "custom_cards": [],
       "cards_order": [],
       "section_titles": {},
-      "custom_meta": []
+      "custom_meta": [],
+      "initial": "A"
     },
     "1432": {
       "name_cn": "盗墓笔记",
@@ -919,7 +922,8 @@
       "custom_cards": [],
       "cards_order": [],
       "section_titles": {},
-      "custom_meta": []
+      "custom_meta": [],
+      "initial": "D"
     },
     "2403": {
       "name_cn": "加菲猫家族",
@@ -978,7 +982,8 @@
       "custom_cards": [],
       "cards_order": [],
       "section_titles": {},
-      "custom_meta": []
+      "custom_meta": [],
+      "initial": "J"
     }
   },
   "manuals": {},

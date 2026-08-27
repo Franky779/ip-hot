@@ -3,18 +3,10 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
+import { pinyinInitial } from '@/lib/pinyin-initial'
 import type { IpCase } from '@/lib/ipbrand-types'
 
 const LETTERS = ['#', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-
-// 猜测首字母：英文字母取大写，数字/符号 #，中文暂归 #（可在下拉手动选）
-function guessInitial(name: string): string {
-  const c = (name || '').trim().charAt(0)
-  if (!c) return '#'
-  if (/[a-zA-Z]/.test(c)) return c.toUpperCase()
-  if (/[0-9]/.test(c)) return '#'
-  return '#'
-}
 
 function Label({ children, required }: { children: string; required?: boolean }) {
   return (
@@ -56,7 +48,7 @@ export function IpNewClient() {
   const set = (k: keyof typeof f, v: string) => setF(prev => ({ ...prev, [k]: v }))
 
   const setNameCn = (v: string) => {
-    setF(prev => ({ ...prev, name_cn: v, initial: guessInitial(v) }))
+    setF(prev => ({ ...prev, name_cn: v, initial: pinyinInitial(v) }))
   }
 
   const setArr = (setter: (v: string[]) => void, i: number, v: string, arr: string[]) => {
@@ -169,8 +161,8 @@ export function IpNewClient() {
               </div>
               <div className="ipn-row">
                 <div className="ipn-field">
-                  <Label>首字母（列表筛选用）</Label>
-                  <select className={inputCls} value={f.initial} onChange={e => set('initial', e.target.value)}>
+                  <Label>首字母（自动归类）</Label>
+                  <select className={inputCls} value={f.initial} disabled title="按中文名/英文名自动归类，无需手动选择">
                     {LETTERS.map(l => <option key={l} value={l}>{l === '#' ? '# 数字/中文' : l}</option>)}
                   </select>
                 </div>

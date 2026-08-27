@@ -448,8 +448,9 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id: d.id, edit }),
       })
+      const j = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error('保存失败')
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, ...edit } as IpRecord : x)) : prev))
+      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, ...edit, name_cn: j.name_cn ?? edit.name_cn, initial: j.initial ?? edit.initial } as IpRecord : x)) : prev))
       setEditing(false)
       setDraft(null)
     } catch {
