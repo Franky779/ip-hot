@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { FACTORY_CATEGORIES, FACTORY_HUBS, FACTORY_SUPPLY_TYPES, formatLocation, mergeFactoryRecords, type FactoryAdminData, type FactoryConfig, type FactoryRecord, type FactorySupplyType } from '@/lib/factory-types'
 import { licenseesByFactory, mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
+import { casesByFactory, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseRecord } from '@/lib/case-types'
 import { VerifiedBadge } from '../VerifiedBadge'
 
 function imageUrl(local: string) { return `/factory/${local}` }
@@ -18,6 +19,7 @@ export function FactoryDetailClient({ initialId }: { initialId: number }) {
   const [saving, setSaving] = useState(false)
   const [busy, setBusy] = useState(false)
   const [servingLicensees, setServingLicensees] = useState<LicenseeRecord[]>([])
+  const [relatedCases, setRelatedCases] = useState<CaseRecord[]>([])
   const { isAdmin, loaded: adminLoaded } = useAdmin()
   const imageInput = useRef<HTMLInputElement>(null)
   const qrInput = useRef<HTMLInputElement>(null)
@@ -45,6 +47,20 @@ export function FactoryDetailClient({ initialId }: { initialId: number }) {
         setServingLicensees(licenseesByFactory(merged, initialId))
       })
       .catch(() => setServingLicensees([]))
+  }, [initialId])
+
+  // 反向联动：拉案例库，筛出关联了当前工厂的授权案例（失败则隐藏该区块）
+  useEffect(() => {
+    if (!initialId || initialId <= 0) return
+    Promise.all([
+      fetch('/case/cases.json').then(r => (r.ok ? r.json() as Promise<CaseRecord[]> : [])),
+      fetch('/api/case/overrides').then(r => (r.ok ? r.json() : Promise.resolve(null))),
+    ])
+      .then(([records, admin]) => {
+        const merged = admin ? mergeCaseRecords(records, admin as CaseAdminData) : records
+        setRelatedCases(casesByFactory(merged, initialId))
+      })
+      .catch(() => setRelatedCases([]))
   }, [initialId])
 
   useEffect(() => { if (d) document.title = `${d.name} · IP工厂供应链` }, [d])
@@ -171,6 +187,7 @@ export function FactoryDetailClient({ initialId }: { initialId: number }) {
       </div>
       {d.images.length > 1 && <section className="factory-detail-section"><div className="factory-section-heading">工厂实拍</div><div className="factory-gallery">{d.images.slice(1).map(image => <div key={image.local} onClick={() => window.open(imageUrl(image.local), '_blank')}><img src={imageUrl(image.local)} alt={d.name} loading="lazy" /></div>)}</div></section>}
       {servingLicensees.length > 0 && <section className="factory-detail-section"><div className="factory-section-heading">服务过的品牌方 ({servingLicensees.length})</div><div className="lic-chip-row">{servingLicensees.map(item => <Link key={item.id} href={`/licensee/detail?id=${item.id}`} className="lic-chip lic-chip-ip">{item.name}<span>{(item.licensing_cases || []).filter(c => c.factory_id === initialId).map(c => c.ip_name).filter(Boolean).join(' / ') || '品牌方档案'} »</span></Link>)}</div></section>}
+      {relatedCases.length > 0 && <section className="factory-detail-section"><div className="factory-section-heading">相关授权案例 ({relatedCases.length})</div><div className="lic-chip-row">{relatedCases.map(item => <Link key={item.id} href={`/case/detail?id=${item.id}`} className="lic-chip lic-chip-ip">{caseTitle(item)}<span>{[item.license_kind, item.product_category].filter(Boolean).join(' / ') || '案例详情'} »</span></Link>)}</div></section>}
       <section className="factory-detail-section"><div className="factory-section-heading">联系信息</div>{adminConfig.contact_public && d.qr_images.length ? <div className="factory-qr-grid">{d.qr_images.map(qr => <img key={qr} src={imageUrl(qr)} alt="联系二维码" />)}</div> : <div className="factory-contact-hidden">联系方式已隐藏，对接请联系管理员</div>}</section>
     </div>
   ) : null

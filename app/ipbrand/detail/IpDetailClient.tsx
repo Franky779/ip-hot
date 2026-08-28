@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { mergeIpRecords, dedupeIpNews, EMPTY_ADMIN, type IpBrandEdit, type IpBrandOptionField, type IpCustomCard, type IpNews, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
 import { licenseesByIp, mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
+import { casesByIp, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseRecord } from '@/lib/case-types'
 
 type FeedArticle = IpNews
 
@@ -49,6 +50,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
   const [data, setData] = useState<IpRecord[] | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [linkedLicensees, setLinkedLicensees] = useState<LicenseeRecord[]>([])
+  const [relatedCases, setRelatedCases] = useState<CaseRecord[]>([])
   const [feedNews, setFeedNews] = useState<FeedArticle[]>([])
   const [newsBusy, setNewsBusy] = useState(false)
   const [newsError, setNewsError] = useState('')
@@ -102,6 +104,20 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
         setLinkedLicensees(licenseesByIp(merged, ipId))
       })
       .catch(() => setLinkedLicensees([]))
+  }, [ipId])
+
+  // 反向联动：拉案例库，筛出关联了当前 IP 的授权案例（失败则隐藏该区块）
+  useEffect(() => {
+    if (!ipId || ipId <= 0) return
+    Promise.all([
+      fetch('/case/cases.json').then(r => (r.ok ? r.json() as Promise<CaseRecord[]> : [])),
+      fetch('/api/case/overrides').then(r => (r.ok ? r.json() : Promise.resolve(null))),
+    ])
+      .then(([records, admin]) => {
+        const merged = admin ? mergeCaseRecords(records, admin as CaseAdminData) : records
+        setRelatedCases(casesByIp(merged, ipId))
+      })
+      .catch(() => setRelatedCases([]))
   }, [ipId])
 
   const d = data && ipId && ipId > 0 ? data.find(x => x.id === ipId) : undefined
@@ -1055,6 +1071,20 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
                 <Link key={item.id} href={`/licensee/detail?id=${item.id}`} className="lic-chip lic-chip-ip">
                   {item.name}
                   <span>{(item.licensing_cases || []).filter(c => c.ip_id === ipId).map(c => c.category).filter(Boolean).join(' / ') || '品牌方档案'} »</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {relatedCases.length > 0 && (
+          <div className="ipd-section">
+            <div className="ipd-section-title">相关授权案例 ({relatedCases.length})</div>
+            <div className="lic-chip-row">
+              {relatedCases.map(item => (
+                <Link key={item.id} href={`/case/detail?id=${item.id}`} className="lic-chip lic-chip-ip">
+                  {caseTitle(item)}
+                  <span>{[item.license_kind, item.product_category].filter(Boolean).join(' / ') || '案例详情'} »</span>
                 </Link>
               ))}
             </div>

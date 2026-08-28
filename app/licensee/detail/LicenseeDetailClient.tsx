@@ -9,6 +9,7 @@ import {
   type LicenseeAdminData, type LicenseeCase, type LicenseeConfig, type LicenseeRecord,
 } from '@/lib/licensee-types'
 import { mergeFactoryRecords, type FactoryAdminData, type FactoryRecord } from '@/lib/factory-types'
+import { casesByLicensee, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseRecord } from '@/lib/case-types'
 import type { IpRecord } from '@/lib/ipbrand-types'
 import { LicenseeBadge } from '../LicenseeBadge'
 
@@ -35,6 +36,7 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
   const [ipLibrary, setIpLibrary] = useState<IpRecord[] | null>(null)
   const [ipLoading, setIpLoading] = useState(false)
   const [ipSearch, setIpSearch] = useState<Record<number, string>>({})
+  const [relatedCases, setRelatedCases] = useState<CaseRecord[]>([])
 
   useEffect(() => {
     Promise.all([
@@ -46,6 +48,20 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
   }, [])
 
   useEffect(() => { if (d) document.title = `${d.name} · 品牌方库` }, [d])
+
+  // 反向联动：拉案例库，筛出关联了当前品牌方的授权案例（失败则隐藏该区块）
+  useEffect(() => {
+    if (!initialId || initialId <= 0) return
+    Promise.all([
+      fetch('/case/cases.json').then(r => (r.ok ? r.json() as Promise<CaseRecord[]> : [])),
+      fetch('/api/case/overrides').then(r => (r.ok ? r.json() : Promise.resolve(null))),
+    ])
+      .then(([records, admin]) => {
+        const merged = admin ? mergeCaseRecords(records, admin as CaseAdminData) : records
+        setRelatedCases(casesByLicensee(merged, initialId))
+      })
+      .catch(() => setRelatedCases([]))
+  }, [initialId])
 
   // 进入编辑态时载入工厂列表供案例选择
   useEffect(() => {
@@ -261,39 +277,20 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
         </section>
       )}
 
-      {(d.licensing_cases || []).length > 0 && (
-        <section className="factory-detail-section">
-          <div className="factory-section-heading">授权合作案例 ({d.licensing_cases.length})</div>
-          <div className="lic-case-list">
-            {d.licensing_cases.map((c, i) => (
-              <div className="lic-case-card" key={i}>
-                <div className="lic-case-chain">
-                  {c.ip_id > 0
-                    ? <Link href={`/ipbrand/detail?id=${c.ip_id}`} className="lic-chain-node lic-chain-ip"><span className="lic-role lic-role-ip">IP方</span><b>{c.ip_name}</b></Link>
-                    : <div className="lic-chain-node lic-chain-ip"><span className="lic-role lic-role-ip">IP方</span><b>{c.ip_name}</b></div>}
-                  <div className="lic-chain-link">授权{c.license_type ? ` · ${c.license_type}` : ''}</div>
-                  <div className="lic-chain-node lic-chain-self"><span className="lic-role lic-role-self">品牌方</span><b>{d.name}</b></div>
-                  <div className="lic-chain-link">代工生产</div>
-                  {c.factory_id > 0
-                    ? <Link href={`/factory/detail?id=${c.factory_id}`} className="lic-chain-node lic-chain-factory"><span className="lic-role lic-role-factory">工厂</span><b>{c.factory_name}</b></Link>
-                    : <div className="lic-chain-node lic-chain-factory lic-chain-off"><span className="lic-role lic-role-factory">工厂</span><b>{c.factory_name || '未关联'}</b></div>}
-                </div>
-                <div className="lic-case-meta">
-                  {c.category && <span>{c.category}</span>}
-                  {c.launch_date && <span>上市 {c.launch_date}</span>}
-                </div>
-                {c.sales_note && <div className="lic-case-note">{c.sales_note}</div>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {linkedFactories(d).length > 0 && (
         <section className="factory-detail-section">
           <div className="factory-section-heading">合作供应链</div>
           <div className="lic-chip-row">
             {linkedFactories(d).map(f => <Link key={f.id} href={`/factory/detail?id=${f.id}`} className="lic-chip lic-chip-factory">{f.name}<span>工厂档案 »</span></Link>)}
+          </div>
+        </section>
+      )}
+
+      {relatedCases.length > 0 && (
+        <section className="factory-detail-section">
+          <div className="factory-section-heading">相关授权案例 ({relatedCases.length})</div>
+          <div className="lic-chip-row">
+            {relatedCases.map(item => <Link key={item.id} href={`/case/detail?id=${item.id}`} className="lic-chip lic-chip-ip">{caseTitle(item)}<span>{[item.license_kind, item.product_category].filter(Boolean).join(' / ') || '案例详情'} »</span></Link>)}
           </div>
         </section>
       )}

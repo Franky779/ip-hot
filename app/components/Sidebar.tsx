@@ -185,6 +185,16 @@ export function Sidebar() {
             </span>
             <span>工厂/供应链</span>
           </Link>
+          <Link href="/case" className={`sidebar-link${pathname === '/case' || pathname?.startsWith('/case/') ? ' active' : ''}`}>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6" />
+                <path d="M9 13l2 2 4-4" />
+              </svg>
+            </span>
+            <span>授权案例库</span>
+          </Link>
           <Link href="/talks" className={`sidebar-link${pathname === '/talks' ? ' active' : ''}`}>
             <span className="sidebar-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
