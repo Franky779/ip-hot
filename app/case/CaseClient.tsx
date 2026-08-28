@@ -18,6 +18,9 @@ export function CaseClient() {
   const [loadError, setLoadError] = useState(false)
   const [confirmDel, setConfirmDel] = useState<CaseRecord | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [batchConfirm, setBatchConfirm] = useState(false)
+  const [batchDeleting, setBatchDeleting] = useState(false)
   const { isAdmin, loaded: adminLoaded } = useAdmin()
 
   useEffect(() => {
@@ -79,6 +82,32 @@ export function CaseClient() {
     }
   }
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  }
+
+  const handleBatchDelete = async () => {
+    if (!selectedIds.size) return
+    setBatchDeleting(true)
+    const password = localStorage.getItem(ADMIN_PW_KEY) || ''
+    try {
+      const results = await Promise.all([...selectedIds].map(id => fetch('/api/admin/case/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+        body: JSON.stringify({ id }),
+      })))
+      if (results.some(r => !r.ok)) throw new Error('partially failed')
+      const ids = selectedIds
+      setData(prev => prev ? prev.filter(item => !ids.has(item.id)) : prev)
+      setSelectedIds(new Set())
+      setBatchConfirm(false)
+    } catch {
+      alert('批量删除失败，请重试')
+    } finally {
+      setBatchDeleting(false)
+    }
+  }
+
   return (
     <div className="factory-page">
       <div className="factory-topbar">
@@ -91,7 +120,10 @@ export function CaseClient() {
           <svg viewBox="0 0 24 24" className="factory-search-icon"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
         </div>
         <div className="factory-topbar-right">
-          {adminLoaded && isAdmin && <Link href="/case/new" className="factory-add-btn">＋ 新增案例</Link>}
+          {adminLoaded && isAdmin && <>
+            <button className="factory-batch-del-btn" disabled={!selectedIds.size} onClick={() => setBatchConfirm(true)} title="删除选中的案例">🗑 批量删除{selectedIds.size ? ` (${selectedIds.size})` : ''}</button>
+            <Link href="/case/new" className="factory-add-btn">＋ 新增案例</Link>
+          </>}
         </div>
       </div>
 
@@ -114,9 +146,10 @@ export function CaseClient() {
           {!loadError && !data && <div className="factory-empty">加载案例库中…</div>}
           {data && filtered.length === 0 && <div className="factory-empty">没有找到匹配的案例</div>}
           {filtered.map(item => (
-            <Link href={`/case/detail?id=${item.id}`} className="factory-card case-card" key={item.id} title={caseTitle(item)}>
+            <Link href={`/case/detail?id=${item.id}`} className={`factory-card case-card${adminLoaded && isAdmin && selectedIds.has(item.id) ? ' selected' : ''}`} key={item.id} title={caseTitle(item)}>
               <div className="factory-card-cover">
                 {item.images[0] ? <img src={`/case/${item.images[0].local}`} alt={caseTitle(item)} loading="lazy" /> : <div className="factory-card-placeholder">{(item.ip_name || item.licensee_name || '?').slice(0, 1)}</div>}
+                {adminLoaded && isAdmin && <div className={`case-select-box${selectedIds.has(item.id) ? ' checked' : ''}`} onClick={event => { event.preventDefault(); event.stopPropagation(); toggleSelect(item.id) }} title={selectedIds.has(item.id) ? '取消选择' : '选择案例'} role="checkbox" aria-checked={selectedIds.has(item.id)} />}
                 {adminLoaded && isAdmin && <button className="factory-delete-btn" title="删除案例" onClick={event => { event.preventDefault(); event.stopPropagation(); setConfirmDel(item) }}>✕</button>}
               </div>
               <div className="factory-card-name case-card-name">{caseTitle(item)}</div>
@@ -135,6 +168,8 @@ export function CaseClient() {
       </main>
 
       {confirmDel && <div className="factory-confirm-mask" onClick={() => !deleting && setConfirmDel(null)}><div className="factory-confirm-box" onClick={e => e.stopPropagation()}><div className="factory-confirm-title">删除确认</div><div className="factory-confirm-text">确定从案例库中删除「{caseTitle(confirmDel)}」吗？<div>删除后此记录不再显示，且不可撤销。</div></div><div className="factory-confirm-actions"><button onClick={() => setConfirmDel(null)} disabled={deleting}>取消</button><button className="danger" onClick={handleDelete} disabled={deleting}>{deleting ? '删除中…' : '确认删除'}</button></div></div></div>}
+
+      {batchConfirm && <div className="factory-confirm-mask" onClick={() => !batchDeleting && setBatchConfirm(false)}><div className="factory-confirm-box" onClick={e => e.stopPropagation()}><div className="factory-confirm-title">批量删除确认</div><div className="factory-confirm-text">确定从案例库中删除选中的 {selectedIds.size} 条案例吗？<div>删除后这些记录不再显示，且不可撤销。</div></div><div className="factory-confirm-actions"><button onClick={() => setBatchConfirm(false)} disabled={batchDeleting}>取消</button><button className="danger" onClick={handleBatchDelete} disabled={batchDeleting}>{batchDeleting ? '删除中…' : '确认删除'}</button></div></div></div>}
     </div>
   )
 }

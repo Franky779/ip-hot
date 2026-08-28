@@ -8452,6 +8452,33 @@ a.case-chain-node:hover { transform: translateY(-1px); box-shadow: var(--shadow)
   .case-chain-arrow { display: none; }
 }
 
+/* 多选按钮（卡片左上角，仅 admin）+ 批量删除（topbar 红色按钮） */
+.case-select-box {
+  position: absolute; top: 0.5rem; left: 0.5rem; z-index: 3;
+  width: 20px; height: 20px; border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.28);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.case-select-box.checked { background: var(--accent); border-color: var(--accent); }
+.case-select-box.checked::after { content: '✓'; color: #fff; font-size: 12px; line-height: 1; font-weight: 700; }
+.case-select-box:hover { border-color: var(--accent); }
+
+.factory-card.case-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+
+.factory-batch-del-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.6rem;
+  padding: 0.55rem 1.1rem;
+  background: #e0443c; color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.factory-batch-del-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+.factory-batch-del-btn:disabled { background: var(--text-muted); cursor: not-allowed; opacity: 0.7; }
+
 /* 详情页：图片展示区一行 6 张 + 点击放大弹窗 */
 .case-gallery {
   display: grid;
