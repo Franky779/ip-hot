@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-set -a
-source /srv/apps/ip-hot/shared/.env.production.local
-set +a
+# 只提取监控需要的变量；不 source 整个 .env，避免个别行格式问题（如未加引号的值含空格）
+# 令健康检查脚本整体失败。dotenv 取值按“首个 = 截断”，sed 取首个 = 后的整行即是值。
+env_file=/srv/apps/ip-hot/shared/.env.production.local
+ADMIN_PASSWORD=$(sed -n 's/^ADMIN_PASSWORD=//p' "$env_file")
 
 home_status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3101/)
 sources_status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3101/api/sources)
