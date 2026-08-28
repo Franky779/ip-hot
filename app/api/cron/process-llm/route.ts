@@ -130,23 +130,11 @@ export async function GET(request: Request) {
         const llmResult = await summarizeArticle(article.title, '')
 
         if (!llmResult) {
-          // LLM 未配置或调用失败 → 降级
-          const { error: updateError } = await supabase
-            .from('articles')
-            .update({
-              title_cn: article.title.slice(0, 60),
-              summary_cn: '',
-              category: null,
-              relevance_score: null,
-              is_selected: false,
-              commentary: null,
-            })
-            .eq('id', article.id)
-
+          // 三家 LLM 全挂：不写任何字段（保持原状，下一轮自动重试），标记 failed 以便监控。
           return {
             id: article.id, source: article.source, title: article.title, url: article.url,
-            ok: !updateError, score: null, selected: false, commentary: '',
-            status: updateError ? 'failed' : 'unscored', error: updateError?.message,
+            ok: false, score: null, selected: false, commentary: '',
+            status: 'failed', error: 'ALL_LLM_PROVIDERS_EXHAUSTED',
           }
         }
 

@@ -290,15 +290,26 @@ export async function summarizeArticle(
     }
   }
 
-  // 全部失败，返回降级结果（不返回 null）
-  console.error('[LLM] 所有模型均失败，返回降级结果')
-  return {
-    title_cn: title.slice(0, 60),
-    summary_cn: '',
-    category: '待分类',
-    relevance_score: 5,
-    is_selected: false,
-    safety_blocked: false,
-    commentary: '待人工编辑',
+  // 全部失败：告警后返回 null。
+  // 不再返回"评分5+待分类"的伪装降级结果 —— 它会被改写为「待人工复核」堆积、让首页静默断更
+  // （2026-08-25 事故根因）。返回 null 后各调用方保持文章原状（title_cn IS NULL），
+  // 下一轮 cron 自动重试，同时本轮被标记为 failed，使全挂状态可观测。
+  console.error('[LLM] 所有模型均失败（三家全挂）')
+  if (process.env.FEISHU_LLM_ALERT_WEBHOOK) {
+    try {
+      await fetch(process.env.FEISHU_LLM_ALERT_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          msg_type: 'text',
+          content: {
+            text: `【IP-HOT告警】LLM 三家全挂！新资讯无法打分归类，请立即检查余额/Key。时间：${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`,
+          },
+        }),
+      })
+    } catch (e) {
+      console.error('[LLM] 飞书告警发送失败:', e instanceof Error ? e.message : String(e))
+    }
   }
+  return null
 }
