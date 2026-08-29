@@ -31,6 +31,13 @@ function coreSearchName(name: string): string {
   return seg.replace(/[《》「」『』]/g, '').trim()
 }
 
+// IP 诞生年代只展示年份：历史数据多为完整日期（如 "2022-08-31"），仅提取 4 位年份；已是纯年份则原样保留
+function listingYear(value: string | undefined | null): string {
+  if (!value) return ''
+  const m = String(value).match(/\d{4}/)
+  return m ? m[0] : String(value).trim()
+}
+
 // 各固定卡片的默认标题（管理员可改，存到 section_titles）
 const DEFAULT_TITLES: Record<string, string> = {
   ip_intro: 'IP 介绍',
@@ -975,7 +982,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       ['版权方', d.company],
       ['专业分类', d.category],
       ['出品国家/地区', d.place_origin],
-      ['IP诞生年代', d.listing_date],
+      ['IP诞生年代', listingYear(d.listing_date)],
       ['授权有效期', d.auth_start && d.auth_end ? `${d.auth_start} ~ ${d.auth_end}` : (d.auth_start || d.auth_end || '')],
       ['授权案例', d.case_len ? `${d.case_len} 个` : ''],
       ['受众', d.ages && d.ages.length ? d.ages.join('，') : ''],
