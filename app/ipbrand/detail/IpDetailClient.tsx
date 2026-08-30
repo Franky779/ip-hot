@@ -82,7 +82,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
   useEffect(() => {
     if (!ipId || ipId <= 0) return
     setNotFound(false)
-    fetch(`/api/ipbrand/${ipId}`)
+    fetch(`/api/ipbrand/${ipId}`, { cache: 'no-store' })
       .then(r => {
         if (r.status === 404) {
           setNotFound(true)

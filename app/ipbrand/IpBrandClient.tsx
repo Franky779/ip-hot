@@ -23,7 +23,7 @@ export function IpBrandClient() {
   const { isAdmin, loaded: adminLoaded } = useAdmin()
 
   useEffect(() => {
-    fetch('/api/ipbrand/summary')
+    fetch('/api/ipbrand/summary', { cache: 'no-store' })
       .then(r => {
         if (!r.ok) throw new Error(String(r.status))
         return r.json() as Promise<IpSummary[]>

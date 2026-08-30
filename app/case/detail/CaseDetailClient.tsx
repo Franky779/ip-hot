@@ -65,7 +65,7 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
   const loadIpLibrary = () => {
     if (ipLibrary !== null || ipLoading) return
     setIpLoading(true)
-    fetch('/api/ipbrand/summary')
+    fetch('/api/ipbrand/summary', { cache: 'no-store' })
       .then(r => r.ok ? r.json() as Promise<IpSummary[]> : [])
       .then(records => setIpLibrary(records))
       .catch(() => setIpLibrary([]))
