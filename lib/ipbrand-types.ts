@@ -94,6 +94,38 @@ export type IpBrandAdminData = {
   options: Partial<IpBrandOptions>
 }
 
+// 列表页与编辑器搜索用的轻量摘要（避免每次下载 4.7MB 全量 ips.json）
+export type IpSummary = {
+  id: number
+  name_cn: string
+  name_en: string
+  initial: string
+  cover: string
+  case_len: number
+  category: string
+  company: string
+  one_line_intro: string
+  ip_intro: string
+  verified: boolean
+}
+
+/** 从完整记录瘦身为摘要字段；initial 由调用方（服务端）现算传入，保持本文件无 pinyin 依赖 */
+export function toIpSummary(record: IpRecord, initial: string): IpSummary {
+  return {
+    id: record.id,
+    name_cn: record.name_cn,
+    name_en: record.name_en,
+    initial,
+    cover: record.cover,
+    case_len: record.case_len,
+    category: record.category,
+    company: record.company,
+    one_line_intro: record.one_line_intro,
+    ip_intro: record.ip_intro,
+    verified: !!record.verified,
+  }
+}
+
 export const EMPTY_ADMIN: IpBrandAdminData = {
   deleted: [],
   edits: {},

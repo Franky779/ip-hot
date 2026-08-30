@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
-import { mergeIpRecords, dedupeIpNews, EMPTY_ADMIN, type IpBrandEdit, type IpBrandOptionField, type IpCustomCard, type IpNews, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
+import { dedupeIpNews, type IpBrandEdit, type IpBrandOptionField, type IpCustomCard, type IpNews, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
 import { licenseesByIp, mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
 import { casesByIp, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseRecord } from '@/lib/case-types'
 import { IpBadge } from '../IpBadge'
@@ -55,7 +55,8 @@ function secTitle(d: IpRecord | null | undefined, key: string): string {
 }
 
 export function IpDetailClient({ initialId }: { initialId: number }) {
-  const [data, setData] = useState<IpRecord[] | null>(null)
+  const [data, setData] = useState<IpRecord | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [linkedLicensees, setLinkedLicensees] = useState<LicenseeRecord[]>([])
   const [relatedCases, setRelatedCases] = useState<CaseRecord[]>([])
@@ -79,16 +80,22 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
   const manualRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/ipbrand/ips.json').then(r => {
+    if (!ipId || ipId <= 0) return
+    setNotFound(false)
+    fetch(`/api/ipbrand/${ipId}`)
+      .then(r => {
+        if (r.status === 404) {
+          setNotFound(true)
+          return null
+        }
         if (!r.ok) throw new Error(String(r.status))
-        return r.json() as Promise<IpRecord[]>
-      }),
-      fetch('/api/ipbrand/overrides').then(r => (r.ok ? r.json() : Promise.resolve(EMPTY_ADMIN))),
-    ])
-      .then(([records, admin]) => setData(mergeIpRecords(records, admin)))
+        return r.json() as Promise<IpRecord>
+      })
+      .then(rec => {
+        if (rec) setData(rec)
+      })
       .catch(() => setLoadError(true))
-  }, [])
+  }, [ipId])
 
   // 并行读取全站词库选项（失败用空数组，不阻止详情页展示）
   useEffect(() => {
@@ -128,7 +135,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       .catch(() => setRelatedCases([]))
   }, [ipId])
 
-  const d = data && ipId && ipId > 0 ? data.find(x => x.id === ipId) : undefined
+  const d = data
   const title = d ? d.name_cn || d.name_en || '(未命名)' : 'IP 详情'
 
   useEffect(() => {
@@ -312,7 +319,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       const j = await res.json()
       if (!res.ok) throw new Error(j.error || '上传失败')
       const urls = j.files.map((f: { url: string }) => f.url)
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, brand_manual_images: [...(x.brand_manual_images || []), ...urls] } : x)) : prev))
+      setData(prev => (prev ? { ...prev, brand_manual_images: [...(prev.brand_manual_images || []), ...urls] } : prev))
     } catch (e) {
       alert((e as Error).message)
     } finally {
@@ -335,7 +342,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       })
       const j = await res.json()
       if (!res.ok) throw new Error(j.error || '删除失败')
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, brand_manual_images: (x.brand_manual_images || []).filter(u => u !== url) } : x)) : prev))
+      setData(prev => (prev ? { ...prev, brand_manual_images: (prev.brand_manual_images || []).filter(u => u !== url) } : prev))
     } catch (e) {
       alert((e as Error).message)
     } finally {
@@ -366,7 +373,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id: d.id, name }),
       })
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, brand_manual_images: [...(x.brand_manual_images || []).filter(u => u !== url), newUrl] } : x)) : prev))
+      setData(prev => (prev ? { ...prev, brand_manual_images: [...(prev.brand_manual_images || []).filter(u => u !== url), newUrl] } : prev))
     } catch (e) {
       alert((e as Error).message)
     } finally {
@@ -391,7 +398,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       const j = await res.json()
       if (!res.ok) throw new Error(j.error || '上传失败')
       const urls = j.files.map((f: { url: string }) => f.url)
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, ip_event_plan_images: [...(x.ip_event_plan_images || []), ...urls] } : x)) : prev))
+      setData(prev => (prev ? { ...prev, ip_event_plan_images: [...(prev.ip_event_plan_images || []), ...urls] } : prev))
     } catch (e) {
       alert((e as Error).message)
     } finally {
@@ -414,7 +421,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       })
       const j = await res.json()
       if (!res.ok) throw new Error(j.error || '删除失败')
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, ip_event_plan_images: (x.ip_event_plan_images || []).filter(u => u !== url) } : x)) : prev))
+      setData(prev => (prev ? { ...prev, ip_event_plan_images: (prev.ip_event_plan_images || []).filter(u => u !== url) } : prev))
     } catch (e) {
       alert((e as Error).message)
     } finally {
@@ -445,7 +452,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
         headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
         body: JSON.stringify({ id: d.id, name }),
       })
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, ip_event_plan_images: [...(x.ip_event_plan_images || []).filter(u => u !== url), newUrl] } : x)) : prev))
+      setData(prev => (prev ? { ...prev, ip_event_plan_images: [...(prev.ip_event_plan_images || []).filter(u => u !== url), newUrl] } : prev))
     } catch (e) {
       alert((e as Error).message)
     } finally {
@@ -491,7 +498,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
       })
       const j = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error('保存失败')
-      setData(prev => (prev ? prev.map(x => (x.id === d.id ? { ...x, ...edit, name_cn: j.name_cn ?? edit.name_cn, initial: j.initial ?? edit.initial } as IpRecord : x)) : prev))
+      setData(prev => (prev ? { ...prev, ...edit, name_cn: j.name_cn ?? edit.name_cn, initial: j.initial ?? edit.initial } as IpRecord : prev))
       setEditing(false)
       setDraft(null)
     } catch {
@@ -571,11 +578,11 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
     body = <div className="ipd-status">数据加载失败，请刷新重试</div>
   } else if (ipId === -1) {
     body = <div className="ipd-status">缺少 IP 编号，<Link href="/ipbrand">返回列表</Link></div>
+  } else if (notFound) {
+    body = <div className="ipd-status">没有找到编号为 {ipId} 的 IP，<Link href="/ipbrand">返回列表</Link></div>
   } else if (!data) {
     body = <div className="ipd-status">加载中…</div>
-  } else if (!d) {
-    body = <div className="ipd-status">没有找到编号为 {ipId} 的 IP，<Link href="/ipbrand">返回列表</Link></div>
-  } else if (editing && draft) {
+  } else if (editing && draft && d) {
     // ===== 编辑态 =====
     const galleryImgs = (draft.images || []).filter(i => i.type === 'gallery')
     const cases = draft.licensor_case_list || []
@@ -986,6 +993,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
     )
   } else {
     // ===== 展示态 =====
+    const d = data
     const metas: Array<[string, string]> = [
       ['版权方', d.company],
       ['专业分类', d.category],

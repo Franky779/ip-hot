@@ -6,7 +6,7 @@ import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { CASE_CITIES, CASE_LICENSE_KINDS, CASE_PRODUCT_CATEGORIES, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseConfig, type CaseRecord } from '@/lib/case-types'
 import { mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
 import { mergeFactoryRecords, type FactoryAdminData, type FactoryRecord } from '@/lib/factory-types'
-import type { IpRecord } from '@/lib/ipbrand-types'
+import type { IpSummary } from '@/lib/ipbrand-types'
 
 function imageUrl(local: string) { return `/case/${local}` }
 
@@ -31,7 +31,7 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
   // 编辑态三方关联选择器：品牌方/工厂列表（小，直接载入）；IP库（4.5MB，点击后才拉取）
   const [licensees, setLicensees] = useState<LicenseeRecord[]>([])
   const [factories, setFactories] = useState<FactoryRecord[]>([])
-  const [ipLibrary, setIpLibrary] = useState<IpRecord[] | null>(null)
+  const [ipLibrary, setIpLibrary] = useState<IpSummary[] | null>(null)
   const [ipLoading, setIpLoading] = useState(false)
   const [ipSearch, setIpSearch] = useState('')
 
@@ -65,8 +65,8 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
   const loadIpLibrary = () => {
     if (ipLibrary !== null || ipLoading) return
     setIpLoading(true)
-    fetch('/ipbrand/ips.json')
-      .then(r => r.ok ? r.json() as Promise<IpRecord[]> : [])
+    fetch('/api/ipbrand/summary')
+      .then(r => r.ok ? r.json() as Promise<IpSummary[]> : [])
       .then(records => setIpLibrary(records))
       .catch(() => setIpLibrary([]))
       .finally(() => setIpLoading(false))
@@ -84,7 +84,7 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
   })
   const deleteImage = (index: number) => patch({ images: (draft?.images || []).filter((_, i) => i !== index) })
 
-  const pickIp = (ip: IpRecord) => {
+  const pickIp = (ip: IpSummary) => {
     patch({ ip_id: ip.id, ip_name: ip.name_cn || ip.name_en })
     setIpSearch('')
   }

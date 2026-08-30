@@ -6,7 +6,7 @@ import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { CASE_CITIES, CASE_LICENSE_KINDS, CASE_PRODUCT_CATEGORIES, type CaseAdminData, type CaseConfig, type CaseRecord } from '@/lib/case-types'
 import { mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
 import { mergeFactoryRecords, type FactoryAdminData, type FactoryRecord } from '@/lib/factory-types'
-import type { IpRecord } from '@/lib/ipbrand-types'
+import type { IpSummary } from '@/lib/ipbrand-types'
 
 type ImageDraft = { id: string; file: File; preview: string }
 
@@ -21,7 +21,7 @@ export function CaseNewClient() {
   const [config, setConfig] = useState<CaseConfig>({ custom_categories: [], custom_cities: [] })
   const [licensees, setLicensees] = useState<LicenseeRecord[]>([])
   const [factories, setFactories] = useState<FactoryRecord[]>([])
-  const [ipLibrary, setIpLibrary] = useState<IpRecord[] | null>(null)
+  const [ipLibrary, setIpLibrary] = useState<IpSummary[] | null>(null)
   const [ipLoading, setIpLoading] = useState(false)
   const [ipSearch, setIpSearch] = useState('')
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -53,8 +53,8 @@ export function CaseNewClient() {
   const loadIpLibrary = () => {
     if (ipLibrary !== null || ipLoading) return
     setIpLoading(true)
-    fetch('/ipbrand/ips.json')
-      .then(r => r.ok ? r.json() as Promise<IpRecord[]> : [])
+    fetch('/api/ipbrand/summary')
+      .then(r => r.ok ? r.json() as Promise<IpSummary[]> : [])
       .then(records => setIpLibrary(records))
       .catch(() => setIpLibrary([]))
       .finally(() => setIpLoading(false))
@@ -63,7 +63,7 @@ export function CaseNewClient() {
   const keyword = ipSearch.trim().toLowerCase()
   const ipHits = ipLibrary && keyword ? ipLibrary.filter(ip => (ip.name_cn || '').toLowerCase().includes(keyword) || (ip.name_en || '').toLowerCase().includes(keyword)).slice(0, 8) : []
 
-  const pickIp = (ip: IpRecord) => {
+  const pickIp = (ip: IpSummary) => {
     setForm(prev => ({ ...prev, ip_id: ip.id, ip_name: ip.name_cn || ip.name_en }))
     setIpSearch('')
   }

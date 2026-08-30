@@ -3,20 +3,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../components/AdminToggle'
-import { mergeIpRecords, EMPTY_ADMIN, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
-import { deriveIpInitials } from '@/lib/pinyin-initial'
+import type { IpSummary } from '@/lib/ipbrand-types'
 import { IpBadge } from './IpBadge'
 
 const LETTERS = ['', '#', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
 export function IpBrandClient() {
-  const [data, setData] = useState<IpRecord[] | null>(null)
+  const [data, setData] = useState<IpSummary[] | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [q, setQ] = useState('')
   const [inputValue, setInputValue] = useState('')
   const [cat, setCat] = useState('')
   const [init, setInit] = useState('')
-  const [confirmDel, setConfirmDel] = useState<IpRecord | null>(null)
+  const [confirmDel, setConfirmDel] = useState<IpSummary | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [selected, setSelected] = useState<number[]>([])
   const [confirmBulk, setConfirmBulk] = useState(false)
@@ -24,14 +23,12 @@ export function IpBrandClient() {
   const { isAdmin, loaded: adminLoaded } = useAdmin()
 
   useEffect(() => {
-    Promise.all([
-      fetch('/ipbrand/ips.json').then(r => {
+    fetch('/api/ipbrand/summary')
+      .then(r => {
         if (!r.ok) throw new Error(String(r.status))
-        return r.json() as Promise<IpRecord[]>
-      }),
-      fetch('/api/ipbrand/overrides').then(r => (r.ok ? r.json() : Promise.resolve(EMPTY_ADMIN))),
-    ])
-      .then(([records, admin]) => setData(deriveIpInitials(mergeIpRecords(records, admin))))
+        return r.json() as Promise<IpSummary[]>
+      })
+      .then(setData)
       .catch(() => setLoadError(true))
   }, [])
 

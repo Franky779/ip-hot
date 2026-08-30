@@ -10,7 +10,7 @@ import {
 } from '@/lib/licensee-types'
 import { mergeFactoryRecords, type FactoryAdminData, type FactoryRecord } from '@/lib/factory-types'
 import { casesByLicensee, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseRecord } from '@/lib/case-types'
-import type { IpRecord } from '@/lib/ipbrand-types'
+import type { IpSummary } from '@/lib/ipbrand-types'
 import { LicenseeBadge } from '../LicenseeBadge'
 
 function imageUrl(local: string) { return `/licensee/${local}` }
@@ -33,7 +33,7 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
 
   // 案例编辑器用：工厂列表（小，直接载入）；IP库（4.5MB，点击"载入IP库"后才拉取）
   const [factories, setFactories] = useState<FactoryRecord[]>([])
-  const [ipLibrary, setIpLibrary] = useState<IpRecord[] | null>(null)
+  const [ipLibrary, setIpLibrary] = useState<IpSummary[] | null>(null)
   const [ipLoading, setIpLoading] = useState(false)
   const [ipSearch, setIpSearch] = useState<Record<number, string>>({})
   const [relatedCases, setRelatedCases] = useState<CaseRecord[]>([])
@@ -77,8 +77,8 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
   const loadIpLibrary = () => {
     if (ipLibrary !== null || ipLoading) return
     setIpLoading(true)
-    fetch('/ipbrand/ips.json')
-      .then(r => r.ok ? r.json() as Promise<IpRecord[]> : [])
+    fetch('/api/ipbrand/summary')
+      .then(r => r.ok ? r.json() as Promise<IpSummary[]> : [])
       .then(records => setIpLibrary(records))
       .catch(() => setIpLibrary([]))
       .finally(() => setIpLoading(false))
@@ -110,7 +110,7 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
     const target = factories.find(f => f.id === factoryId)
     patchCase(index, target ? { factory_id: target.id, factory_name: target.name } : { factory_id: 0, factory_name: '' })
   }
-  const pickIp = (index: number, ip: IpRecord) => {
+  const pickIp = (index: number, ip: IpSummary) => {
     patchCase(index, { ip_id: ip.id, ip_name: ip.name_cn || ip.name_en })
     setIpSearch(prev => ({ ...prev, [index]: '' }))
   }
