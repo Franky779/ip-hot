@@ -94,6 +94,7 @@ export async function POST(request: Request) {
       licensor_case_list: cases,
       news_list: [],
       source_url: '',
+      verified: String(form.get('verified') || '') === 'true',
     }
 
     admin.new_records = [...(admin.new_records || []), record]

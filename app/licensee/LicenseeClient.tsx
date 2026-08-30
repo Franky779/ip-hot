@@ -107,7 +107,7 @@ export function LicenseeClient() {
               <Link href={`/licensee/detail?id=${item.id}`} className="factory-card" key={item.id} title={item.name}>
                 <div className="factory-card-cover">
                   {item.images[0] ? <img src={`/licensee/${item.images[0].local}`} alt={item.name} loading="lazy" /> : <div className="factory-card-placeholder">{item.name.slice(0, 1) || '?'}</div>}
-                  {item.verified && <span className="factory-card-verified"><LicenseeBadge size={13} />平台已认证</span>}
+                  {item.verified && <span className="factory-card-verified"><LicenseeBadge size={13} />老贾已建联</span>}
                   {ipCount > 0 && <span className="factory-ip-count">已合作IP {ipCount} 个</span>}
                   {adminLoaded && isAdmin && <button className="factory-delete-btn" title="删除品牌方" onClick={event => { event.preventDefault(); event.stopPropagation(); setConfirmDel(item) }}>✕</button>}
                 </div>

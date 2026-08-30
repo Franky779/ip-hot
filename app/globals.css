@@ -5854,10 +5854,19 @@ body {
   color: var(--text-secondary);
   text-align: center;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.4;
   transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.ipb-card-name > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ipb-card:hover .ipb-card-name { color: var(--text); }
@@ -5918,6 +5927,11 @@ body {
   z-index: 2;
   transition: background 0.18s, border-color 0.18s;
   user-select: none;
+}
+
+/* 管理员勾选框与「老贾已建联」金标角标同在左上角时，勾选框下移避让 */
+.ipb-card-cover:has(.factory-card-verified) .ipb-select-box {
+  top: 2.2rem;
 }
 .ipb-select-box.on { background: var(--accent); border-color: var(--accent); }
 .ipb-card.selected .ipb-card-cover {
@@ -6113,6 +6127,9 @@ body {
   line-height: 1.3;
   margin-bottom: 0.5rem;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .ipd-name-en {

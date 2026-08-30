@@ -6,6 +6,7 @@ import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { mergeIpRecords, dedupeIpNews, EMPTY_ADMIN, type IpBrandEdit, type IpBrandOptionField, type IpCustomCard, type IpNews, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
 import { licenseesByIp, mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
 import { casesByIp, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseRecord } from '@/lib/case-types'
+import { IpBadge } from '../IpBadge'
 
 type FeedArticle = IpNews
 
@@ -481,6 +482,7 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
         section_titles: draft.section_titles || {},
         custom_meta: draft.custom_meta || [],
         related_news: draft.related_news,
+        verified: !!draft.verified,
       }
       const res = await fetch('/api/admin/ipbrand/save-edit', {
         method: 'POST',
@@ -602,6 +604,12 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
             <div className="ipd-meta-edit">
               <div className="ipd-meta-edit-title">维度信息（可增删改）</div>
               <div className="ipd-meta-edit-grid">
+                <div className="ipd-meta-edit-item">
+                  <div className="ipd-meta-edit-label">老贾建联</div>
+                  <div className="ipd-meta-edit-ctrl">
+                    <label className="factory-check-label">老贾是否已建联<input type="checkbox" checked={!!draft.verified} onChange={e => patch({ verified: e.target.checked })} /><span>{draft.verified ? '老贾已建联' : '未建联'}</span></label>
+                  </div>
+                </div>
                 <div className="ipd-meta-edit-item">
                   <div className="ipd-meta-edit-label">版权方</div>
                   <div className="ipd-meta-edit-ctrl">
@@ -1007,9 +1015,13 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
             )}
           </div>
           <div className="ipd-hero-info">
-            <h1>{title}</h1>
+            <h1>{title}{d.verified && <IpBadge size={20} />}</h1>
             {d.name_en && d.name_en !== d.name_cn && <div className="ipd-name-en">{d.name_en}</div>}
             <div className="ipd-meta-grid">
+              <div className="ipd-meta-item factory-verified-item">
+                <div className="ipd-meta-label">老贾建联</div>
+                <div className="ipd-meta-value">{d.verified ? <span className="verified-yes"><IpBadge size={16} />老贾已建联</span> : <span className="verified-no">未建联</span>}</div>
+              </div>
               {metas.filter(([, v]) => v).map(([label, value]) => (
                 <div key={label} className="ipd-meta-item">
                   <div className="ipd-meta-label">{label}</div>

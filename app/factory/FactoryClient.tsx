@@ -104,7 +104,7 @@ export function FactoryClient() {
             <Link href={`/factory/detail?id=${item.id}`} className="factory-card" key={item.id} title={item.name}>
               <div className="factory-card-cover">
                 {item.images[0] ? <img src={`/factory/${item.images[0].local}`} alt={item.name} loading="lazy" /> : <div className="factory-card-placeholder">{item.name.slice(0, 1) || '?'}</div>}
-                {item.verified && <span className="factory-card-verified"><VerifiedBadge size={13} />平台已验厂</span>}
+                {item.verified && <span className="factory-card-verified"><VerifiedBadge size={13} />老贾已建联</span>}
                 <span className="factory-ip-count">已落地IP项目 {item.ip_project_count}</span>
                 {adminLoaded && isAdmin && <button className="factory-delete-btn" title="删除供应链" onClick={event => { event.preventDefault(); event.stopPropagation(); setConfirmDel(item) }}>✕</button>}
               </div>

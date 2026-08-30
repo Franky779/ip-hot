@@ -153,7 +153,7 @@ export function FactoryDetailClient({ initialId }: { initialId: number }) {
       <section className="factory-edit-section">
         <div className="factory-section-heading">维度信息</div>
         <div className="factory-edit-meta-grid">
-          <label className="factory-check-label">平台是否已验厂<input type="checkbox" checked={!!draft.verified} onChange={e => patch({ verified: e.target.checked })} /><span>{draft.verified ? '平台已验厂' : '未验厂'}</span></label>
+          <label className="factory-check-label">老贾是否已建联<input type="checkbox" checked={!!draft.verified} onChange={e => patch({ verified: e.target.checked })} /><span>{draft.verified ? '老贾已建联' : '未建联'}</span></label>
           <label>产业带<select className="factory-edit-input" value={draft.hub} onChange={e => patch({ hub: e.target.value })}><option value="">请选择</option>{FACTORY_HUBS.map(item => <option key={item}>{item}</option>)}</select></label>
           <label>所在地<input className="factory-edit-input" value={draft.location} onChange={e => patch({ location: e.target.value })} placeholder="如：东莞石排" /></label>
           <label>已落地 IP 项目数量<input className="factory-edit-input" type="number" min="0" value={draft.ip_project_count} onChange={e => patch({ ip_project_count: Math.max(0, Number(e.target.value) || 0) })} /></label>
@@ -175,7 +175,7 @@ export function FactoryDetailClient({ initialId }: { initialId: number }) {
           <h1>{d.name}{d.verified && <VerifiedBadge size={20} />}</h1>
           <p className="factory-detail-line">{d.one_line || '暂无定位信息'}</p>
           <div className="factory-meta-grid factory-meta-in-hero">
-            <div className="factory-verified-item"><b>平台是否已验厂</b><span className={d.verified ? 'verified-yes' : 'verified-no'}>{d.verified ? <span className="verified-yes"><VerifiedBadge size={16} />平台已验厂</span> : '未验厂'}</span></div>
+            <div className="factory-verified-item"><b>老贾建联</b><span className={d.verified ? 'verified-yes' : 'verified-no'}>{d.verified ? <span className="verified-yes"><VerifiedBadge size={16} />老贾已建联</span> : '未建联'}</span></div>
             <div><b>主营品类</b><span>{d.categories.join(' / ') || '未填写'}</span></div>
             <div><b>产业带</b><span>{d.hub || '未填写'}</span></div>
             <div className="factory-meta-location"><b>所在地</b><span>{formatLocation(d)}</span></div>

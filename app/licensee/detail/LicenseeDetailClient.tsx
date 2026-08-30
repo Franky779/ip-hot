@@ -195,7 +195,7 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
       <section className="factory-edit-section">
         <div className="factory-section-heading">维度信息</div>
         <div className="factory-edit-meta-grid">
-          <label className="factory-check-label">平台是否已认证<input type="checkbox" checked={!!draft.verified} onChange={e => patch({ verified: e.target.checked })} /><span>{draft.verified ? '平台已认证' : '未认证'}</span></label>
+          <label className="factory-check-label">老贾是否已建联<input type="checkbox" checked={!!draft.verified} onChange={e => patch({ verified: e.target.checked })} /><span>{draft.verified ? '老贾已建联' : '未建联'}</span></label>
           <label>公司主体<input className="factory-edit-input" value={draft.company} onChange={e => patch({ company: e.target.value })} placeholder="工商注册公司名" /></label>
           <label>成立年份<input className="factory-edit-input" value={draft.founded} onChange={e => patch({ founded: e.target.value })} placeholder="如：2015" /></label>
           <label>所在地区<select className="factory-edit-input" value={draft.hub} onChange={e => patch({ hub: e.target.value })}><option value="">请选择</option>{availableHubs.map(item => <option key={item}>{item}</option>)}</select></label>
@@ -254,7 +254,7 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
           {d.name_en && <p className="lic-name-en">{d.name_en}</p>}
           <p className="factory-detail-line">{d.one_line || '暂无定位信息'}</p>
           <div className="factory-meta-grid factory-meta-in-hero">
-            <div className="factory-verified-item"><b>平台认证</b><span className={d.verified ? 'verified-yes' : 'verified-no'}>{d.verified ? <span className="verified-yes"><LicenseeBadge size={16} />平台已认证</span> : '未认证'}</span></div>
+            <div className="factory-verified-item"><b>老贾建联</b><span className={d.verified ? 'verified-yes' : 'verified-no'}>{d.verified ? <span className="verified-yes"><LicenseeBadge size={16} />老贾已建联</span> : '未建联'}</span></div>
             <div><b>公司主体</b><span>{d.company || '未填写'}</span></div>
             <div><b>成立年份</b><span>{d.founded || '未填写'}</span></div>
             <div className="factory-meta-location"><b>所在地</b><span>{formatLocation(d)}</span></div>

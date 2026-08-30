@@ -40,6 +40,7 @@ export function IpNewClient() {
   })
   const [ipIntro, setIpIntro] = useState('')
   const [companyIntro, setCompanyIntro] = useState('')
+  const [verified, setVerified] = useState(false)
   const [ages, setAges] = useState<string[]>([''])
   const [areas, setAreas] = useState<string[]>([''])
   const [industries, setIndustries] = useState<string[]>([''])
@@ -96,6 +97,7 @@ export function IpNewClient() {
       fd.append('auth_end', f.auth_end.trim())
       fd.append('ip_intro', ipIntro)
       fd.append('company_intro', companyIntro)
+      fd.append('verified', String(verified))
       fd.append('ages', JSON.stringify(ages.map(s => s.trim()).filter(Boolean)))
       fd.append('areas', JSON.stringify(areas.map(s => s.trim()).filter(Boolean)))
       fd.append('industries', JSON.stringify(industries.map(s => s.trim()).filter(Boolean)))
@@ -213,6 +215,7 @@ export function IpNewClient() {
             {/* 维度信息 */}
             <div className="ipn-card">
               <div className="ipn-card-title">维度信息</div>
+              <label className="factory-check-label">老贾是否已建联<input type="checkbox" checked={verified} onChange={e => setVerified(e.target.checked)} /><span>{verified ? '老贾已建联' : '未建联'}</span></label>
               <div className="ipn-row">
                 <div className="ipn-field">
                   <Label>专业分类</Label>

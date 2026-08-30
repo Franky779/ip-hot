@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../components/AdminToggle'
 import { mergeIpRecords, EMPTY_ADMIN, type IpRecord, type IpImage, type IpCase } from '@/lib/ipbrand-types'
 import { deriveIpInitials } from '@/lib/pinyin-initial'
+import { IpBadge } from './IpBadge'
 
 const LETTERS = ['', '#', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 
@@ -223,6 +224,7 @@ export function IpBrandClient() {
                 <span className={`ipb-case-badge${d.case_len ? '' : ' zero'}`}>
                   {d.case_len ? `案例 ${d.case_len}` : '暂无案例'}
                 </span>
+                {d.verified && <span className="factory-card-verified"><IpBadge size={13} />老贾已建联</span>}
                 {adminLoaded && isAdmin && (
                   <button
                     className="ipb-del-btn"
@@ -237,7 +239,7 @@ export function IpBrandClient() {
                   </button>
                 )}
               </div>
-              <div className="ipb-card-name">{d.name_cn || d.name_en || '(未命名)'}</div>
+              <div className="ipb-card-name"><span>{d.name_cn || d.name_en || '(未命名)'}</span>{d.verified && <IpBadge size={13} />}</div>
             </Link>
             )
           })}

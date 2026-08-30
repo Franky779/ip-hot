@@ -47,6 +47,7 @@ export type IpRecord = {
   licensor_case_list: IpCase[]
   news_list: IpNews[]
   source_url: string
+  verified?: boolean
   related_news?: IpNews[]
   // 管理员增量字段
   custom_cards?: IpCustomCard[]
@@ -81,6 +82,7 @@ export type IpBrandEdit = Partial<{
   cards_order: string[]
   section_titles: Record<string, string>
   custom_meta: IpMeta[]
+  verified: boolean
 }>
 
 export type IpBrandAdminData = {
