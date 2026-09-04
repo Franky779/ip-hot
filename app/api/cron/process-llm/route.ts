@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { summarizeArticle } from '@/lib/llm'
+import { summarizeArticle, type LlmFailureKind } from '@/lib/llm'
+import { sendFeishuAlertAggregated } from '@/lib/feishu-alert'
 import { resolveClassificationResult, autoCleanupLowScore } from '@/lib/pending-classification'
 import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
 import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
@@ -19,6 +20,7 @@ type ProcessResult = {
   commentary: string
   status: 'scored' | 'failed' | 'unscored'
   error?: string
+  llmErrorKind?: LlmFailureKind
 }
 
 const BATCH_SIZE = 8
@@ -127,16 +129,21 @@ export async function GET(request: Request) {
   const results: ProcessResult[] = await Promise.all(
     articles.map(async (article): Promise<ProcessResult> => {
       try {
-        const llmResult = await summarizeArticle(article.title, '')
+        const llmOutcome = await summarizeArticle(article.title, '')
 
-        if (!llmResult) {
-          // 三家 LLM 全挂：不写任何字段（保持原状，下一轮自动重试），标记 failed 以便监控。
+        if (!llmOutcome.ok) {
+          // LLM 全挂：不写任何字段（保持原状，下一轮自动重试），标记 failed 以便监控。
+          // error 区分「内容拦截」（非故障）与「真故障」，供批次汇总去重告警。
           return {
             id: article.id, source: article.source, title: article.title, url: article.url,
             ok: false, score: null, selected: false, commentary: '',
-            status: 'failed', error: 'ALL_LLM_PROVIDERS_EXHAUSTED',
+            status: 'failed',
+            error: llmOutcome.kind === 'content_blocked' ? 'CONTENT_BLOCKED' : 'ALL_LLM_PROVIDERS_EXHAUSTED',
+            llmErrorKind: llmOutcome.kind,
           }
         }
+
+        const llmResult = llmOutcome.result
 
         const policy = applyOfficialSourcePolicy({
           relevance_score: llmResult.relevance_score,
@@ -208,6 +215,17 @@ export async function GET(request: Request) {
       qualityResults: results,
     },
   }).eq('id', logId)
+
+  // 集中告警：同一批次只发一条；仅「真故障」（outage）触发，内容安全拦截静默，避免批量失败逐篇刷屏。
+  const outageCount = results.filter((r) => r.llmErrorKind === 'outage').length
+  const blockedCount = results.filter((r) => r.llmErrorKind === 'content_blocked').length
+  if (outageCount > 0) {
+    const sampleError = results.find((r) => r.llmErrorKind === 'outage')?.error ?? 'unknown'
+    const time = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+    await sendFeishuAlertAggregated(
+      `【IP-HOT告警】LLM 真故障 ${outageCount} 篇未能打分（本批 ${articles.length} 篇${blockedCount > 0 ? `，另有 ${blockedCount} 篇为内容拦截已静默跳过` : ''}）。示例错误: ${sampleError}。请检查余额/Key/并发。时间：${time}`,
+    )
+  }
 
   // 自动清理评分≤4的非官号资讯
   const cleaned = await autoCleanupLowScore(supabase)

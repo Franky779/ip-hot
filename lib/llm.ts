@@ -5,7 +5,8 @@
 import { createServiceClient } from './supabase'
 import { findRelevantLearnings, formatLearningRules } from './classification-learning'
 import { applyDirectCategoryScoreFloor, enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
-import { sendFeishuAlert } from './feishu-alert'
+import { classifyLlmError, type LlmFailureKind } from './llm-errors'
+export type { LlmFailureKind } from './llm-errors'
 
 type LlmProvider = {
   name: string
@@ -66,6 +67,13 @@ export type LlmResult = {
   commentary: string
   safety_blocked: boolean
 }
+
+/** 失败信息分类（分类逻辑见 lib/llm-errors.ts） */
+
+/** summarizeArticle 的返回类型：成功携带结果；失败区分失败类型并携带示例错误，便于调用方决定是否告警 */
+export type LlmOutcome =
+  | { ok: true; result: LlmResult }
+  | { ok: false; kind: LlmFailureKind; sampleError: string }
 
 const SYSTEM_PROMPT = `你是一位数字创意产业新闻编辑。本站定位：专注动漫 / IP / 潮玩谷子 / 文创 / 文旅 / 博物馆 / 旅游纪念品 / 数字创意产业等多元资讯聚合。
 请对以下新闻进行分析和处理：
@@ -244,13 +252,13 @@ function sleep(ms: number) {
 export async function summarizeArticle(
   title: string,
   content: string
-): Promise<LlmResult | null> {
+): Promise<LlmOutcome> {
   const providers = LLM_PROVIDERS.filter(
     (provider) => provider.baseUrl && provider.apiKey && provider.model
   )
   if (!providers.length) {
     console.warn('[LLM] 未配置可用的 LLM，跳过摘要')
-    return null
+    return { ok: false, kind: 'outage', sampleError: 'no LLM provider configured' }
   }
 
   // 查询学习记录并注入 prompt
@@ -269,6 +277,8 @@ export async function summarizeArticle(
     console.error('[LLM] 查询学习记录失败:', e instanceof Error ? e.message : String(e))
   }
 
+  const failures: Array<{ kind: LlmFailureKind; message: string }> = []
+
   for (const provider of providers) {
     for (let i = 0; i < provider.attempts; i++) {
       try {
@@ -280,26 +290,32 @@ export async function summarizeArticle(
           provider.apiKey,
           provider.model
         )
-        return parseResult(parsed, title)
+        return { ok: true, result: parseResult(parsed, title) }
       } catch (e) {
+        const message = e instanceof Error ? e.message.slice(0, 200) : String(e)
         console.warn(
           `[LLM] ${provider.name} 第${i + 1}次失败:`,
-          (e as Error).message?.slice(0, 160)
+          message
         )
+        const kind = classifyLlmError(e)
+        failures.push({ kind, message })
+        if (kind === 'content_blocked') {
+          // 网关内容安全拦截：不是服务故障。对该 provider 不做无效重试，直接换下一家
+          //（备份 DeepSeek 无此过滤，通常能正常接盘给这类内容打低分/归类）。
+          break
+        }
       }
       if (i < provider.attempts - 1) await sleep(2000)
     }
   }
 
-  // 全部失败：告警后返回 null。
-  // 不再返回"评分5+待分类"的伪装降级结果 —— 它会被改写为「待人工复核」堆积、让首页静默断更
-  // （2026-08-25 事故根因）。返回 null 后各调用方保持文章原状（title_cn IS NULL），
-  // 下一轮 cron 自动重试，同时本轮被标记为 failed，使全挂状态可观测。
-  console.error('[LLM] 所有模型均失败（三家全挂）')
-  const alertText = `【IP-HOT告警】LLM 三家全挂！新资讯无法打分归类，请立即检查余额/Key。时间：${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`
-  if (!(await sendFeishuAlert(alertText))) {
-    // sendFeishuAlert 内部已打印失败原因；这里补一行，便于从 cron_logs 定位。
-    console.error('[LLM] 飞书告警发送失败')
-  }
-  return null
+  // 全部失败：不在本层发飞书告警，改由 cron 路由按批次汇总后统一发（避免批量失败时逐篇刷屏）。
+  // 区分「内容安全拦截」（网关拿敏感词挡内容，非故障）与「真故障」（余额/Key/并发/网络）。
+  const hasOutage = failures.some((f) => f.kind === 'outage')
+  const kind: LlmFailureKind = hasOutage ? 'outage' : 'content_blocked'
+  const sampleError = failures.find((f) => f.kind === 'outage')?.message
+    ?? failures[0]?.message
+    ?? 'unknown error'
+  console.error(`[LLM] 所有模型均失败（${kind === 'content_blocked' ? '内容安全拦截' : '真故障'}）:`, sampleError)
+  return { ok: false, kind, sampleError }
 }

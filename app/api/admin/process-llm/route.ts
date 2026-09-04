@@ -65,8 +65,9 @@ export async function POST(request: Request) {
   // 全部并行跑 LLM + 数据库更新，3 条约 30-45s
   const results = await Promise.allSettled(
     pending.map(async (article) => {
-      const result = await summarizeArticle(article.title, '')
-      if (!result) throw new Error('No LLM provider is configured')
+      const outcome = await summarizeArticle(article.title, '')
+      if (!outcome.ok) throw new Error('No LLM provider is configured')
+      const result = outcome.result
       const policy = applyOfficialSourcePolicy({ relevance_score: result.relevance_score, is_selected: result.is_selected, safety_blocked: result.safety_blocked, trusted_official_x: verifiedOfficialXNames.has(article.source) })
       if (policy.action === 'delete' || (!verifiedOfficialXNames.has(article.source) && shouldIgnoreArticle(policy.relevance_score, result.commentary))) {
         const { error: deleteError } = await supabase.from('articles').delete().eq('id', article.id)

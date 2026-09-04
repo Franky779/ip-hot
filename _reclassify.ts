@@ -50,13 +50,15 @@ async function main() {
     const tag = `[${i + 1}/${articles.length}]`
 
     try {
-      const result = await summarizeArticle(article.title, '')
+      const outcome = await summarizeArticle(article.title, '')
 
-      if (!result) {
-        console.log(`${tag} ❌ LLM 返回空`)
+      if (!outcome.ok) {
+        console.log(`[${i + 1}/${articles.length}] ❌ LLM 返回空（${outcome.kind}）`)
         failed++
         continue
       }
+
+      const result = outcome.result
 
       if (result.category === '待分类') {
         console.log(`${tag} ⏭️  仍为待分类 | ${result.title_cn.slice(0, 40)}`)

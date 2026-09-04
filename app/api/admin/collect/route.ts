@@ -81,7 +81,8 @@ export async function POST(request: Request) {
   }
 
   // 3. 同步调 LLM 分类（带正文前 3000 字，分类质量高于自动管线的纯标题）
-  const llmResult = await summarizeArticle(article.title, article.content.slice(0, 3000))
+  const llmOutcome = await summarizeArticle(article.title, article.content.slice(0, 3000))
+  const llmResult = llmOutcome.ok ? llmOutcome.result : null
 
   if (llmResult?.safety_blocked) {
     return NextResponse.json({ error: '内容未通过安全审查，未收录', kind: 'safety_blocked' }, { status: 422 })

@@ -26,9 +26,11 @@ type Outcome = 'classified' | 'reviewed' | 'filtered' | 'failed'
 
 async function processArticle(article: PendingArticle, verifiedOfficialXNames: Set<string>, selectionThreshold: number): Promise<Outcome> {
   const supabase = createServiceClient()
-  const result = await summarizeArticle(article.title, '')
+  const llmOutcome = await summarizeArticle(article.title, '')
 
-  if (!result) return 'failed'
+  if (!llmOutcome.ok) return 'failed'
+
+  const result = llmOutcome.result
 
   const policy = applyOfficialSourcePolicy({ relevance_score: result.relevance_score, is_selected: result.is_selected, safety_blocked: result.safety_blocked, trusted_official_x: verifiedOfficialXNames.has(article.source) })
   if (policy.action === 'delete') {
