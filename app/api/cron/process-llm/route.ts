@@ -144,6 +144,7 @@ export async function GET(request: Request) {
               score: null, selected: false, commentary: '',
               status: marked.ok ? 'blocked' : 'failed',
               error: marked.ok ? 'CONTENT_BLOCKED' : marked.error,
+              sampleError: llmOutcome.sampleError, // 2026-09-05 阶段 2 增强：写真实错误供事后排障
               llmErrorKind: llmOutcome.kind,
             }
           }
@@ -153,6 +154,7 @@ export async function GET(request: Request) {
             ok: false, score: null, selected: false, commentary: '',
             status: 'failed',
             error: 'ALL_LLM_PROVIDERS_EXHAUSTED',
+            sampleError: llmOutcome.sampleError, // 2026-09-05 阶段 2 增强：写真实错误供事后排障
             llmErrorKind: llmOutcome.kind,
           }
         }
