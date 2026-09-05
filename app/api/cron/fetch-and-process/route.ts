@@ -17,6 +17,7 @@ import {
   buildManualFetchBackgroundRequest,
 } from '@/lib/manual-fetch-background'
 import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
+import { markContentBlocked } from '@/lib/content-blocked'
 import { normalizePublishedAt } from '@/lib/article-time'
 import { extractFeedMedia, normalizeImageUrl } from '@/lib/article-image'
 import { buildSourceCoverage, getBeijingDayRange, selectCoverageRecoverySourceIds, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
@@ -165,7 +166,7 @@ type ProcessResult = {
   score: number | null
   selected: boolean
   commentary: string
-  status: 'scored' | 'failed' | 'unscored'
+  status: 'scored' | 'failed' | 'unscored' | 'blocked'
   error?: string
   llmErrorKind?: LlmFailureKind
 }
@@ -527,13 +528,26 @@ export async function GET(request: Request) {
           const llmOutcome = await summarizeArticle(article.title, '')
 
           if (!llmOutcome.ok) {
-            // LLM 全挂：不写任何字段（保持 title_cn IS NULL，下一轮 cron 自动重试），
-            // 本轮标记 failed。error 区分「内容拦截」（非故障）与「真故障」，供批次汇总去重告警。
+            // 区分「内容拦截」与「真故障」（2026-09-05 阶段 2）：
+            //   - content_blocked：写终态（待人工复核），脱队，终止死循环
+            //   - outage：不写库，保持 title_cn IS NULL，下一轮自动重试
+            if (llmOutcome.kind === 'content_blocked') {
+              const marked = await markContentBlocked(supabase, { id: article.id, title: article.title })
+              resultOk = marked.ok
+              return {
+                id: article.id, source: article.source, title: article.title, url: article.url,
+                ok: marked.ok, score: null, selected: false, commentary: '',
+                status: marked.ok ? 'blocked' : 'failed',
+                error: marked.ok ? 'CONTENT_BLOCKED' : marked.error,
+                llmErrorKind: llmOutcome.kind,
+              }
+            }
+            // outage（真故障）：不写库，标记 failed 以便监控，下一轮重试
             return {
               id: article.id, source: article.source, title: article.title, url: article.url,
               ok: false, score: null, selected: false, commentary: '',
               status: 'failed',
-              error: llmOutcome.kind === 'content_blocked' ? 'CONTENT_BLOCKED' : 'ALL_LLM_PROVIDERS_EXHAUSTED',
+              error: 'ALL_LLM_PROVIDERS_EXHAUSTED',
               llmErrorKind: llmOutcome.kind,
             }
           }

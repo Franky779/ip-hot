@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { shouldIgnoreArticle, summarizeArticle } from '@/lib/llm'
 import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
 import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
+import { markContentBlocked } from '@/lib/content-blocked'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -66,7 +67,26 @@ export async function POST(request: Request) {
   const results = await Promise.allSettled(
     pending.map(async (article) => {
       const outcome = await summarizeArticle(article.title, '')
-      if (!outcome.ok) throw new Error('No LLM provider is configured')
+      if (!outcome.ok) {
+        // 区分「内容拦截」与「真故障」（2026-09-05 阶段 2）：
+        //   - content_blocked：写终态（待人工复核），脱队，终止死循环
+        //   - outage：抛错，计入 failed，下一轮重试
+        if (outcome.kind === 'content_blocked') {
+          const marked = await markContentBlocked(supabase, { id: article.id, title: article.title })
+          if (!marked.ok) throw new Error(`markContentBlocked failed: ${marked.error}`)
+          return {
+            status: 'blocked' as const,
+            discarded: false,
+            source: article.source,
+            title: article.title,
+            url: article.url,
+            score: null,
+            selected: false,
+            commentary: '',
+          }
+        }
+        throw new Error('No LLM provider is configured')
+      }
       const result = outcome.result
       const policy = applyOfficialSourcePolicy({ relevance_score: result.relevance_score, is_selected: result.is_selected, safety_blocked: result.safety_blocked, trusted_official_x: verifiedOfficialXNames.has(article.source) })
       if (policy.action === 'delete' || (!verifiedOfficialXNames.has(article.source) && shouldIgnoreArticle(policy.relevance_score, result.commentary))) {
