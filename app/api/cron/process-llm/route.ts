@@ -22,6 +22,7 @@ type ProcessResult = {
   status: 'scored' | 'failed' | 'unscored' | 'blocked'
   error?: string
   llmErrorKind?: LlmFailureKind
+  sampleError?: string
 }
 
 const BATCH_SIZE = 8

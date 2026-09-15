@@ -169,6 +169,7 @@ type ProcessResult = {
   status: 'scored' | 'failed' | 'unscored' | 'blocked'
   error?: string
   llmErrorKind?: LlmFailureKind
+  sampleError?: string
 }
 
 let manualFetchQueued = false
