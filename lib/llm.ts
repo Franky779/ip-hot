@@ -6,7 +6,19 @@ import { createServiceClient } from './supabase'
 import { findRelevantLearnings, formatLearningRules } from './classification-learning'
 import { applyDirectCategoryScoreFloor, enforceDirectIndustryScore, INDUSTRY_SCOPE_RULES } from './relevance'
 import { classifyLlmError, type LlmFailureKind } from './llm-errors'
+import { checkBudget } from './llm-budget'
+import {
+  buildInputHash,
+  completeReceipt,
+  failReceipt,
+  findReusableReceipt,
+  openReceipt,
+  DEFAULT_LLM_PURPOSE,
+  type LlmPurpose,
+  type ReceiptUsage,
+} from './llm-receipts'
 export type { LlmFailureKind } from './llm-errors'
+export type { LlmPurpose } from './llm-receipts'
 
 type LlmProvider = {
   name: string
@@ -145,6 +157,23 @@ AI/新技术必须同时出现明确的目标行业对象和具体应用案例�
 请严格按以下JSON格式返回，不要添加任何其他文字：
 {"title_cn":"...","summary_cn":"...","category":"...","relevance_score":7,"is_selected":true,"safety_blocked":false,"commentary":"..."}`
 
+type LlmCallResult = {
+  parsed: Record<string, unknown>
+  usage: ReceiptUsage
+}
+
+function readUsage(data: unknown): ReceiptUsage {
+  const raw = (data as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } } | null)?.usage
+  const toNumber = (value: unknown): number | null => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : null
+  }
+  return {
+    promptTokens: toNumber(raw?.prompt_tokens),
+    completionTokens: toNumber(raw?.completion_tokens),
+  }
+}
+
 /** 调用单个 LLM API */
 async function callLLM(
   title: string,
@@ -153,7 +182,7 @@ async function callLLM(
   baseUrl: string,
   apiKey: string,
   model: string
-): Promise<LlmResult> {
+): Promise<LlmCallResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 90000)
   const endpoint = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
@@ -195,7 +224,7 @@ async function callLLM(
   const jsonMatch = raw.match(/\{[\s\S]*?\}/)
   if (!jsonMatch) throw new Error(`No JSON in: ${raw.slice(0, 120)}`)
 
-  return JSON.parse(jsonMatch[0])
+  return { parsed: JSON.parse(jsonMatch[0]) as Record<string, unknown>, usage: readUsage(data) }
 }
 
 /** 解析 LLM 返回的 JSON 为标准结果 */
@@ -251,7 +280,8 @@ function sleep(ms: number) {
 
 export async function summarizeArticle(
   title: string,
-  content: string
+  content: string,
+  purpose: LlmPurpose = DEFAULT_LLM_PURPOSE
 ): Promise<LlmOutcome> {
   const providers = LLM_PROVIDERS.filter(
     (provider) => provider.baseUrl && provider.apiKey && provider.model
@@ -277,12 +307,46 @@ export async function summarizeArticle(
     console.error('[LLM] 查询学习记录失败:', e instanceof Error ? e.message : String(e))
   }
 
+  const trimmedContent = content.slice(0, 3000)
+  const primaryModel = providers[0].model
+  const inputHash = buildInputHash([systemPrompt, title, trimmedContent])
+
+  // 1) 复用已付过钱的结果：不花钱、不占用预算额度
+  const reusable = await findReusableReceipt(purpose, primaryModel, inputHash)
+  if (reusable?.response_json) {
+    try {
+      const cached = JSON.parse(reusable.response_json) as Record<string, unknown>
+      return { ok: true, result: parseResult(cached, title) }
+    } catch {
+      // 回执内容损坏：忽略，按正常流程重新调用
+    }
+  }
+
+  // 2) 预算熔断：超限暂停调用，文章保持原状等下一轮重试（不伪装降级）
+  const budget = await checkBudget(purpose)
+  if (!budget.allowed) {
+    const window = budget.tripped ?? 'day'
+    const used = budget.usage[window]
+    const limit = budget.limits[window]
+    const message = `LLM budget tripped: ${purpose} ${window} ${used}/${limit}`
+    console.warn(`[LLM] 预算熔断，跳过本次调用：${message}`)
+    return { ok: false, kind: 'outage', sampleError: message }
+  }
+
+  // 3) 记账后调用，拿回结果立即结算
+  const receiptId = await openReceipt({
+    purpose,
+    model: primaryModel,
+    inputHash,
+    requestChars: systemPrompt.length + title.length + trimmedContent.length,
+  })
+
   const failures: Array<{ kind: LlmFailureKind; message: string }> = []
 
   for (const provider of providers) {
     for (let i = 0; i < provider.attempts; i++) {
       try {
-        const parsed = await callLLM(
+        const { parsed, usage } = await callLLM(
           title,
           content,
           systemPrompt,
@@ -290,7 +354,11 @@ export async function summarizeArticle(
           provider.apiKey,
           provider.model
         )
-        return { ok: true, result: parseResult(parsed, title) }
+        const result = parseResult(parsed, title)
+        if (receiptId) {
+          await completeReceipt(receiptId, JSON.stringify(parsed), usage)
+        }
+        return { ok: true, result }
       } catch (e) {
         const message = e instanceof Error ? e.message.slice(0, 200) : String(e)
         console.warn(
@@ -317,5 +385,8 @@ export async function summarizeArticle(
     ?? failures[0]?.message
     ?? 'unknown error'
   console.error(`[LLM] 所有模型均失败（${kind === 'content_blocked' ? '内容安全拦截' : '真故障'}）:`, sampleError)
+  if (receiptId) {
+    await failReceipt(receiptId, sampleError)
+  }
   return { ok: false, kind, sampleError }
 }

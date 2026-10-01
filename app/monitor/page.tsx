@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { AdminToggle, useAdmin } from '../components/AdminToggle'
 import SourceQualityPanel, { type SourceQualityItem } from './SourceQualityPanel'
+import LlmBudgetPanel from './LlmBudgetPanel'
 
 // ====== 数据分析模块 (原 /admin/analytics 内容) ======
 
@@ -871,6 +872,9 @@ export default function MonitorPage() {
               onDaysChange={setQualityDays}
               onRefresh={fetchData}
             />
+
+            {/* LLM 调用预算与用量 */}
+            <LlmBudgetPanel />
 
             {/* 待人工复核队列 */}
             {data.reviewQueue && data.reviewQueue.length > 0 && (
