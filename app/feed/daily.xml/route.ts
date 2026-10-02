@@ -5,30 +5,38 @@ export const dynamic = 'force-dynamic'
 
 type DailyReportRow = {
   id: string
-  date: string
-  title: string
-  content: string
-  article_count: number | null
+  period: string
+  period_date: string
+  summary: string | null
+  highlights: string | null
+  content_html: string | null
+  total_count: number | null
 }
 
 /** 日报 RSS：最近 30 期日报（只出导语式摘要与日报链接）。 */
 export async function GET() {
   try {
+    // 线上真实表结构：period('daily'|'weekly'|'monthly') + period_date（schema.sql 里的旧结构已过时）
     const { data, error } = await createServiceClient()
       .from('daily_reports')
-      .select('id, date, title, content, article_count')
-      .order('date', { ascending: false })
+      .select('id, period, period_date, summary, highlights, content_html, total_count')
+      .eq('period', 'daily')
+      .gte('period_date', '2000-01-01') // 排除历史脏数据（如 1969 年）
+      .order('period_date', { ascending: false })
       .limit(30)
 
     if (error) throw new Error(error.message)
 
-    const entries: FeedEntry[] = (data ?? [] as DailyReportRow[]).map((report) => ({
-      title: report.title,
-      link: `${SITE_URL}/daily?date=${report.date}`,
-      description: truncateText(stripHtml(report.content), 300),
-      pubDate: report.date ? new Date(`${report.date}T10:00:00+08:00`).toUTCString() : null,
-      guid: `ip-hot-daily-${report.date}`,
-    }))
+    const entries: FeedEntry[] = ((data ?? []) as DailyReportRow[]).map((report) => {
+      const summary = stripHtml(report.summary || report.highlights || report.content_html)
+      return {
+        title: `IP-HOT 日报 · ${report.period_date}${report.total_count ? `（${report.total_count} 条）` : ''}`,
+        link: `${SITE_URL}/daily?period=daily&date=${report.period_date}`,
+        description: truncateText(summary, 300),
+        pubDate: report.period_date ? new Date(`${report.period_date}T10:00:00+08:00`).toUTCString() : null,
+        guid: `ip-hot-daily-${report.period_date}`,
+      }
+    })
 
     const xml = buildRssFeed(
       {
