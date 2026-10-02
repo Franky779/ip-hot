@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { section_id, section_title, region, name, url, type, description, method, fetch_type, enabled, sort_order, is_official, platform, x_handle, x_user_id, x_profile_url, official_evidence_url, verification_status, verified_by, verified_at, last_reviewed_at, verification_notes } = body
+  const { section_id, section_title, region, name, url, type, description, method, fetch_type, enabled, sort_order, is_official, platform, x_handle, x_user_id, x_profile_url, official_evidence_url, verification_status, verified_by, verified_at, last_reviewed_at, verification_notes, tier, participation_mode, first_party } = body
 
   if (!section_id || !section_title || !region || !name || !url) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       enabled: enabled ?? false,
       sort_order: sort_order ?? 0,
       is_official: is_official ?? false, platform: platform ?? '', x_handle: x_handle ?? '', x_user_id: x_user_id ?? '', x_profile_url: x_profile_url ?? '', official_evidence_url: official_evidence_url ?? '', verification_status: verification_status ?? 'unverified', verified_by: verified_by ?? '', verified_at: verified_at || null, last_reviewed_at: last_reviewed_at || null, verification_notes: verification_notes ?? '',
+      tier: tier ?? 'T2', participation_mode: participation_mode ?? 'editorial', first_party: first_party ?? false,
     })
     .select('id')
     .single()
@@ -63,6 +64,7 @@ export async function PATCH(request: Request) {
   const allowedFields = [
     'section_id', 'section_title', 'region', 'name', 'url', 'type',
     'description', 'method', 'fetch_type', 'enabled', 'sort_order', 'is_official', 'platform', 'x_handle', 'x_user_id', 'x_profile_url', 'official_evidence_url', 'verification_status', 'verified_by', 'verified_at', 'last_reviewed_at', 'verification_notes',
+    'tier', 'participation_mode', 'first_party',
   ]
   const update = Object.fromEntries(
     Object.entries(changes).filter(([key, value]) => allowedFields.includes(key) && value !== undefined)

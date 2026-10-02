@@ -24,9 +24,25 @@ interface Source {
   official_evidence_url?: string
   is_official?: boolean
   verification_status?: 'unverified' | 'verified' | 'revoked'
+  tier?: 'T1' | 'T1_5' | 'T2' | 'EXCLUDE_MP'
+  participation_mode?: 'editorial' | 'hot_signal' | 'isolated'
+  first_party?: boolean
   verified_by?: string
   verification_notes?: string
 }
+
+const SOURCE_TIER_OPTIONS: Array<{ value: NonNullable<Source['tier']>; label: string }> = [
+  { value: 'T1', label: 'T1 · 官方一手（公告/财报/展会官方）' },
+  { value: 'T1_5', label: 'T1.5 · 官方账号' },
+  { value: 'T2', label: 'T2 · 媒体与个人' },
+  { value: 'EXCLUDE_MP', label: '不参与精选（广告/招商号）' },
+]
+
+const PARTICIPATION_MODE_OPTIONS: Array<{ value: NonNullable<Source['participation_mode']>; label: string }> = [
+  { value: 'editorial', label: '进精选' },
+  { value: 'hot_signal', label: '只作热度证据' },
+  { value: 'isolated', label: '不公开' },
+]
 
 interface SourceModalProps {
   source?: Source | null
@@ -65,6 +81,9 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
     verified_by: source?.verified_by ?? '',
     verification_notes: source?.verification_notes ?? '',
     is_official: source?.is_official ?? false,
+    tier: source?.tier ?? 'T2',
+    participation_mode: source?.participation_mode ?? 'editorial',
+    first_party: source?.first_party ?? false,
   })
   const [executionMode, setExecutionMode] = useState<SourceExecutionMode>(initialSchedule.executionMode)
   const [scheduleTier, setScheduleTier] = useState<SourceScheduleTier>(initialSchedule.tier)
@@ -270,6 +289,32 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
             {' '}官方号
           </label>
           <p className="source-form-hint">勾选后，该来源的所有文章将跳过相关性筛选，LLM 分类后直接展示。</p>
+        </div>
+
+        <div className="source-form-field">
+          <label>信源分级</label>
+          <select
+            value={form.tier}
+            onChange={(e) => setForm({ ...form, tier: e.target.value as NonNullable<Source['tier']> })}
+          >
+            {SOURCE_TIER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p className="source-form-hint">T1 官方一手优先展示；T2 媒体报道要更硬才入选；广告号只算热度。</p>
+        </div>
+
+        <div className="source-form-field">
+          <label>参与方式</label>
+          <select
+            value={form.participation_mode}
+            onChange={(e) => setForm({ ...form, participation_mode: e.target.value as NonNullable<Source['participation_mode']> })}
+          >
+            {PARTICIPATION_MODE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p className="source-form-hint">一般保持"进精选"；纯广告号改"只作热度证据"。</p>
         </div>
 
         <div className="admin-modal-btns">
