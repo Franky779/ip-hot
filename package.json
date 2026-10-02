@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:source": "node --experimental-strip-types scripts/test-source.mjs",
-    "test:quality": "node --experimental-strip-types --test lib/source-quality.test.ts",
+    "test:quality": "node --experimental-strip-types --test lib/source-quality.test.ts lib/article-time.test.ts",
     "test:deployment": "node --test scripts/deployment-files.test.mjs",
     "test:source-repair": "node --experimental-strip-types --test lib/source-repair.test.ts",
     "test:rss": "node --experimental-strip-types --test lib/rss.test.ts",

@@ -13,6 +13,7 @@ import {
   resolveManualClassification,
 } from '@/lib/manual-collect'
 import { REVIEW_CATEGORY } from '@/lib/pending-classification'
+import { normalizePublishedAt } from '@/lib/article-time'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -112,7 +113,8 @@ export async function POST(request: Request) {
       is_selected: classification.is_selected,
       selection_threshold: classification.selection_threshold,
       commentary: llmResult?.commentary ?? null,
-      published_at: article.publishedAt,
+      // A7 旧文不刷屏：发布时间归一化（缺失→现在，未来时间→现在，正常→按原文时间归档）
+      published_at: normalizePublishedAt(article.publishedAt ?? null, new Date().toISOString()),
       image_url: article.coverUrl,
       is_video: false,
       is_manual: true,

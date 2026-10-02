@@ -46,6 +46,28 @@ export function normalizePublishedAt(value: string | null, collectedAt: string):
   return published.toISOString()
 }
 
+/**
+ * A7 旧文不刷屏：单源首次导入时，缺发布时间的条目最多放行这么多条。
+ * 有明确发布时间的条目不受限——normalizePublishedAt 已保证按原文时间归档、
+ * 排序沉底，不会冲掉首页"今天"。
+ */
+export const UNKNOWN_DATE_INSERT_LIMIT = 5
+
+export type UnknownDateItem = { published_at: string | null }
+
+export function limitUnknownDateItems<T extends UnknownDateItem>(
+  items: T[],
+  limit: number = UNKNOWN_DATE_INSERT_LIMIT,
+): { kept: T[]; dropped: number } {
+  let unknownSeen = 0
+  const kept = items.filter((item) => {
+    if (item.published_at) return true
+    unknownSeen += 1
+    return unknownSeen <= limit
+  })
+  return { kept, dropped: items.length - kept.length }
+}
+
 export function formatArticleDate(iso: string | null): string {
   const date = parseDate(iso)
   if (!date) return ''

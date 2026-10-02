@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase'
 import { RSS_SOURCES } from '@/lib/sources'
 import { checkLinks } from '@/lib/link-checker'
 import { normalizePublishedAt } from '@/lib/article-time'
+import { gateUnknownDateItems } from '@/lib/article-freshness'
 import { extractFeedMedia } from '@/lib/article-image'
 import { createFeedParser } from '@/lib/rss'
 
@@ -90,9 +91,16 @@ export async function GET(request: Request) {
       }
 
       if (validItems.length > 0) {
+        // A7 旧文不刷屏：新源首次导入时限制无日期存量入库
+        const gated = await gateUnknownDateItems(supabase, source.name, validItems)
+        if (gated.dropped > 0) {
+          result.blocked += gated.dropped
+          console.log(`  [A7] ${source.name} 首次导入：${gated.dropped} 条无日期条目未入库（限量放行）`)
+        }
+
         const { data, error } = await supabase
           .from('articles')
-          .upsert(validItems, { onConflict: 'source,url', ignoreDuplicates: true })
+          .upsert(gated.items, { onConflict: 'source,url', ignoreDuplicates: true })
           .select('id')
 
         if (error) {

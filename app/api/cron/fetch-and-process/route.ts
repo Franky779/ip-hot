@@ -19,6 +19,7 @@ import {
 import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 import { markContentBlocked } from '@/lib/content-blocked'
 import { normalizePublishedAt } from '@/lib/article-time'
+import { gateUnknownDateItems } from '@/lib/article-freshness'
 import { extractFeedMedia, normalizeImageUrl } from '@/lib/article-image'
 import { buildSourceCoverage, getBeijingDayRange, selectCoverageRecoverySourceIds, type CoverageSource, type SourceFetchRun } from '@/lib/source-coverage'
 import { execFileSync } from 'child_process'
@@ -31,6 +32,8 @@ export const maxDuration = 300
 
 const parser = createFeedParser(15000)
 
+export type SourceTier = 'T1' | 'T1_5' | 'T2' | 'EXCLUDE_MP'
+
 type RuntimeSource = {
   id: string
   name: string
@@ -38,6 +41,7 @@ type RuntimeSource = {
   fetchType: 'rss' | 'web'
   scrapeConfig?: ScrapeConfig
   qualityMode: 'normal' | 'observe' | 'reduced' | 'paused'
+  tier: SourceTier
 }
 
 async function loadSources(
@@ -46,7 +50,7 @@ async function loadSources(
 ): Promise<RuntimeSource[]> {
   const sourceQuery = supabase
     .from('info_sources')
-    .select('id, name, url, fetch_type')
+    .select('id, name, url, fetch_type, tier')
 
   const { data, error } = await (requestedSourceIds.length > 0
     ? sourceQuery.in('id', requestedSourceIds)
@@ -82,6 +86,7 @@ async function loadSources(
         url: configuredSource?.url || source.url,
         fetchType,
         qualityMode: qualityModes.get(source.id) ?? 'normal',
+        tier: (source.tier as SourceTier | null | undefined) ?? 'T2',
         scrapeConfig: configuredSource?.scrapeConfig || (
           fetchType === 'web' ? { adapter: 'auto-news-links', maxItems: 10 } : undefined
         ),
@@ -101,6 +106,7 @@ async function loadSources(
     url,
     fetchType: 'rss',
     qualityMode: 'normal',
+    tier: 'T2' as SourceTier,
   }))
 }
 
@@ -465,9 +471,16 @@ export async function GET(request: Request) {
       }
 
       if (validItems.length > 0) {
+        // A7 旧文不刷屏：新源首次导入时限制无日期存量入库
+        const gated = await gateUnknownDateItems(supabase, source.name, validItems)
+        if (gated.dropped > 0) {
+          result.blocked += gated.dropped
+          console.log(`  [A7] ${source.name} 首次导入：${gated.dropped} 条无日期条目未入库（限量放行）`)
+        }
+
         const { data, error } = await supabase
           .from('articles')
-          .upsert(validItems, { onConflict: 'source,url', ignoreDuplicates: true })
+          .upsert(gated.items, { onConflict: 'source,url', ignoreDuplicates: true })
           .select('id')
 
         if (error) {
