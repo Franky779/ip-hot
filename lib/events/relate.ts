@@ -30,19 +30,15 @@ export type JudgeResult = {
   reason: string
 }
 
-export async function judgeRelation(a: {
+export type RelatableArticle = {
   title_cn: string | null
   title: string
   summary_cn: string | null
   source: string
-  published_at: string | null
-}, b: {
-  title_cn: string | null
-  title: string
-  summary_cn: string | null
-  source: string
-  published_at: string | null
-}): Promise<JudgeResult | null> {
+  published_at: string | Date | null
+}
+
+export async function judgeRelation(a: RelatableArticle, b: RelatableArticle): Promise<JudgeResult | null> {
   const fmt = (x: typeof a) => {
     const time = x.published_at
       ? (x.published_at instanceof Date
