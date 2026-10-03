@@ -43,10 +43,16 @@ export async function judgeRelation(a: {
   source: string
   published_at: string | null
 }): Promise<JudgeResult | null> {
-  const fmt = (x: typeof a) =>
-    [`标题: ${x.title_cn ?? x.title}`, `信源: ${x.source}`, x.summary_cn ? `摘要: ${x.summary_cn}` : null, x.published_at ? `时间: ${x.published_at.slice(0, 10)}` : null]
+  const fmt = (x: typeof a) => {
+    const time = x.published_at
+      ? (x.published_at instanceof Date
+          ? x.published_at.toISOString().slice(0, 10)
+          : String(x.published_at).slice(0, 10))
+      : null
+    return [`标题: ${x.title_cn ?? x.title}`, `信源: ${x.source}`, x.summary_cn ? `摘要: ${x.summary_cn}` : null, time ? `时间: ${time}` : null]
       .filter(Boolean)
       .join('\n')
+  }
   const userPrompt = `【资讯 A】\n${fmt(a)}\n\n【资讯 B】\n${fmt(b)}\n\nA 和 B 是同一件事吗？`
 
   const outcome = await callLlmJson('relate', SYSTEM_PROMPT, userPrompt)
