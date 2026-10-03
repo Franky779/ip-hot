@@ -131,6 +131,14 @@ export function Sidebar() {
               </Link>
             )
           })}
+          <Link href="/hot" className={`sidebar-link${pathname === '/hot' || pathname?.startsWith('/hot/') ? ' active' : ''}`}>
+            <span className="sidebar-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2c1 4-4 6-4 11a4 4 0 0 0 8 0c0-2-1-3-1-3s3 1 3 4a6 6 0 0 1-12 0C6 8 11 6 12 2z" />
+              </svg>
+            </span>
+            <span>热点榜</span>
+          </Link>
           <Link href="/daily" className={`sidebar-link${pathname === '/daily' ? ' active' : ''}`}>
             <span className="sidebar-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

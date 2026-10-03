@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createServiceClient, getSupabase } from '@/lib/supabase'
 import { CategoryTabs } from './components/CategoryTabs'
 import { SearchBox } from './components/SearchBox'
@@ -31,6 +32,15 @@ type Article = {
   created_at: string | null
   image_url?: string | null
   is_video?: boolean | null
+  /** 事件归属（A1 聚簇后叠加）：同一事件的时间线里只展示代表卡 */
+  event?: { eventId: string; title: string; sourceCount: number }
+}
+
+type HotEventLite = {
+  id: string
+  title: string
+  sourceCount: number
+  heatScore: number
 }
 
 type SearchParams = { category?: string; q?: string; page?: string }
@@ -116,6 +126,66 @@ async function getArticles(category: string, q: string, page: number): Promise<A
   }
 }
 
+/** 叠加事件归属信息：article_id → {eventId, title, sourceCount} */
+async function attachEventOverlay(articles: Article[]): Promise<void> {
+  if (articles.length === 0) return
+  const ids = articles.map((a) => a.id)
+  try {
+    const { rows } = await createServiceClient().query<{
+      article_id: string
+      event_id: string
+      title: string
+      source_count: number
+    }>(
+      `select r.article_id, e.id as event_id,
+              coalesce(e.title_cn, e.canonical_title) as title,
+              e.source_count
+       from ip_event_reports r
+       join ip_events e on e.id = r.event_id
+       where r.article_id = any($1::uuid[])`,
+      [ids],
+    )
+    const byArticle = new Map(rows.map((r) => [r.article_id, r]))
+    for (const a of articles) {
+      const row = byArticle.get(a.id)
+      if (row) {
+        a.event = { eventId: row.event_id, title: row.title, sourceCount: Number(row.source_count) }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to attach event overlay:', error)
+  }
+}
+
+/** 同一事件的报道只保留代表卡（时间线上最新那条），其余隐藏 */
+function dedupeByEvent(articles: Article[]): Article[] {
+  const seen = new Set<string>()
+  const kept: Article[] = []
+  for (const a of articles) {
+    if (a.event && a.event.sourceCount >= 2) {
+      if (seen.has(a.event.eventId)) continue
+      seen.add(a.event.eventId)
+    }
+    kept.push(a)
+  }
+  return kept
+}
+
+/** 首页顶部热点入口：Top 5 事件（热度>0） */
+async function getTopHotEvents(): Promise<HotEventLite[]> {
+  try {
+    const { rows } = await createServiceClient().query<HotEventLite>(
+      `select id, coalesce(title_cn, canonical_title) as title, source_count as "sourceCount", heat_score::float8 as "heatScore"
+       from ip_events where heat_score > 0
+       order by heat_score desc, last_seen_at desc limit 5`,
+    )
+    return rows
+  } catch (error) {
+    console.error('Failed to load top hot events:', error)
+    return []
+  }
+}
+
 function getDisplayDate(article: Article): string {
   const displayTime = resolveArticleDisplayTime(article.published_at, article.created_at)
   return formatArticleDate(displayTime.iso)
@@ -167,9 +237,14 @@ export default async function Home({
   }
 
   const isPendingCategory = category === '待分类'
-  const { articles, hasMore } = isPendingCategory
-    ? { articles: [], hasMore: false }
+  const { articles: fetched, hasMore } = isPendingCategory
+    ? { articles: [] as Article[], hasMore: false }
     : await getArticles(category, q, page)
+  await attachEventOverlay(fetched)
+  const articles = dedupeByEvent(fetched)
+  const topHot = page === 1 && category === 'all' && !q && !isPendingCategory
+    ? await getTopHotEvents()
+    : []
   const { data: sources, error: sourcesError } = await getSupabase()
     .from('info_sources')
     .select('name, region')
@@ -211,15 +286,30 @@ export default async function Home({
                 : '数据库暂无数据。下次 cron 抓取后会出现内容。'}
           </p>
         ) : (
-          <TimelineList
-            dateGroups={dateGroups}
-            dates={dates}
-            currentPage={page}
-            hasMore={hasMore}
-            category={category}
-            query={q}
-            sourceRegions={sourceRegions}
-          />
+          <>
+            {topHot.length > 0 && (
+              <div className="hot-strip">
+                <Link href="/hot" className="hot-strip-label">🔥 热点</Link>
+                <div className="hot-strip-items">
+                  {topHot.map((ev) => (
+                    <Link key={ev.id} href={`/hot/${ev.id}`} className="hot-strip-item" title={`热度 ${ev.heatScore.toFixed(1)}`}>
+                      {ev.title}
+                      <span className="hot-strip-count">{ev.sourceCount}家</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            <TimelineList
+              dateGroups={dateGroups}
+              dates={dates}
+              currentPage={page}
+              hasMore={hasMore}
+              category={category}
+              query={q}
+              sourceRegions={sourceRegions}
+            />
+          </>
         )}
       </section>
     </>

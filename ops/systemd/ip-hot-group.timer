@@ -1,0 +1,11 @@
+[Unit]
+Description=Cluster events and refresh heat every 15 minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/15:00
+RandomizedDelaySec=30
+Persistent=true
+Unit=ip-hot-group.service
+
+[Install]
+WantedBy=timers.target

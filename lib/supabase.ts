@@ -338,9 +338,9 @@ export class DatabaseClient {
     return new QueryBuilder(table)
   }
 
-  async query(text: string, params?: unknown[]): Promise<{ rows: Row[]; rowCount: number }> {
+  async query<R = any>(text: string, params?: unknown[]): Promise<{ rows: R[]; rowCount: number }> {
     const result = await getPool().query(text, params || [])
-    return { rows: result.rows, rowCount: result.rowCount ?? 0 }
+    return { rows: result.rows as R[], rowCount: result.rowCount ?? 0 }
   }
 }
 

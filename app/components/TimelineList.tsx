@@ -26,6 +26,7 @@ interface Article {
   created_at: string | null
   image_url?: string | null
   is_video?: boolean | null
+  event?: { eventId: string; title: string; sourceCount: number }
 }
 
 interface TimelineListProps {
@@ -350,6 +351,16 @@ export function TimelineList({
                       className={`article-card${article.image_url ? ' has-image' : ''}`}
                     >
                       <div className="article-meta">
+                        {article.event && article.event.sourceCount >= 2 && (
+                          <a
+                            href={`/hot/${article.event.eventId}`}
+                            className="hot-badge hot-badge-sources"
+                            onClick={(e) => e.stopPropagation()}
+                            title={`同一事件的其他 ${article.event.sourceCount - 1} 条报道已合并，点击看热点榜详情`}
+                          >
+                            {article.event.sourceCount} 家在说
+                          </a>
+                        )}
                         {loaded && isAdmin && typeof article.relevance_score === 'number' && (
                           <span className={`relevance-score ${article.relevance_score <= 3 ? 'score-low' : article.relevance_score >= 7 ? 'score-high' : 'score-mid'}`}>
                             {article.relevance_score}分

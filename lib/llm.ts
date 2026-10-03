@@ -174,11 +174,22 @@ function readUsage(data: unknown): ReceiptUsage {
   }
 }
 
-/** 调用单个 LLM API */
+/** 调用单个 LLM API（文章打分专用：user 消息按 标题+内容 拼装） */
 async function callLLM(
   title: string,
   content: string,
   systemPrompt: string,
+  baseUrl: string,
+  apiKey: string,
+  model: string
+): Promise<LlmCallResult> {
+  return callProvider(systemPrompt, `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`, baseUrl, apiKey, model)
+}
+
+/** 调用单个 LLM API（通用：user 消息由调用方拼好） */
+async function callProvider(
+  systemPrompt: string,
+  userPrompt: string,
   baseUrl: string,
   apiKey: string,
   model: string
@@ -201,7 +212,7 @@ async function callLLM(
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
+            content: userPrompt,
           },
         ],
         temperature: 0.2,
@@ -389,4 +400,84 @@ export async function summarizeArticle(
     await failReceipt(receiptId, sampleError)
   }
   return { ok: false, kind, sampleError }
+}
+
+export type LlmJsonOutcome =
+  | { ok: true; parsed: Record<string, unknown>; cached: boolean }
+  | { ok: false; kind: LlmFailureKind; error: string }
+
+/**
+ * 通用 JSON 调用层（事件聚簇等场景用）：与 summarizeArticle 相同的
+ * 「回执复用 → 预算熔断 → 记账调用 → 结算」四步，failover 走同一组 provider。
+ */
+export async function callLlmJson(
+  purpose: LlmPurpose,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<LlmJsonOutcome> {
+  const providers = LLM_PROVIDERS.filter(
+    (provider) => provider.baseUrl && provider.apiKey && provider.model
+  )
+  if (!providers.length) {
+    return { ok: false, kind: 'outage', error: 'no LLM provider configured' }
+  }
+
+  const primaryModel = providers[0].model
+  const inputHash = buildInputHash([purpose, systemPrompt, userPrompt])
+
+  // 1) 复用已付过钱的结果
+  const reusable = await findReusableReceipt(purpose, primaryModel, inputHash)
+  if (reusable?.response_json) {
+    try {
+      const cached = JSON.parse(reusable.response_json) as Record<string, unknown>
+      return { ok: true, parsed: cached, cached: true }
+    } catch {
+      // 回执内容损坏：按正常流程重新调用
+    }
+  }
+
+  // 2) 预算熔断
+  const budget = await checkBudget(purpose)
+  if (!budget.allowed) {
+    const window = budget.tripped ?? 'day'
+    const message = `LLM budget tripped: ${purpose} ${window} ${budget.usage[window]}/${budget.limits[window]}`
+    console.warn(`[LLM] 预算熔断，跳过本次调用：${message}`)
+    return { ok: false, kind: 'outage', error: message }
+  }
+
+  // 3) 记账后调用
+  const receiptId = await openReceipt({
+    purpose,
+    model: primaryModel,
+    inputHash,
+    requestChars: systemPrompt.length + userPrompt.length,
+  })
+
+  const failures: Array<{ kind: LlmFailureKind; message: string }> = []
+  for (const provider of providers) {
+    for (let i = 0; i < provider.attempts; i++) {
+      try {
+        const { parsed, usage } = await callProvider(systemPrompt, userPrompt, provider.baseUrl, provider.apiKey, provider.model)
+        if (receiptId) {
+          await completeReceipt(receiptId, JSON.stringify(parsed), usage)
+        }
+        return { ok: true, parsed, cached: false }
+      } catch (e) {
+        const message = e instanceof Error ? e.message.slice(0, 200) : String(e)
+        const kind = classifyLlmError(e)
+        failures.push({ kind, message })
+        if (kind === 'content_blocked') break
+      }
+      if (i < provider.attempts - 1) await sleep(2000)
+    }
+  }
+
+  const hasOutage = failures.some((f) => f.kind === 'outage')
+  const kind: LlmFailureKind = hasOutage ? 'outage' : 'content_blocked'
+  const error = failures.find((f) => f.kind === 'outage')?.message ?? failures[0]?.message ?? 'unknown error'
+  console.error(`[LLM:${purpose}] 所有模型均失败（${kind}）:`, error)
+  if (receiptId) {
+    await failReceipt(receiptId, error)
+  }
+  return { ok: false, kind, error }
 }
