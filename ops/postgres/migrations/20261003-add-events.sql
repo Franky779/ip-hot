@@ -41,3 +41,6 @@ CREATE INDEX IF NOT EXISTS idx_event_reports_article ON ip_event_reports (articl
 INSERT INTO llm_budget (purpose, minute_limit, hour_limit, day_limit)
 VALUES ('relate', 60, 600, 400)
 ON CONFLICT (purpose) DO NOTHING;
+
+-- ========== 应用账号授权（迁移由 postgres 用户执行时必须显式授权给 ip_hot_app） ==========
+GRANT SELECT, INSERT, UPDATE, DELETE ON ip_events, ip_event_reports TO ip_hot_app;
