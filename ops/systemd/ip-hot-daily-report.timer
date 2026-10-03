@@ -1,0 +1,11 @@
+[Unit]
+Description=Generate yesterday's IP report every morning
+
+[Timer]
+OnCalendar=*-*-* 06:10:00
+RandomizedDelaySec=120
+Persistent=true
+Unit=ip-hot-daily-report.service
+
+[Install]
+WantedBy=timers.target

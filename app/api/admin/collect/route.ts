@@ -113,6 +113,7 @@ export async function POST(request: Request) {
       is_selected: classification.is_selected,
       selection_threshold: classification.selection_threshold,
       commentary: llmResult?.commentary ?? null,
+      prompt_version: llmResult?.prompt_version ?? null,
       // A7 旧文不刷屏：发布时间归一化（缺失→现在，未来时间→现在，正常→按原文时间归档）
       published_at: normalizePublishedAt(article.publishedAt ?? null, new Date().toISOString()),
       image_url: article.coverUrl,

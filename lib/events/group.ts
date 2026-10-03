@@ -3,6 +3,7 @@
 
 import { createServiceClient } from '@/lib/supabase'
 import { callLlmJson } from '@/lib/llm'
+import { getPrompt } from '@/lib/prompts'
 import { extractPrimaryEntity } from './tokenize'
 import { judgeRelation } from './relate'
 import { recallCandidates, loadRecallWindow, type ClusterArticle } from './recall'
@@ -167,8 +168,9 @@ async function maybeGenerateSummary(eventId: string, force = false): Promise<boo
     `${i + 1}. [${r.source}] ${r.title_cn ?? r.title}${r.summary_cn ? ` — ${r.summary_cn}` : ''}`)
   const outcome = await callLlmJson(
     'summarize',
-    '你是行业资讯编辑。把同一事件的多条报道写成一个 60 字以内的中文事件综述：说清谁、做了什么、关键数字/时间。只输出 JSON。',
+    getPrompt('event-summary').text,
     `事件标题：${ev.title_cn ?? ''}\n\n报道列表：\n${lines.join('\n')}\n\n返回格式：{"summary_cn":"..."} `,
+    'event-summary',
   )
   if (!outcome.ok) {
     console.warn(`[events/group] 综述生成失败: ${outcome.error}`)

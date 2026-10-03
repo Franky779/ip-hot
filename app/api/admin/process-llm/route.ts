@@ -113,6 +113,7 @@ export async function POST(request: Request) {
           is_selected: policy.action === 'publish' ? policy.relevance_score >= selectionThreshold : false,
           selection_threshold: selectionThreshold,
           commentary: result.commentary,
+          prompt_version: result.prompt_version,
         })
         .eq('id', article.id)
       if (upErr) throw new Error(upErr.message)

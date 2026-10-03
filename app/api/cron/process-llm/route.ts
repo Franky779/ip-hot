@@ -186,6 +186,7 @@ export async function GET(request: Request) {
             selection_threshold: selectionThreshold,
             is_selected: classification.is_selected,
             commentary: llmResult.commentary,
+            prompt_version: llmResult.prompt_version,
           })
           .eq('id', article.id)
 

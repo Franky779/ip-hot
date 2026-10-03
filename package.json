@@ -14,6 +14,8 @@
     "test:rss": "node --experimental-strip-types --test lib/rss.test.ts",
     "test:collect": "node --experimental-strip-types --test lib/manual-collect.test.ts",
     "test:source-health": "node --experimental-strip-types --test lib/source-health-summary.test.ts",
+    "test:prompts": "node --experimental-strip-types --test lib/prompts.test.ts",
+    "test:period": "node --experimental-strip-types --test lib/period-insights.test.ts",
     "configure:kidscreen": "node scripts/configure-kidscreen-source.mjs",
     "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs"
   },

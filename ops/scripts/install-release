@@ -69,7 +69,18 @@ systemctl enable --now ip-hot-pending-classification.timer
 systemctl enable --now ip-hot-coverage-repair.timer
 systemctl enable --now ip-hot-source-repair.timer
 systemctl enable --now ip-hot-source-llm-repair.timer
+systemctl enable --now ip-hot-group.timer
+systemctl enable --now ip-hot-daily-report.timer
+systemctl enable --now ip-hot-weekly-report.timer
+systemctl enable --now ip-hot-monthly-report.timer
 systemctl reload nginx
+
+# A4：日报/周报/月报改由 systemd timer 驱动，移除 crontab 里的旧 cron-daily-report.sh 三行。
+# 不移除会出现「同一天生成两次」——重复调用虽然命中回执不花钱，但会互相覆盖缓存。
+if crontab -l 2>/dev/null | grep -q 'cron-daily-report.sh'; then
+  crontab -l 2>/dev/null | grep -v 'cron-daily-report.sh' | crontab -
+  echo 'Removed legacy cron-daily-report.sh entries from crontab.'
+fi
 
 health_ok=false
 if systemctl restart ip-hot.service; then

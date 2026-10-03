@@ -78,6 +78,7 @@ async function processArticle(article: PendingArticle, verifiedOfficialXNames: S
       selection_threshold: selectionThreshold,
       is_selected: policy.is_selected && policy.relevance_score >= selectionThreshold,
       commentary: result.commentary,
+      prompt_version: result.prompt_version,
     })
     .eq('id', article.id)
   return error ? 'failed' : 'classified'

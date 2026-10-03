@@ -1,6 +1,16 @@
-// lib/daily-report.ts — IP日报数据查询 + LLM摘要生成
+// lib/daily-report.ts — 日报 / 周报 / 月报数据查询 + LLM 摘要生成
+//
+// 三个周期共用一套生成逻辑（A4）：周期差异只体现在
+//   1) 时间窗（getPeriodRange）
+//   2) 增量洞察的条数（Top N 事件 / 活跃 IP / 授权线索，见 lib/period-insights.ts）
+//   3) 给 LLM 的周期提示（日报写当日，周报月报写整体判断）
 
 import { getSupabase } from './supabase'
+import { callLlmJson } from './llm'
+import { getPrompt, promptVersion } from './prompts'
+import { getPeriodInsights } from './period-insights'
+import { normalizeInsights, type ActiveIp, type HotEventBrief, type LicensingLead, type PeriodInsights } from './period-utils'
+export { normalizeInsights } from './period-utils'
 
 const PUBLIC_CATEGORIES = [
   '创作/上新', 'IP/品牌/授权', '潮玩谷子', '零售/渠道',
@@ -30,6 +40,8 @@ export type DailyReport = {
   categoryCounts: Record<string, number>
   categoryGroups: CategoryGroup[]
   totalCount: number
+  /** A4：周期洞察。日报也会带 Top5 事件与精简快照，周报月报更全。 */
+  insights?: PeriodInsights
 }
 
 export type PeriodLabel = '日报' | '周报' | '月报'
@@ -113,63 +125,75 @@ function buildCategoryGroups(articles: ArticleLink[]): CategoryGroup[] {
 
 // ─── LLM ─────────────────────────────────────────────────────
 
-type LlmProvider = {
-  name: string; baseUrl: string; apiKey: string; model: string; attempts: number
+/**
+ * 周期报告导语生成。
+ * 走 lib/llm.ts 的 callLlmJson：与文章评分共用「回执复用 → 预算熔断 → 记账 → 结算」四步，
+ * 同一份报告重复生成不再重复花钱（改提示词除外——版本进了 input_hash）。
+ * 提示词正文在 prompts/period-report.md。
+ */
+async function callDailyLLM(prompt: string, period: 'daily' | 'weekly' | 'monthly'): Promise<{ summary: string; highlights: string } | null> {
+  const periodKind = period === 'daily' ? '日报' : period === 'weekly' ? '周报' : '月报'
+  const outcome = await callLlmJson(
+    'summarize',
+    getPrompt('period-report').text,
+    `${prompt}\n\n（本次产出的是${periodKind}，写作时请体现「${periodKind}」的整体判断而非单日流水。）`,
+    'period-report',
+  )
+  if (!outcome.ok) {
+    console.warn(`[DailyReport LLM] 调用失败: ${outcome.error}`)
+    return null
+  }
+  return {
+    summary: String(outcome.parsed.summary ?? ''),
+    highlights: String(outcome.parsed.highlights ?? ''),
+  }
 }
 
-const LLM_PROVIDERS: LlmProvider[] = [
-  { name: 'DeepSeek', baseUrl: process.env.LLM_BASE_URL || '', apiKey: process.env.LLM_API_KEY || '', model: process.env.LLM_MODEL || 'deepseek-v4-flash', attempts: 3 },
-  { name: 'Kimi', baseUrl: process.env.LLM_BACKUP_URL || '', apiKey: process.env.LLM_BACKUP_KEY || '', model: process.env.LLM_BACKUP_MODEL || 'kimi-k2.6', attempts: 2 },
-  { name: 'Kimi Coding', baseUrl: process.env.LLM_BACKUP2_URL || '', apiKey: process.env.LLM_BACKUP2_KEY || '', model: process.env.LLM_BACKUP2_MODEL || 'kimi-for-coding', attempts: 2 },
-]
+function buildDailyPrompt(
+  period: 'daily' | 'weekly' | 'monthly',
+  categoryGroups: CategoryGroup[],
+  dateLabel: string,
+  insights?: PeriodInsights,
+): string {
+  const lines: string[] = []
+  const periodName = period === 'daily' ? '日报' : period === 'weekly' ? '周报' : '月报'
 
-async function callDailyLLM(prompt: string): Promise<{ summary: string; highlights: string } | null> {
-  const providers = LLM_PROVIDERS.filter(p => p.baseUrl && p.apiKey && p.model)
-  if (!providers.length) return null
+  // A4：把聚合好的统计与热点事件直接喂给模型，避免它从标题列表里自己数数（数不准还费 token）
+  if (insights) {
+    const { snapshot, hotEvents, activeIps, licensingLeads } = insights
+    lines.push(`【本期数据快照】`)
+    lines.push(
+      `收录 ${snapshot.articleCount} 条，来自 ${snapshot.sourceCount} 个信源，入选 ${snapshot.selectedCount} 条` +
+      (snapshot.avgScore != null ? `，平均分 ${snapshot.avgScore}` : '') +
+      (snapshot.categoryTop ? `，最热分类「${snapshot.categoryTop.category}」${snapshot.categoryTop.count} 条` : ''),
+    )
+    lines.push('')
 
-  const systemPrompt = `你是一位资深IP行业分析师，负责撰写每日/每周/每月的IP行业资讯汇总。你的写作风格：犀利、有洞察、口语化，像一位懂行的朋友在聊天。避免套话、官腔、AI味。
-
-请严格按以下JSON格式返回，不要添加任何其他文字：
-{"summary":"2-3段分析文字(每段不超过200字)，总结该周期IP行业动态趋势、值得关注的变化、以及背后的行业信号","highlights":"2-3条本期最值得关注的资讯要点，每条以"• "开头，每条不超过60字，用换行分隔"}`
-
-  for (const provider of providers) {
-    for (let i = 0; i < provider.attempts; i++) {
-      try {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 90_000)
-        const endpoint = `${provider.baseUrl.replace(/\/+$/, '')}/chat/completions`
-        let res: Response
-        try {
-          res = await fetch(endpoint, {
-            signal: controller.signal, method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.apiKey}` },
-            body: JSON.stringify({
-              model: provider.model,
-              messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }],
-              temperature: 0.5, max_tokens: 2000,
-            }),
-          })
-        } finally { clearTimeout(timeout) }
-
-        if (!res.ok) { const text = await res.text(); throw new Error(`API ${res.status}: ${text.slice(0, 200)}`) }
-        const data = await res.json()
-        const raw: string = data.choices?.[0]?.message?.content ?? ''
-        if (!raw) throw new Error('Empty response')
-        const jsonMatch = raw.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) throw new Error(`No JSON in: ${raw.slice(0, 120)}`)
-        const parsed = JSON.parse(jsonMatch[0])
-        return { summary: String(parsed.summary || ''), highlights: String(parsed.highlights || '') }
-      } catch (e) {
-        console.warn(`[DailyReport LLM] ${provider.name} 第${i + 1}次失败:`, (e as Error).message?.slice(0, 160))
+    if (hotEvents.length > 0) {
+      lines.push(`【本期热点事件（按独立信源数与信源分级加权排序）】`)
+      for (const [i, ev] of hotEvents.entries()) {
+        lines.push(
+          `${i + 1}. ${ev.title}（${ev.sourceCount} 家信源报道 / ${ev.reportCount} 篇${ev.topTier === 'T1' ? ' / 含官方一手' : ''}）` +
+          (ev.summary ? `\n   ${ev.summary}` : ''),
+        )
       }
-      if (i < provider.attempts - 1) await new Promise(r => setTimeout(r, 2000))
+      lines.push('')
+    }
+
+    if (activeIps.length > 0) {
+      lines.push(`【本期活跃 IP】${activeIps.map((x) => `${x.name}(${x.articleCount})`).join('、')}`)
+      lines.push('')
+    }
+
+    if (licensingLeads.length > 0) {
+      lines.push(`【本期授权/版权相关高分条目】`)
+      for (const lead of licensingLeads) {
+        lines.push(`- ${lead.title}（${lead.source}${lead.score != null ? ` / ${lead.score}分` : ''}）`)
+      }
+      lines.push('')
     }
   }
-  return null
-}
 
-function buildDailyPrompt(period: 'daily' | 'weekly' | 'monthly', categoryGroups: CategoryGroup[], dateLabel: string): string {
-  const lines: string[] = []
   lines.push(`以下是${dateLabel}IP行业资讯的分类汇总：`)
   lines.push('')
   for (const g of categoryGroups) {
@@ -178,6 +202,9 @@ function buildDailyPrompt(period: 'daily' | 'weekly' | 'monthly', categoryGroups
     lines.push('')
   }
   lines.push(`请基于以上资讯，撰写${dateLabel}IP行业动态分析。`)
+  if (period !== 'daily') {
+    lines.push(`这是${periodName}，请在导语里体现「本期整体趋势判断」，而不是逐条复述。`)
+  }
   return lines.join('\n')
 }
 
@@ -242,11 +269,12 @@ export async function getDailyReport(
     const articleData: ArticleLink[] = safeJsonParse(cached.article_data, [])
     const categoryGroups = buildCategoryGroups(articleData)
     const categoryCounts = cached.category_counts || {}
+    const insights = normalizeInsights(cached.insights)
     // 如果缓存没有预渲染HTML，补生成（向前兼容旧缓存）
     if (!cached.content_html) {
       const html = renderReportHtml({
-        periodLabel, summary: cached.summary, highlights: cached.highlights,
-        categoryCounts, categoryGroups, totalCount: cached.total_count || 0,
+        period, periodLabel, summary: cached.summary, highlights: cached.highlights,
+        categoryCounts, categoryGroups, totalCount: cached.total_count || 0, insights,
       })
       try {
         await db.from('daily_reports').update({ content_html: html })
@@ -257,6 +285,7 @@ export async function getDailyReport(
       period, periodDate: targetDate, periodLabel,
       summary: cached.summary, highlights: cached.highlights,
       categoryCounts, categoryGroups, totalCount: cached.total_count || 0,
+      insights,
     }
   }
 
@@ -286,21 +315,26 @@ export async function getDailyReport(
   const categoryCounts: Record<string, number> = {}
   for (const g of categoryGroups) categoryCounts[g.category] = g.count
 
-  // 3. LLM（skipLLM 时跳过，直接返回文章列表，秒开）
+  // 3. 周期洞察（A4）：Top 热点事件 / 数据快照 / 活跃 IP / 授权线索
+  //    零模型成本，纯 SQL 聚合；失败已在内部逐项兜底
+  const insights = await getPeriodInsights(period, start, end)
+
+  // 4. LLM（skipLLM 时跳过，直接返回文章列表，秒开）
   let summary: string | null = null
   let highlights: string | null = null
 
   if (!opts?.skipLLM) {
-    const prompt = buildDailyPrompt(period, categoryGroups, periodLabel)
-    const llmResult = await callDailyLLM(prompt)
+    const prompt = buildDailyPrompt(period, categoryGroups, periodLabel, insights)
+    const llmResult = await callDailyLLM(prompt, period)
     summary = llmResult?.summary ?? null
     highlights = llmResult?.highlights ?? null
   }
 
-  // 4. 渲染HTML + 写缓存（skipLLM 时不写缓存，留给 backfill 补生成）
+  // 5. 渲染HTML + 写缓存（skipLLM 时不写缓存，留给 backfill 补生成）
   if (!opts?.skipLLM) {
     const contentHtml = summary ? renderReportHtml({
-      periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length,
+      period, periodLabel, summary, highlights, categoryCounts, categoryGroups,
+      totalCount: articles.length, insights,
     }) : null
 
     try {
@@ -308,6 +342,8 @@ export async function getDailyReport(
         period, period_date: targetDate, summary, highlights,
         category_counts: categoryCounts, article_data: JSON.stringify(articles),
         total_count: articles.length, content_html: contentHtml,
+        insights: JSON.stringify(insights),
+        prompt_version: promptVersion('period-report'),
         created_at: new Date().toISOString(),
       }, { onConflict: 'period, period_date' })
     } catch (e) {
@@ -315,7 +351,10 @@ export async function getDailyReport(
     }
   }
 
-  return { period, periodDate: targetDate, periodLabel, summary, highlights, categoryCounts, categoryGroups, totalCount: articles.length }
+  return {
+    period, periodDate: targetDate, periodLabel, summary, highlights,
+    categoryCounts, categoryGroups, totalCount: articles.length, insights,
+  }
 }
 
 /** 读取预渲染的静态HTML（秒开路径） */
@@ -341,8 +380,34 @@ function renderReportHtml(report: {
   categoryCounts: Record<string, number>
   categoryGroups: CategoryGroup[]
   totalCount: number
+  period: 'daily' | 'weekly' | 'monthly'
+  insights?: PeriodInsights
 }): string {
   const parts: string[] = []
+  const period = report.period
+  const snapshot = report.insights?.snapshot
+
+  // 0. 数据快照条（A4）：日报一行，周报月报四项
+  if (snapshot && snapshot.articleCount > 0) {
+    parts.push('<div class="daily-snapshot">')
+    const cells: string[] = [
+      `<span class="daily-snapshot-item">收录 <strong>${snapshot.articleCount}</strong> 条</span>`,
+      `<span class="daily-snapshot-item">信源 <strong>${snapshot.sourceCount}</strong> 个</span>`,
+    ]
+    if (period !== 'daily') {
+      cells.push(`<span class="daily-snapshot-item">入选 <strong>${snapshot.selectedCount}</strong> 条</span>`)
+      if (snapshot.avgScore != null) {
+        cells.push(`<span class="daily-snapshot-item">平均分 <strong>${snapshot.avgScore}</strong></span>`)
+      }
+    }
+    if (snapshot.categoryTop) {
+      cells.push(
+        `<span class="daily-snapshot-item">最热分类 <strong>${esc(snapshot.categoryTop.category)}</strong>（${snapshot.categoryTop.count}）</span>`,
+      )
+    }
+    parts.push(cells.join(''))
+    parts.push('</div>')
+  }
 
   // 1. 本期看点（置顶）
   if (report.highlights) {
@@ -379,7 +444,14 @@ function renderReportHtml(report: {
   }
   parts.push('</div>')
 
-  // 4. 分类详情
+  // 4. 本期热点事件（A4，复用 A1 事件层）
+  parts.push(renderHotEvents(report.insights?.hotEvents ?? [], period))
+
+  // 5. 活跃 IP + 授权交易线索（A4，周报月报专属加分项）
+  parts.push(renderActiveIps(report.insights?.activeIps ?? [], period))
+  parts.push(renderLicensingLeads(report.insights?.licensingLeads ?? [], period))
+
+  // 6. 分类详情
   parts.push('<div class="daily-category-links">')
   for (const g of report.categoryGroups) {
     parts.push('<div class="daily-category-block">')
@@ -392,6 +464,75 @@ function renderReportHtml(report: {
   }
   parts.push('</div>')
 
+  return parts.join('')
+}
+
+/** 本期热点事件：热度按独立信源数 × 信源分级权重，链接到事件详情页 */
+function renderHotEvents(events: HotEventBrief[], period: 'daily' | 'weekly' | 'monthly'): string {
+  if (events.length === 0) return ''
+  const title = period === 'daily' ? '今日热点事件' : '本期热点事件'
+  const parts: string[] = ['<div class="daily-hot-events">']
+  parts.push(`<h3 class="daily-section-title">${title}<span class="daily-section-badge">${events.length}</span></h3>`)
+  parts.push('<ol class="daily-hot-list">')
+  for (const [i, ev] of events.entries()) {
+    const meta: string[] = [`${ev.sourceCount} 家信源`]
+    if (ev.reportCount > 1) meta.push(`${ev.reportCount} 篇报道`)
+    if (ev.topTier === 'T1') meta.push('含官方一手')
+    if (ev.category) meta.push(ev.category)
+    parts.push(
+      `<li class="daily-hot-item">` +
+      `<a class="daily-hot-link" href="/hot/${esc(ev.id)}">${esc(ev.title)}</a>` +
+      `<span class="daily-hot-meta">${esc(meta.join(' · '))}</span>` +
+      (ev.summary ? `<p class="daily-hot-summary">${esc(ev.summary)}</p>` : '') +
+      `</li>`,
+    )
+    void i
+  }
+  parts.push('</ol>')
+  if (events.length >= 10) {
+    parts.push('<p class="daily-section-more"><a href="/hot">查看完整热点榜 →</a></p>')
+  }
+  parts.push('</div>')
+  return parts.join('')
+}
+
+/** 活跃 IP Top N：给从业者直接可用的「本期谁在动」清单 */
+function renderActiveIps(ips: ActiveIp[], period: 'daily' | 'weekly' | 'monthly'): string {
+  if (ips.length === 0) return ''
+  const parts: string[] = ['<div class="daily-active-ips">']
+  parts.push(
+    `<h3 class="daily-section-title">本期活跃 IP<span class="daily-section-badge">${ips.length}</span></h3>`,
+  )
+  parts.push('<div class="daily-ip-grid">')
+  for (const ip of ips) {
+    const via = ip.via === 'ip_library' ? '品牌库命中' : '事件主体'
+    parts.push(
+      `<a class="daily-ip-chip" href="/ipbrand?query=${encodeURIComponent(ip.name)}">` +
+      `<span class="daily-ip-name">${esc(ip.name)}</span>` +
+      `<span class="daily-ip-count">${ip.articleCount} 条</span>` +
+      `<span class="daily-ip-via">${via}</span>` +
+      `</a>`,
+    )
+  }
+  parts.push('</div></div>')
+  return parts.join('')
+}
+
+/** 授权交易线索：周报月报直接当公众号/社群素材 */
+function renderLicensingLeads(leads: LicensingLead[], period: 'daily' | 'weekly' | 'monthly'): string {
+  if (leads.length === 0) return ''
+  const parts: string[] = ['<div class="daily-licensing-leads">']
+  parts.push(
+    `<h3 class="daily-section-title">本期授权交易与版权动态<span class="daily-section-badge">${leads.length}</span></h3>`,
+  )
+  parts.push('<ul class="daily-lead-list">')
+  for (const lead of leads) {
+    parts.push(
+      `<li><a href="${esc(lead.url)}" target="_blank" rel="noopener noreferrer" class="daily-lead-link">${esc(lead.title)}</a>` +
+      `<span class="daily-lead-meta">${esc(lead.source)}${lead.score != null ? ` · ${lead.score}分` : ''}</span></li>`,
+    )
+  }
+  parts.push('</ul></div>')
   return parts.join('')
 }
 

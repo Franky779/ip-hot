@@ -57,15 +57,17 @@ export async function openReceipt(params: {
   model: string
   inputHash: string
   requestChars: number
+  promptVersion?: string | null
 }): Promise<string | null> {
   try {
     const { rows } = await createServiceClient().query(
-      `insert into llm_receipts (purpose, model, input_hash, request_chars, status)
-       values ($1, $2, $3, $4, 'pending')
+      `insert into llm_receipts (purpose, model, input_hash, request_chars, prompt_version, status)
+       values ($1, $2, $3, $4, $5, 'pending')
        on conflict (purpose, model, input_hash) do update
-         set status = 'pending', response_json = null, error_message = null, updated_at = now()
+         set status = 'pending', response_json = null, error_message = null,
+             prompt_version = excluded.prompt_version, updated_at = now()
        returning id`,
-      [params.purpose, params.model, params.inputHash, params.requestChars],
+      [params.purpose, params.model, params.inputHash, params.requestChars, params.promptVersion ?? null],
     )
     return rows[0]?.id ?? null
   } catch {

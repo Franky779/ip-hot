@@ -17,6 +17,7 @@ import { findSourceConfiguration } from './sources.ts'
 import { getSourceSchedule } from './source-schedule.ts'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { getPrompt } from './prompts.ts'
 
 export type LlmRepairProposal = {
   /** 建议的抓取类型：rss | web | gov */
@@ -128,18 +129,6 @@ export async function loadKnowledgeBase(): Promise<string> {
   }
 }
 
-const REPAIR_SYSTEM_PROMPT = `你是一名信息源抓取调试工程师，负责修复网站信息源抓取失败问题。
-你只能输出一个 JSON 对象，不要输出任何其它文字。
-
-修复原则：
-1. 你的输出只是"建议"，会由系统用 runSourceTest() 实测验证后才落地。
-2. 如果你不确定（需要登录、需要浏览器 CDP、复杂反爬、无法从已有信息判断），设置 needs_human=true，此时不要给出具体落地配置。
-3. 优先选择最简单可行的抓取方式：原生 RSS > 静态 HTML 抓取(scrapeConfig) > JSON 接口 > 需要 CDP。
-4. 第三方 RSSHub 只作备选。
-5. 只根据输入的症状和知识库判断，不要臆测。
-
-输出 JSON 格式（严格）：
-{"type":"rss|web|gov","url":"...","scrapeConfig":{...}或省略,"needs_human":false,"needsLocalCdp":false,"loginRequired":false,"diagnosis":"根因诊断","reasoning":"为什么选这个方案","confidence":0.8}`
 
 /** 为单个源生成修复建议（不落地，仅诊断+建议） */
 export async function proposeRepair(candidate: RepairCandidate): Promise<LlmRepairResult> {
@@ -187,7 +176,7 @@ export async function proposeRepair(candidate: RepairCandidate): Promise<LlmRepa
       try {
         const parsed = await callRepairLlm(
           provider,
-          REPAIR_SYSTEM_PROMPT + (kb ? `\n\n参考知识库（此前修好的源）：\n${kb.slice(0, 6000)}` : ''),
+          getPrompt('source-repair').text + (kb ? `\n\n参考知识库（此前修好的源）：\n${kb.slice(0, 6000)}` : ''),
           userPrompt,
         )
         const proposal: LlmRepairProposal = {
