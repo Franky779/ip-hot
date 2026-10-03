@@ -10,6 +10,8 @@ export async function POST(request: Request) {
   const limit = Number(searchParams.get('limit') || '0') || 0
   const singleDate = searchParams.get('date')           // YYYY-MM-DD
   const singlePeriod = searchParams.get('period')       // daily | weekly | monthly
+  // rebuild=1：已有缓存时只重渲染 HTML（版式升级后刷新历史报告，不重跑 LLM）
+  const rebuildHtml = searchParams.get('rebuild') === '1'
 
   const results: string[] = []
   let totalGen = 0, totalSkip = 0, totalFail = 0
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
   if (singleDate && singlePeriod && PERIODS.includes(singlePeriod as any)) {
     const period = singlePeriod as 'daily' | 'weekly' | 'monthly'
     try {
-      const report = await getDailyReport(period, singleDate)
+      const report = await getDailyReport(period, singleDate, { rebuildHtml })
       if (report.summary) {
         results.push(`✅ ${period} ${singleDate} — ${report.totalCount}条`)
         totalGen++
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
 
       const label = `[${processed}/${Math.min(dates.length, limit || dates.length)}] ${period} ${d.value}`
       try {
-        const report = await getDailyReport(period, d.value)
+        const report = await getDailyReport(period, d.value, { rebuildHtml })
         if (report.summary) {
           results.push(`✅ ${label} — ${report.totalCount}条`)
           totalGen++

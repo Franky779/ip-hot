@@ -245,11 +245,15 @@ export async function getAvailableDates(period: 'daily' | 'weekly' | 'monthly'):
   return result
 }
 
-/** 获取指定周期+日期的日报数据。opts.skipLLM 跳过 LLM 摘要生成（页面秒开用），后台 backfill 再补生成。 */
+/**
+ * 获取指定周期+日期的日报数据。
+ *  opts.skipLLM     跳过 LLM 摘要生成（页面秒开用），后台 backfill 再补生成
+ *  opts.rebuildHtml 已有缓存时强制重渲染 HTML（不重跑 LLM），用于版式升级后刷新历史报告
+ */
 export async function getDailyReport(
   period: 'daily' | 'weekly' | 'monthly',
   targetDate: string,
-  opts?: { skipLLM?: boolean },
+  opts?: { skipLLM?: boolean; rebuildHtml?: boolean },
 ): Promise<DailyReport> {
   const { start, end } = getPeriodRange(period, targetDate)
   const periodLabel = formatPeriodLabel(period, targetDate)
@@ -269,23 +273,40 @@ export async function getDailyReport(
     const articleData: ArticleLink[] = safeJsonParse(cached.article_data, [])
     const categoryGroups = buildCategoryGroups(articleData)
     const categoryCounts = cached.category_counts || {}
-    const insights = normalizeInsights(cached.insights)
-    // 如果缓存没有预渲染HTML，补生成（向前兼容旧缓存）
-    if (!cached.content_html) {
+
+    // 缓存里有 insights 但 HTML 是旧版渲染的（上线新板块前生成的）：
+    // 只重渲染 HTML，不重跑 LLM——导语与要点还在缓存里，重跑既慢又可能因换模型而变样。
+    const insightsStale =
+      opts?.rebuildHtml === true ||
+      (!cached.content_html && Boolean(insightsPresent(cached.insights)))
+    if (insightsStale) {
+      // 旧缓存没有 insights 列时按需现算一次，避免历史周报月报永远是旧版式
+      const insights =
+        normalizeInsights(cached.insights) ??
+        (opts?.rebuildHtml === true ? await getPeriodInsights(period, start, end) : undefined)
       const html = renderReportHtml({
         period, periodLabel, summary: cached.summary, highlights: cached.highlights,
         categoryCounts, categoryGroups, totalCount: cached.total_count || 0, insights,
       })
       try {
-        await db.from('daily_reports').update({ content_html: html })
+        const patch: Record<string, unknown> = { content_html: html }
+        if (insights) patch.insights = JSON.stringify(insights)
+        await db.from('daily_reports').update(patch)
           .eq('period', period).eq('period_date', targetDate)
-      } catch { /* 忽略 */ }
+      } catch { /* 忽略：渲染失败不影响返回旧 HTML */ }
+      return {
+        period, periodDate: targetDate, periodLabel,
+        summary: cached.summary, highlights: cached.highlights,
+        categoryCounts, categoryGroups, totalCount: cached.total_count || 0,
+        insights,
+      }
     }
+
     return {
       period, periodDate: targetDate, periodLabel,
       summary: cached.summary, highlights: cached.highlights,
       categoryCounts, categoryGroups, totalCount: cached.total_count || 0,
-      insights,
+      insights: normalizeInsights(cached.insights),
     }
   }
 
@@ -534,6 +555,11 @@ function renderLicensingLeads(leads: LicensingLead[], period: 'daily' | 'weekly'
   }
   parts.push('</ul></div>')
   return parts.join('')
+}
+
+/** 缓存行里是否已有 insights 数据（有则说明是新版生成的） */
+function insightsPresent(raw: unknown): boolean {
+  return normalizeInsights(raw) !== undefined
 }
 
 function safeJsonParse(raw: unknown, fallback: any): any {
