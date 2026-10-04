@@ -237,3 +237,18 @@ test('admin events API exposes hide / unhide / relevance override', async () => 
     assert.ok(route.includes(action), `事件管理 API 缺 ${action} 动作，后台无法自助处理`)
   }
 })
+
+test('eval-selection script stays production-faithful and side-effect-free', async () => {
+  const script = await readFile(join(root, 'scripts', 'eval-selection.mjs'), 'utf8')
+  // 与生产同构：提示词来自外置文件，规则从 lib/relevance.ts import（不许复制出第二份）
+  assert.ok(script.includes("prompts', 'article-score.md"), '评估脚本必须读外置打分提示词，不许内置提示词正文')
+  assert.ok(script.includes("from '../lib/relevance.ts'"), '评估脚本必须 import lib/relevance.ts 的规则与后处理，复制会漂移')
+  assert.ok(script.includes('relevance_score'), '评估脚本应解析 relevance_score')
+  // 副作用隔离：评估不占线上预算、不写回执（否则跑一次评估就把线上配额吃光）
+  assert.ok(!script.includes('openReceipt'), '评估脚本不许写 llm_receipts')
+  assert.ok(!script.includes('checkBudget'), '评估脚本不许走 llm_budget 熔断')
+  assert.ok(!script.includes('llm_receipts'), '评估脚本不许触碰 llm_receipts 表')
+  // 输入输出契约
+  assert.ok(script.includes('data', 'gold.jsonl') || script.includes("gold.jsonl"), '评估脚本应以 data/gold.jsonl 为输入')
+  assert.ok(script.includes('eval-results'), '评估脚本应把报告写到 data/eval-results/')
+})
