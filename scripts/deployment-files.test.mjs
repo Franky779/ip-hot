@@ -175,6 +175,54 @@ test('event gate columns and budget row are in the migration', async () => {
   assert.match(sql, /GRANT[\s\S]*TO ip_hot_app/, '迁移末尾必须给应用账号授权，否则接口 permission denied')
 })
 
+test('sources page exposes a tier filter so T1 review is possible', async () => {
+  const client = await readFile(
+    join(root, 'app', 'sources', 'components', 'SourcesClient.tsx'),
+    'utf8',
+  )
+  assert.ok(client.includes('tierFilter'), '信源列表应能按信源分级筛选，否则无法复核 T1')
+  assert.ok(/tier\?:\s*'T1'/.test(client), 'Source 类型应声明 tier 字段，否则前端拿不到分级')
+  assert.ok(client.includes('SOURCE_TIER_FILTER_OPTIONS'), '应提供分级选项定义')
+  assert.ok(
+    client.includes("setTierFilter('all')"),
+    '清除筛选按钮应同时重置分级筛选',
+  )
+})
+
+test('no budget purpose has a day limit smaller than its hour limit', async () => {
+  const dir = join(opsRoot, 'postgres', 'migrations')
+  const files = (await readdir(dir)).filter((f) => f.endsWith('.sql'))
+  const seen = new Map()
+  for (const file of files) {
+    const sql = await readFile(join(dir, file), 'utf8')
+    for (const m of sql.matchAll(/VALUES\s*\(\s*'(\w+)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/gi)) {
+      const [, purpose, minute, hour, day] = m
+      const prev = seen.get(purpose)
+      if (prev) {
+        assert.equal(prev.hour, hour, `${purpose} 在 ${file} 与 ${prev.file} 的小时上限不一致`)
+        assert.equal(prev.day, day, `${purpose} 在 ${file} 与 ${prev.file} 的天上限不一致`)
+      } else {
+        seen.set(purpose, { minute, hour, day, file })
+      }
+    }
+  }
+  for (const [purpose, { minute, hour, day }] of seen) {
+    assert.ok(Number(hour) <= Number(day), `${purpose} 天上限 ${day} 小于小时上限 ${hour}，小时窗口永远先撞满`)
+    assert.ok(Number(minute) <= Number(hour), `${purpose} 分钟上限 ${minute} 大于小时上限 ${hour}`)
+  }
+  assert.ok(seen.has('relate'), '应能找到 relate 的预算初始值声明')
+})
+
+test('event gate migrations stay idempotent for repeat runs', async () => {
+  const sql = await readFile(
+    join(opsRoot, 'postgres', 'migrations', '20261004-add-event-industry-gate.sql'),
+    'utf8',
+  )
+  const alters = sql.match(/ALTER TABLE ip_events ADD COLUMN IF NOT EXISTS/g) || []
+  assert.equal(alters.length, 6, `闸门迁移应幂等重跑，ALTER ADD COLUMN IF NOT EXISTS 应有 6 条，实际 ${alters.length}`)
+  assert.ok(/CREATE INDEX IF NOT EXISTS/.test(sql), '闸门迁移的索引也要幂等')
+})
+
 test('cron runs the gate after clustering so new events get judged', async () => {
   const route = await readFile(join(root, 'app', 'api', 'cron', 'group-events', 'route.ts'), 'utf8')
   const clusterAt = route.indexOf('clusterRound(')
