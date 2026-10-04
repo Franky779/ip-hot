@@ -4,7 +4,7 @@ import { summarizeArticle, type LlmFailureKind } from '@/lib/llm'
 import { sendFeishuAlertAggregated } from '@/lib/feishu-alert'
 import { resolveClassificationResult, autoCleanupLowScore } from '@/lib/pending-classification'
 import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
-import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
+import { getSelectionThreshold, getTierThresholds, loadSourceTierMap, resolveThresholdForSource, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 import { markContentBlocked } from '@/lib/content-blocked'
 
 export const runtime = 'nodejs'
@@ -39,6 +39,9 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
   const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
   const selectionThreshold = await getSelectionThreshold(supabase)
+  // B1 分级门槛：T1 官方一手放宽、T2 二手报道收紧，未知分级回落全局门槛
+  const tierThresholds = await getTierThresholds(supabase)
+  const sourceTierMap = await loadSourceTierMap(supabase)
 
   // 防止本地守护任务、手动处理和未来 Supabase Cron 同时领取同一批文章。
   const lockCutoff = new Date(Date.now() - LOCK_MINUTES * 60 * 1000).toISOString()
@@ -173,9 +176,10 @@ export async function GET(request: Request) {
           if (deleteError) throw new Error(deleteError.message)
           return { id: article.id, source: article.source, title: article.title, url: article.url, ok: true, score: 0, selected: false, commentary: '', status: 'scored' }
         }
+        const articleThreshold = resolveThresholdForSource(sourceTierMap.get(article.source), tierThresholds, selectionThreshold)
         const classification = verifiedOfficialXNames.has(article.source)
           ? { category: llmResult.category, is_selected: true }
-          : resolveClassificationResult({ ...llmResult, relevance_score: policy.relevance_score, is_selected: policy.relevance_score >= selectionThreshold }, selectionThreshold)
+          : resolveClassificationResult({ ...llmResult, relevance_score: policy.relevance_score, is_selected: policy.relevance_score >= articleThreshold }, articleThreshold)
         const { error: updateError } = await supabase
           .from('articles')
           .update({
@@ -183,10 +187,13 @@ export async function GET(request: Request) {
             summary_cn: llmResult.summary_cn,
             category: classification.category,
             relevance_score: policy.relevance_score,
-            selection_threshold: selectionThreshold,
+            selection_threshold: articleThreshold,
             is_selected: classification.is_selected,
             commentary: llmResult.commentary,
             prompt_version: llmResult.prompt_version,
+            score_axes: llmResult.axes,
+            score_runs: llmResult.score_runs,
+            content_type: llmResult.content_type,
           })
           .eq('id', article.id)
 
