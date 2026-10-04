@@ -196,25 +196,36 @@ export function extractJsonObject(raw: string): Record<string, unknown> {
   throw new Error(`No JSON in: ${trimmed.slice(0, 120)}`)
 }
 
-/** 调用单个 LLM API（文章打分专用：user 消息按 标题+内容 拼装） */
+/** 调用 LLM API（文章打分专用：user 消息按 标题+内容 拼装；attempt 用于重试时抬高温度） */
 async function callLLM(
   title: string,
   content: string,
   systemPrompt: string,
   baseUrl: string,
   apiKey: string,
-  model: string
+  model: string,
+  attempt: number = 0
 ): Promise<LlmCallResult> {
-  return callProvider(systemPrompt, `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`, baseUrl, apiKey, model)
+  return callProvider(
+    systemPrompt,
+    `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
+    baseUrl,
+    apiKey,
+    model,
+    // 重试时抬高温度：temp 0.2 下模型会对同一输入确定性地产出同样的畸形 JSON，
+    // 不打破确定性，3 次重试就是 3 次同样的失败
+    0.2 + attempt * 0.2,
+  )
 }
 
-/** 调用单个 LLM API（通用：user 消息由调用方拼好） */
+/** 调用单个 LLM API（通用：user 消息由调用方拼好；retryTemp 用于第 N 次重试抬高温度打破确定性坏输出） */
 async function callProvider(
   systemPrompt: string,
   userPrompt: string,
   baseUrl: string,
   apiKey: string,
-  model: string
+  model: string,
+  temperature: number = 0.2
 ): Promise<LlmCallResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 90000)
@@ -230,6 +241,8 @@ async function callProvider(
       },
       body: JSON.stringify({
         model,
+        // B1：返回体含嵌套 axes，强制 JSON 模式，杜绝模型输出畸形 JSON
+        response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -237,7 +250,7 @@ async function callProvider(
             content: userPrompt,
           },
         ],
-        temperature: 0.2,
+        temperature,
         max_tokens: 3000,
       }),
     })
@@ -452,7 +465,8 @@ export async function summarizeArticle(
             systemPrompt,
             provider.baseUrl,
             provider.apiKey,
-            provider.model
+            provider.model,
+            i
           )
           const result = parseResult(parsed, title)
           if (receiptId) {
