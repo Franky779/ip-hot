@@ -15,6 +15,7 @@ import { join } from 'node:path'
 
 export type PromptName =
   | 'article-score'
+  | 'article-prescreen'
   | 'event-relate'
   | 'event-summary'
   | 'event-industry-gate'
@@ -84,8 +85,10 @@ export function promptVersion(name: PromptName): string {
 export function allPromptVersions(): Array<{ name: PromptName; version: string }> {
   const names: PromptName[] = [
     'article-score',
+    'article-prescreen',
     'event-relate',
     'event-summary',
+    'event-industry-gate',
     'period-report',
     'source-repair',
   ]
