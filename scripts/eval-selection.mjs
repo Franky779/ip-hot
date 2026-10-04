@@ -208,6 +208,38 @@ console.log(`提示词版本 ${PROMPT_VERSION}；模型 ${PROVIDERS[0]?.model ??
 if (missing.length) console.warn(`警告：${missing.length} 条 gold 记录在 articles 表找不到，已跳过`)
 
 // ---------- LLM 调用（不走回执/预算，参数与生产 callProvider 一致） ----------
+// B1 起返回体含嵌套 axes 对象，不能用惰性正则（会在第一个 } 处截断）。
+// 与 lib/llm.ts 的 extractJsonObject 同构：整串 parse → 贪婪截取 → 平衡扫描。
+function extractJsonObject(raw) {
+  const trimmed = raw.trim()
+  try { return JSON.parse(trimmed) } catch { /* 继续尝试 */ }
+  const start = trimmed.indexOf('{')
+  if (start === -1) throw new Error(`No JSON in: ${trimmed.slice(0, 120)}`)
+  const end = trimmed.lastIndexOf('}')
+  if (end > start) {
+    try { return JSON.parse(trimmed.slice(start, end + 1)) } catch { /* 走平衡扫描 */ }
+  }
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let i = start; i < trimmed.length; i++) {
+    const ch = trimmed[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') inString = true
+    else if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) return JSON.parse(trimmed.slice(start, i + 1))
+    }
+  }
+  throw new Error(`No JSON in: ${trimmed.slice(0, 120)}`)
+}
+
 async function callScore(sample) {
   const failures = []
   for (const provider of PROVIDERS) {
@@ -232,9 +264,7 @@ async function callScore(sample) {
         if (!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0, 200)}`)
         const data = await res.json()
         const raw = data.choices?.[0]?.message?.content ?? ''
-        const jsonMatch = raw.match(/\{[\s\S]*?\}/)
-        if (!jsonMatch) throw new Error(`No JSON in: ${raw.slice(0, 120)}`)
-        const parsed = JSON.parse(jsonMatch[0])
+        const parsed = extractJsonObject(raw)
         // 与 lib/llm.ts parseResult 相同的分数后处理
         const category = CATEGORIES.includes(parsed.category) ? parsed.category : '待分类'
         const modelScore = Number.isFinite(Number(parsed.relevance_score))
