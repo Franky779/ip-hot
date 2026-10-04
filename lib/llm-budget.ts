@@ -55,7 +55,7 @@ export const DEFAULT_LIMITS: BudgetLimits = {
   day: 30000,
 }
 
-export const LLM_PURPOSES: LlmPurpose[] = ['summarize', 'prefilter', 'score', 'relate']
+export const LLM_PURPOSES: LlmPurpose[] = ['summarize', 'prefilter', 'score', 'relate', 'industry_gate']
 
 function toInt(value: unknown): number {
   const parsed = Number(value)

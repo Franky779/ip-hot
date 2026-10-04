@@ -8816,6 +8816,21 @@ a.case-chain-node:hover { transform: translateY(-1px); box-shadow: var(--shadow)
   background: var(--accent-light); color: var(--text); font-size: 14px; line-height: 1.6;
 }
 
+/* 热点榜后台操作：仅管理员可见，默认低调，hover 才醒目 */
+.hot-admin-actions {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+}
+.hot-admin-btn {
+  font-size: 12px; line-height: 1.5; padding: 3px 10px; cursor: pointer;
+  color: var(--text-muted); background: transparent;
+  border: 1px solid var(--border); border-radius: 6px;
+  transition: color .15s, border-color .15s;
+}
+.hot-admin-btn:hover:not(:disabled) { color: #e5484d; border-color: #e5484d; }
+.hot-admin-btn-keep:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.hot-admin-btn:disabled { opacity: .5; cursor: default; }
+.hot-admin-note { font-size: 12px; color: var(--text-muted); }
+
 .hot-badge {
   display: inline-flex; align-items: center; font-size: 11px; font-weight: 600;
   padding: 1px 7px; border-radius: 999px; line-height: 1.6;

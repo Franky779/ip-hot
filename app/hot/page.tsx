@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { topEvents, isRising, isNew, type HotEvent } from '@/lib/events/hot'
+import { HotEventActions } from '@/app/components/HotEventActions'
 
 export const revalidate = 120
 
 export const metadata: Metadata = {
-  title: '热点榜 | IP-HOT',
-  description: 'IP 行业热点事件榜：按独立信源数与信源权重实时排序',
+  title: '本周热点 | IP-HOT',
+  description: 'IP 授权行业本周热点事件榜：只保留对授权从业者有决策价值的事件',
 }
 
 function timeAgo(iso: string | null): string {
@@ -29,16 +30,17 @@ export default async function HotPage() {
   return (
     <main className="hot-page">
       <header className="page-header">
-        <h1 className="page-title font-serif">热点榜</h1>
+        <h1 className="page-title font-serif">本周热点</h1>
         <p className="hot-page-sub">
-          同一件事的多家报道聚成一个事件 · 按独立信源数与信源权重排序 · 48 小时窗口
+          只保留对 IP 授权 / 联名 / 版权从业者有决策价值的事 · 同一事件聚合多家报道 · 近 7 天
         </p>
       </header>
 
       {events.length === 0 ? (
         <section className="article-section">
           <p className="empty-state">
-            热点榜还在攒数据——事件聚簇每 15 分钟跑一轮，热门事件出现后会出现在这里。
+            本周还没有通过行业价值筛选的事件。系统每 15 分钟聚簇并判定一轮，
+            出现值得跟的授权 / 联名 / 版权动向时会自动出现在这里。
           </p>
         </section>
       ) : (
@@ -59,6 +61,10 @@ export default async function HotPage() {
                     <span className="hot-time">{timeAgo(ev.first_seen_at)}</span>
                   </div>
                   {ev.summary_cn && <p className="hot-item-summary">{ev.summary_cn}</p>}
+                  <HotEventActions
+                    eventId={ev.id}
+                    industryRelevant={ev.industry_relevant}
+                  />
                 </div>
                 <span className="hot-heat" title="热度 = 独立信源权重 × 时间衰减">
                   {Number(ev.heat_score).toFixed(1)}

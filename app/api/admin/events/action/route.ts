@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     targetEventId?: string | null
     eventId?: string
     title?: string
+    reason?: string
   } | null
   if (!body?.action) {
     return NextResponse.json({ error: 'missing action' }, { status: 400 })
@@ -97,6 +98,39 @@ export async function POST(request: Request) {
         [body.eventId, body.title.slice(0, 200)],
       )
       return NextResponse.json({ ok: true })
+    }
+
+    // 人工隐藏 / 恢复：事件不删除，退出榜单但数据保留，可随时翻案
+    if (body.action === 'hide' || body.action === 'unhide') {
+      if (!body.eventId) return NextResponse.json({ error: 'missing eventId' }, { status: 400 })
+      const hidden = body.action === 'hide'
+      await supabase.query(
+        `update ip_events
+         set hidden = $2,
+             hidden_reason = case when $2 then $3 else null end,
+             hidden_at = case when $2 then now() else null end,
+             updated_at = now()
+         where id = $1::uuid`,
+        [body.eventId, hidden, body.reason?.slice(0, 200) ?? '人工判定与 IP 授权行业无关'],
+      )
+      return NextResponse.json({ ok: true, hidden })
+    }
+
+    // 人工覆盖闸门判定：认为该事件确实有价值时，强制放行到榜单
+    if (body.action === 'markRelevant' || body.action === 'markIrrelevant') {
+      if (!body.eventId) return NextResponse.json({ error: 'missing eventId' }, { status: 400 })
+      const relevant = body.action === 'markRelevant'
+      await supabase.query(
+        `update ip_events
+         set industry_relevant = $2,
+             gate_reason = $3,
+             gate_checked_at = now(),
+             hidden = case when $2 then false else hidden end,
+             updated_at = now()
+         where id = $1::uuid`,
+        [body.eventId, relevant, body.reason?.slice(0, 200) ?? '人工确认'],
+      )
+      return NextResponse.json({ ok: true, industry_relevant: relevant })
     }
 
     return NextResponse.json({ error: 'unknown action' }, { status: 400 })

@@ -17,6 +17,7 @@ export type PromptName =
   | 'article-score'
   | 'event-relate'
   | 'event-summary'
+  | 'event-industry-gate'
   | 'period-report'
   | 'source-repair'
 

@@ -16,6 +16,7 @@
     "test:source-health": "node --experimental-strip-types --test lib/source-health-summary.test.ts",
     "test:prompts": "node --experimental-strip-types --test lib/prompts.test.ts",
     "test:period": "node --experimental-strip-types --test lib/period-insights.test.ts",
+    "test:gate": "node --experimental-strip-types --test lib/events/gate-rules.test.ts",
     "configure:kidscreen": "node scripts/configure-kidscreen-source.mjs",
     "fetch:kidscreen": "node scripts/fetch-kidscreen-cdp.mjs"
   },

@@ -109,6 +109,7 @@ test('prompt files are deployed and use LF endings', async () => {
     'article-score.md',
     'event-relate.md',
     'event-summary.md',
+    'event-industry-gate.md',
     'period-report.md',
     'source-repair.md',
   ]) {
@@ -131,4 +132,60 @@ test('prompt text lives only in prompts/*.md, not hardcoded in lib', async () =>
 
   const relate = await readFile(join(root, 'lib', 'events', 'relate.ts'), 'utf8')
   assert.ok(!relate.includes('你是资讯聚簇判断器'), '聚簇提示词正文应只存在于 prompts/event-relate.md')
+})
+
+test('hot board filters by the industry gate and hides manually-hidden events', async () => {
+  const hot = await readFile(join(root, 'lib', 'events', 'hot.ts'), 'utf8')
+  // 榜单查询必须同时过三道：闸门、人工隐藏、标题去重
+  assert.ok(
+    hot.includes('coalesce(industry_relevant, false) = true'),
+    'topEvents 缺少行业价值闸门过滤（闸门不接，榜单会重新混入影视/体育/栏目内容）',
+  )
+  assert.ok(
+    hot.includes('coalesce(hidden, false) = false'),
+    'topEvents 缺少人工隐藏过滤',
+  )
+  assert.ok(hot.includes('dedupeByTitle(rows)'), 'topEvents 缺少标题去重')
+  // 多取候选再过滤，保证过滤后仍能凑满 limit
+  assert.ok(
+    hot.includes('Math.max(1, limit) * 3'),
+    'topEvents 应多取候选再过滤/去重，否则闸门会让榜单变短',
+  )
+})
+
+test('industry gate prompt encodes the explicit exclusion rules', async () => {
+  const prompt = await readFile(join(root, 'prompts', 'event-industry-gate.md'), 'utf8')
+  // 这些是线上真实判错过的类别，提示词必须显式排除，
+  // 否则模型会把「体育 IP 授权是真业务」和「普通球星签约」混为一谈
+  for (const mustMention of ['影视票房', '体育赛事', '每周推荐', '联名']) {
+    assert.ok(prompt.includes(mustMention), `闸门提示词未覆盖「${mustMention}」这类判错过的内容`)
+  }
+  assert.ok(prompt.includes('拿不准') || prompt.includes('一律判 irrelevant'), '闸门提示词应写明边界情况从宽处理')
+})
+
+test('event gate columns and budget row are in the migration', async () => {
+  const sql = await readFile(
+    join(opsRoot, 'postgres', 'migrations', '20261004-add-event-industry-gate.sql'),
+    'utf8',
+  )
+  for (const col of ['industry_relevant', 'gate_reason', 'gate_checked_at', 'hidden']) {
+    assert.ok(sql.includes(col), `迁移缺 ${col} 列`)
+  }
+  assert.ok(sql.includes("'industry_gate'"), '迁移应为 industry_gate 用途初始化预算')
+  assert.match(sql, /GRANT[\s\S]*TO ip_hot_app/, '迁移末尾必须给应用账号授权，否则接口 permission denied')
+})
+
+test('cron runs the gate after clustering so new events get judged', async () => {
+  const route = await readFile(join(root, 'app', 'api', 'cron', 'group-events', 'route.ts'), 'utf8')
+  const clusterAt = route.indexOf('clusterRound(')
+  const gateAt = route.indexOf('runIndustryGate(')
+  assert.ok(clusterAt > 0 && gateAt > 0, '聚簇 cron 应同时跑聚簇与闸门')
+  assert.ok(gateAt > clusterAt, '闸门应在聚簇之后跑，避免同批新事件漏判')
+})
+
+test('admin events API exposes hide / unhide / relevance override', async () => {
+  const route = await readFile(join(root, 'app', 'api', 'admin', 'events', 'action', 'route.ts'), 'utf8')
+  for (const action of ["'hide'", "'unhide'", "'markRelevant'", "'markIrrelevant'"]) {
+    assert.ok(route.includes(action), `事件管理 API 缺 ${action} 动作，后台无法自助处理`)
+  }
 })

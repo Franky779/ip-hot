@@ -22,6 +22,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       count: events.length,
+      // 榜单口径：近 7 天，且只保留通过行业价值闸门的事件
+      window: '7d',
+      filter: 'industry_relevant',
       events: events.map((ev) => ({
         id: ev.id,
         title: ev.title_cn ?? ev.canonical_title,

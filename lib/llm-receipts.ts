@@ -6,7 +6,7 @@ import { createServiceClient } from './supabase'
 
 export { buildInputHash } from './llm-hash'
 
-export type LlmPurpose = 'summarize' | 'prefilter' | 'score' | 'relate'
+export type LlmPurpose = 'summarize' | 'prefilter' | 'score' | 'relate' | 'industry_gate'
 
 export const DEFAULT_LLM_PURPOSE: LlmPurpose = 'summarize'
 
