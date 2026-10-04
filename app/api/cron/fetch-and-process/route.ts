@@ -16,7 +16,7 @@ import {
   MANUAL_FETCH_BACKGROUND_QUERY,
   buildManualFetchBackgroundRequest,
 } from '@/lib/manual-fetch-background'
-import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
+import { getSelectionThreshold, getTierThresholds, loadSourceTierMap, resolveThresholdForSource, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 import { markContentBlocked } from '@/lib/content-blocked'
 import { normalizePublishedAt } from '@/lib/article-time'
 import { gateUnknownDateItems } from '@/lib/article-freshness'
@@ -243,6 +243,9 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
   const selectionThreshold = await getSelectionThreshold(supabase)
   const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
+  // B1 分级门槛：T1 官方一手放宽、T2 二手报道收紧，未知分级回落全局门槛
+  const tierThresholds = await getTierThresholds(supabase)
+  const sourceTierMap = await loadSourceTierMap(supabase)
   if (coverageRepair) {
     const now = new Date()
     const { start, end } = getBeijingDayRange(now)
@@ -577,9 +580,10 @@ export async function GET(request: Request) {
             resultOk = true
             return { id: article.id, source: article.source, title: article.title, url: article.url, ok: true, score: 0, selected: false, commentary: '', status: 'scored' }
           }
+          const articleThreshold = resolveThresholdForSource(sourceTierMap.get(article.source), tierThresholds, selectionThreshold)
           const classification = verifiedOfficialXNames.has(article.source)
             ? { category: llmResult.category, is_selected: true }
-            : resolveClassificationResult({ ...llmResult, relevance_score: policy.relevance_score, is_selected: policy.relevance_score >= selectionThreshold }, selectionThreshold)
+            : resolveClassificationResult({ ...llmResult, relevance_score: policy.relevance_score, is_selected: policy.relevance_score >= articleThreshold }, articleThreshold)
           const { error: updateError } = await supabase
             .from('articles')
             .update({
@@ -587,10 +591,13 @@ export async function GET(request: Request) {
               summary_cn: llmResult.summary_cn,
               category: classification.category,
               relevance_score: policy.relevance_score,
-              selection_threshold: selectionThreshold,
+              selection_threshold: articleThreshold,
               is_selected: classification.is_selected,
               commentary: llmResult.commentary,
               prompt_version: llmResult.prompt_version,
+              score_axes: llmResult.axes,
+              score_runs: llmResult.score_runs,
+              content_type: llmResult.content_type,
             })
             .eq('id', article.id)
 
