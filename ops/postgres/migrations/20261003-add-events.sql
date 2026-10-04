@@ -38,9 +38,17 @@ CREATE TABLE IF NOT EXISTS ip_event_reports (
 CREATE INDEX IF NOT EXISTS idx_event_reports_article ON ip_event_reports (article_id);
 
 -- ========== relate 用途的预算初始值（pairwise 判断） ==========
+-- 天上限必须 >= 小时上限，否则小时窗口永远先撞满、天窗口形同虚设。
+-- 2026-10-04 修正：原值 60/600/400 天比小时还小，导致事件聚簇跑到第 400 次
+-- 就被「天窗口熔断」掐停，而真实用量只有上线当晚两小时的 400 次。
 INSERT INTO llm_budget (purpose, minute_limit, hour_limit, day_limit)
-VALUES ('relate', 60, 600, 400)
+VALUES ('relate', 60, 600, 8000)
 ON CONFLICT (purpose) DO NOTHING;
+
+-- 幂等修正已存在的库（天上限 < 小时上限的都会被拉正）
+UPDATE llm_budget
+   SET day_limit = GREATEST(day_limit, hour_limit * 8)
+ WHERE day_limit < hour_limit;
 
 -- ========== 应用账号授权（迁移由 postgres 用户执行时必须显式授权给 ip_hot_app） ==========
 GRANT SELECT, INSERT, UPDATE, DELETE ON ip_events, ip_event_reports TO ip_hot_app;
