@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { shouldIgnoreArticle, summarizeArticle } from '@/lib/llm'
 import { applyOfficialSourcePolicy, loadVerifiedOfficialXNames } from '@/lib/source-trust'
-import { getSelectionThreshold, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
+import { getSelectionThreshold, getTierThresholds, loadSourceTierMap, resolveThresholdForSource, onlyArticlesAwaitingInitialLlm } from '@/lib/selection-threshold'
 import { markContentBlocked } from '@/lib/content-blocked'
 
 export const runtime = 'nodejs'
@@ -17,6 +17,9 @@ export async function POST(request: Request) {
   const supabase = createServiceClient()
   const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
   const selectionThreshold = await getSelectionThreshold(supabase)
+  // B1 分级门槛：T1 官方一手放宽、T2 二手报道收紧，未知分级回落全局门槛
+  const tierThresholds = await getTierThresholds(supabase)
+  const sourceTierMap = await loadSourceTierMap(supabase)
   const BATCH_SIZE = 3  // Vercel 60s 上限内处理 3 条（每条约 10-15s），留足安全余量
 
   const { data: pending, error } = await onlyArticlesAwaitingInitialLlm(
@@ -103,6 +106,7 @@ export async function POST(request: Request) {
           commentary: result.commentary,
         }
       }
+      const articleThreshold = resolveThresholdForSource(sourceTierMap.get(article.source), tierThresholds, selectionThreshold)
       const { error: upErr } = await supabase
         .from('articles')
         .update({
@@ -110,10 +114,13 @@ export async function POST(request: Request) {
           summary_cn: result.summary_cn,
           category: result.category,
           relevance_score: policy.action === 'publish' ? policy.relevance_score : 0,
-          is_selected: policy.action === 'publish' ? policy.relevance_score >= selectionThreshold : false,
-          selection_threshold: selectionThreshold,
+          is_selected: policy.action === 'publish' ? policy.relevance_score >= articleThreshold : false,
+          selection_threshold: articleThreshold,
           commentary: result.commentary,
           prompt_version: result.prompt_version,
+          score_axes: result.axes,
+          score_runs: result.score_runs,
+          content_type: result.content_type,
         })
         .eq('id', article.id)
       if (upErr) throw new Error(upErr.message)
