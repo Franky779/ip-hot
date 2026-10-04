@@ -107,6 +107,7 @@ test('prompt files are deployed and use LF endings', async () => {
 
   for (const required of [
     'article-score.md',
+    'article-prescreen.md',
     'event-relate.md',
     'event-summary.md',
     'event-industry-gate.md',
@@ -293,4 +294,30 @@ test('LLM JSON extraction must not use the lazy regex (breaks on nested axes)', 
   assert.ok(!llm.includes("match(/\\{[\\s\\S]*?\\}/)"), '惰性正则 \\{[\\s\\S]*?\\} 会在嵌套 axes 的第一个 } 截断，禁止回退')
   const evalScript = await readFile(join(root, 'scripts', 'eval-selection.mjs'), 'utf8')
   assert.ok(evalScript.includes('extractJsonObject'), '评估脚本必须与生产同构使用 extractJsonObject')
+})
+
+test('B2 prescreen is wired with fail-open, a confidence floor and its own budget', async () => {
+  const llm = await readFile(join(root, 'lib', 'llm.ts'), 'utf8')
+  assert.ok(llm.includes('prescreenArticle'), '缺少预筛函数')
+  assert.ok(llm.includes("callLlmJson('prefilter'"), '预筛必须走独立 purpose=prefilter 预算与回执，否则和打分抢配额')
+  assert.ok(llm.includes('PRESCREEN_MIN_CONFIDENCE'), '排除必须设置信度下限（宁放过勿错杀，误拦好文可能被清理逻辑删掉）')
+  assert.ok(llm.includes('LLM_PRESCREEN'), '必须保留 LLM_PRESCREEN=off 整体关闭开关')
+  // 预筛在完整打分之前：summarizeArticle 内 prescreenArticle 的出现位置必须在 SCORE_RUNS 循环之前
+  const preAt = llm.indexOf('prescreenArticle(title, content)')
+  const runsAt = llm.indexOf('for (let runIndex = 0; runIndex < SCORE_RUNS; runIndex++)')
+  assert.ok(preAt > 0 && runsAt > 0 && preAt < runsAt, '预筛必须在两次打分循环之前执行，否则省不了钱')
+
+  const prompt = await readFile(join(root, 'prompts', 'article-prescreen.md'), 'utf8')
+  assert.ok(prompt.includes('拿不准') && prompt.includes('一律放行'), '预筛提示词必须写明拿不准一律放行')
+  assert.ok(prompt.includes('衍生品情报豁免'), '预筛提示词必须保留衍生品情报豁免，否则周边上市会被误拦（B1 血泪坑）')
+  assert.ok(prompt.includes('"in_scope"') && prompt.includes('"confidence"') && prompt.includes('"reason"'), '预筛输出必须只有 3 个字段')
+
+  const sql = await readFile(join(root, 'ops', 'postgres', 'migrations', '20261005-b2-prescreen.sql'), 'utf8')
+  assert.ok(sql.includes("'prefilter'"), '迁移应为 prefilter 用途初始化预算')
+  assert.match(sql, /GRANT[\s\S]*TO ip_hot_app/, '迁移末尾必须给应用账号授权')
+
+  const evalScript = await readFile(join(root, 'scripts', 'eval-selection.mjs'), 'utf8')
+  assert.ok(evalScript.includes('--prescreen'), '评估脚本应支持 --prescreen 预筛评估')
+  assert.ok(evalScript.includes('PRESCREEN_MIN_CONFIDENCE'), '评估脚本的排除裁决必须与生产同构')
+  assert.ok(evalScript.includes("prompts', 'article-prescreen.md"), '评估脚本必须读外置预筛提示词')
 })
