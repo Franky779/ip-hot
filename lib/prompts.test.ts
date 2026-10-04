@@ -8,8 +8,10 @@ import { allPromptVersions, getPrompt, loadPromptFile, resetPromptCache } from '
 
 const REQUIRED_PROMPTS = [
   'article-score',
+  'article-prescreen',
   'event-relate',
   'event-summary',
+  'event-industry-gate',
   'period-report',
   'source-repair',
 ] as const
