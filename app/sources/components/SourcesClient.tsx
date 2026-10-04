@@ -28,8 +28,16 @@ interface Source {
   last_test_status?: 'untested' | 'success' | 'failed'
   last_tested_at?: string | null
   last_test_message?: string
+  tier?: 'T1' | 'T1_5' | 'T2' | 'EXCLUDE_MP'
   sort_order: number
 }
+
+const SOURCE_TIER_FILTER_OPTIONS: Array<{ value: NonNullable<Source['tier']>; label: string }> = [
+  { value: 'T1', label: 'T1 · 官方一手（公告/财报/展会官方）' },
+  { value: 'T1_5', label: 'T1.5 · 官方账号' },
+  { value: 'T2', label: 'T2 · 媒体与个人' },
+  { value: 'EXCLUDE_MP', label: '不参与精选（广告/招商号）' },
+]
 
 interface SourcesClientProps {
   initialSources: Source[]
@@ -162,6 +170,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [executionModeFilter, setExecutionModeFilter] = useState('all')
   const [sectionFilter, setSectionFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [tierFilter, setTierFilter] = useState('all')
   const [healthRows, setHealthRows] = useState<SourceHealthRow[] | null>(null)
 
   const refreshHealth = useCallback(async () => {
@@ -223,6 +232,15 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     failed: sources.filter((source) => source.last_test_status === 'failed').length,
   }
   const untestedCount = sources.length - testStatusCounts.success - testStatusCounts.failed
+  const tierSummary = useMemo(() => {
+    const counts: Record<string, number> = { T1: 0, T1_5: 0, T2: 0, EXCLUDE_MP: 0 }
+    for (const source of sources) {
+      const tier = source.tier ?? 'T2'
+      if (tier in counts) counts[tier] += 1
+    }
+    return counts
+  }, [sources])
+
   const filteredSources = sources.filter((source) => {
     const matchesKeyword = !normalizedKeyword || [
       source.name, source.url, source.type, source.description, source.method,
@@ -239,10 +257,11 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     const matchesStatus = statusFilter === 'all'
       || (healthSummary.available
         && resolveHealthFilterValue(source, healthBySource[source.id]) === statusFilter)
-    return matchesKeyword && matchesRegion && matchesTestStatus && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus
+    const matchesTier = tierFilter === 'all' || (source.tier ?? 'T2') === tierFilter
+    return matchesKeyword && matchesRegion && matchesTestStatus && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus && matchesTier
   })
   const hasFilters = keyword !== '' || regionFilter !== 'all' || testStatusFilter !== 'all' || fetchTypeFilter !== 'all'
-    || executionModeFilter !== 'all' || sectionFilter !== 'all' || statusFilter !== 'all'
+    || executionModeFilter !== 'all' || sectionFilter !== 'all' || statusFilter !== 'all' || tierFilter !== 'all'
   const grouped = groupBySection(filteredSources)
   const sectionIds = Object.keys(grouped)
 
@@ -755,6 +774,17 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                 ))}
               </select>
             </label>
+            <label>
+              <span>信源分级</span>
+              <select value={tierFilter} onChange={(event) => setTierFilter(event.target.value)}>
+                <option value="all">{sources.length} 条 · 全部分级</option>
+                {SOURCE_TIER_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {tierSummary[option.value]} 条 · {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className="source-filter-summary">
             <span>当前显示 <strong>{filteredSources.length}</strong> / {sources.length} 条</span>
@@ -769,6 +799,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                   setExecutionModeFilter('all')
                   setSectionFilter('all')
                   setStatusFilter('all')
+                  setTierFilter('all')
                 }}
               >
                 清除筛选
