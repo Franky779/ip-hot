@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { useAdmin } from './AdminToggle'
 import { CsvImportButton } from './CsvImportButton'
 
-interface Article { id: string; title: string; sourceUrl: string; publishedAt: string }
 interface KnowledgeTerm { id: string; category: string; term: string; definition: string; example?: string }
 interface PodcastItem { title: string; date: string; url: string }
 interface CourseItem { title: string; duration: string; videoUrl: string }
@@ -14,8 +13,8 @@ function displayTerm(term: string) {
   return term.replace(/\s*[（(][A-Za-z0-9][^）)]*[）)]\s*$/, '').trim()
 }
 
+// 2026-10-04 移除「公众号文章」分类：该内容与日报/周报重复，且原始数据只存在 data/talks-articles.json，无增量来源
 const TABS = [
-  { key: 'articles', label: '公众号文章' },
   { key: 'knowledge', label: '专业用语' },
   { key: 'podcast', label: '播客/直播' },
   { key: 'courses', label: '线上课程' },
@@ -24,7 +23,6 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key']
 
 interface TalksPageClientProps {
-  articles: Article[]
   knowledge: KnowledgeTerm[]
   podcast: PodcastItem[]
   courses: CourseItem[]
@@ -57,11 +55,10 @@ async function loadSection<T>(section: string): Promise<T[]> {
 
 // ====== 主组件 ======
 
-export function TalksPageClient({ articles: initArticles, knowledge: initKnowledge, podcast: initPodcast, courses: initCourses }: TalksPageClientProps) {
-  const [active, setActive] = useState<TabKey>('articles')
+export function TalksPageClient({ knowledge: initKnowledge, podcast: initPodcast, courses: initCourses }: TalksPageClientProps) {
+  const [active, setActive] = useState<TabKey>('knowledge')
   const { isAdmin } = useAdmin()
 
-  const [articles, setArticles] = useState(initArticles)
   const [knowledge, setKnowledge] = useState(initKnowledge)
   const [podcast, setPodcast] = useState(initPodcast)
   const [courses, setCourses] = useState(initCourses)
@@ -97,100 +94,11 @@ export function TalksPageClient({ articles: initArticles, knowledge: initKnowled
       </header>
 
       <section className="article-section">
-        {active === 'articles' && <ArticleView articles={articles} setArticles={setArticles} isAdmin={isAdmin} showSaved={showSaved} />}
         {active === 'knowledge' && <KnowledgeView terms={knowledge} setTerms={setKnowledge} isAdmin={isAdmin} showSaved={showSaved} />}
         {active === 'podcast' && <PodcastView items={podcast} setItems={setPodcast} isAdmin={isAdmin} showSaved={showSaved} />}
         {active === 'courses' && <CourseView items={courses} setItems={setCourses} isAdmin={isAdmin} showSaved={showSaved} />}
       </section>
     </>
-  )
-}
-
-// ====== 公众号文章 ======
-
-function ArticleView({ articles, setArticles, isAdmin, showSaved }: {
-  articles: Article[]; setArticles: (a: Article[]) => void; isAdmin: boolean; showSaved: () => void
-}) {
-  const [editing, setEditing] = useState<Article | null>(null)
-
-  if (!isAdmin) {
-    return (
-      <div className="talks-list">
-        {articles.length === 0 && <p className="empty-state">暂无文章</p>}
-        {[...articles].sort((a, b) => Number(b.id) - Number(a.id)).map((item) => (
-          <a className="talk-card talk-card-link" key={item.id} href={item.sourceUrl} target="_blank" rel="noreferrer">
-            <h2>{item.title}</h2>
-          </a>
-        ))}
-      </div>
-    )
-  }
-
-  async function doSave(a: Article) {
-    const idx = articles.findIndex((x) => x.id === a.id)
-    const updated = idx >= 0 ? articles.map((x, i) => (i === idx ? a : x)) : [...articles, a]
-    setArticles(updated)
-    setEditing(null)
-    await saveSection('articles', updated)
-    showSaved()
-  }
-
-  async function doDelete(id: string) {
-    if (!confirm('确认删除？')) return
-    const updated = articles.filter((x) => x.id !== id)
-    setArticles(updated)
-    await saveSection('articles', updated)
-    showSaved()
-  }
-
-  const today = new Date().toISOString().slice(0, 10)
-
-  return (
-    <div className="talks-admin-split">
-      <div className="talks-admin-list">
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <button className="talks-admin-add-btn" style={{ flex: 1, margin: 0 }} onClick={() => setEditing({ id: String(Date.now()), title: '', sourceUrl: '', publishedAt: today })}>+ 新增文章</button>
-          <CsvImportButton
-            columns={[{ key: 'title', label: '标题', aliases: ['文章标题', '名称'] }, { key: 'sourceUrl', label: '公众号链接', aliases: ['链接', '原文地址', 'URL', 'url'] }]}
-            sampleCsv={'title,sourceUrl\n文章标题一,https://mp.weixin.qq.com/s/xxxx\n文章标题二,https://mp.weixin.qq.com/s/yyyy'}
-            onImport={async (rows) => {
-              const imported: Article[] = rows
-                .filter((r) => r.title || r.sourceUrl)
-                .map((r) => ({ id: String(Date.now()) + Math.random().toString(36).slice(2, 8), title: r.title, sourceUrl: r.sourceUrl, publishedAt: today }))
-              if (imported.length === 0) throw new Error('没有识别到有效数据行，请检查CSV第一行表头是否为：title,sourceUrl（或：标题,公众号链接）')
-              const fresh = await loadSection<Article>('articles')
-              const updated = [...fresh, ...imported]
-              setArticles(updated)
-              await saveSection('articles', updated)
-              showSaved()
-              return imported.length
-            }}
-          />
-        </div>
-        {[...articles].sort((a, b) => Number(b.id) - Number(a.id)).map((a) => (
-          <div className={`talks-admin-item${editing?.id === a.id ? ' active' : ''}`} key={a.id}>
-            <div className="talks-admin-item-main">
-              <span className="talks-admin-item-title">{a.title}</span>
-            </div>
-            <div className="talks-admin-item-actions">
-              <button className="talks-admin-action-btn" onClick={() => setEditing(a)}>编辑</button>
-              <button className="talks-admin-action-btn danger" onClick={() => doDelete(a.id)}>删除</button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {editing && (
-        <div className="talks-admin-form">
-          <h3>{editing.title ? '编辑文章' : '新增文章'}</h3>
-          <label>标题<input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></label>
-          <label>公众号链接<input value={editing.sourceUrl} onChange={(e) => setEditing({ ...editing, sourceUrl: e.target.value })} placeholder="https://mp.weixin.qq.com/s/..." /></label>
-          <div className="talks-admin-form-actions">
-            <button className="talks-admin-save-btn" onClick={() => doSave(editing)}>保存</button>
-            <button className="talks-admin-cancel-btn" onClick={() => setEditing(null)}>取消</button>
-          </div>
-        </div>
-      )}
-    </div>
   )
 }
 

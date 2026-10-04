@@ -613,26 +613,8 @@ body {
   box-shadow: 0 2px 8px rgba(0, 180, 138, 0.3);
 }
 
-/* 文章卡片 — 整卡可点 */
-.talk-card-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.talk-card-link:hover {
-  border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-}
-
-.talk-card-link h2 {
-  transition: color 0.2s ease;
-}
-
-.talk-card-link:hover h2 {
-  color: var(--accent);
-}
+/* 2026-10-04 移除「公众号文章」分类，原 .talk-card-link（整卡可点的文章卡）随之下线。
+   .talk-card / .talk-card-meta 仍被播客、课程两个分类使用，保留。 */
 
 .talk-card-meta {
   font-size: 0.8125rem;
@@ -8568,6 +8550,76 @@ textarea.factory-form-input { resize: vertical; }
 .lic-name-en { color: var(--text-muted); font-size: 14px; margin: 2px 0 0; }
 .lic-intro { color: var(--text-secondary); line-height: 1.9; font-size: 15px; margin: 0; white-space: pre-wrap; }
 
+/* ---- 卡片尺寸对齐 IP 品牌库（.ipb-grid / .ipb-card）----
+   .factory-grid / .factory-card 被供应链库、品牌方库、案例库三页共用，
+   所以这里只在 .licensee-page 作用域内覆写，不动共用类。
+   目标：8 列、正方形封面、无卡片外框、居中单行名称——与 IP 卡逐项同宽同高。 */
+.licensee-page .factory-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 15px 24px;
+  margin-top: 1rem;
+}
+@media (max-width: 1280px) { .licensee-page .factory-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .licensee-page .factory-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .licensee-page .factory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 0.75rem; } }
+
+/* 去掉卡片外框：IP 卡本身没有底色和边框，只有封面带 1px 描边 */
+.licensee-page .factory-card {
+  background: none;
+  border: none;
+  border-radius: 0;
+  gap: 0;
+  overflow: visible;
+}
+.licensee-page .factory-card:hover {
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.licensee-page .factory-card-cover {
+  aspect-ratio: 1;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.licensee-page .factory-card:hover .factory-card-cover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.licensee-page .factory-card-placeholder { font-size: 2rem; font-weight: 400; }
+
+/* 名称：与 .ipb-card-name 同字号、同居中、同省略号 */
+.licensee-page .factory-card-name {
+  padding: 0.5rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  justify-content: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+.licensee-page .factory-card-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.licensee-page .factory-card:hover .factory-card-name { color: var(--text); }
+
+/* 卡片变窄，附属信息（地区 / 类型 / 品类）按比例缩到能塞进一屏宽 */
+.licensee-page .factory-card-location-type-row {
+  padding: 0.2rem 0 0;
+  justify-content: center;
+  gap: 0.3rem;
+  overflow: hidden;
+}
+.licensee-page .factory-card-meta { font-size: 0.65rem; }
+.licensee-page .factory-type-badges span { font-size: 0.6rem; padding: 0 0.35rem; }
+.licensee-page .factory-tags { padding: 0.25rem 0 0; justify-content: center; gap: 0.2rem; }
+.licensee-page .factory-tags span { font-size: 0.6rem; padding: 0 0.35rem; }
+
+/* 角标同步缩小，避免在 200px 宽的封面上压住图 */
+.licensee-page .factory-card-verified { top: 0.35rem; left: 0.35rem; font-size: 0.6rem; padding: 1px 0.4rem; }
+.licensee-page .factory-ip-count { bottom: 0.35rem; right: 0.35rem; font-size: 0.6rem; padding: 1px 0.4rem; }
+.licensee-page .factory-delete-btn { top: 0.35rem; right: 0.35rem; width: 22px; height: 22px; font-size: 0.7rem; }
+
 /* 授权IP列表 / 合作供应链 芯片 */
 .lic-chip-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .lic-chip {
@@ -8842,15 +8894,33 @@ a.case-chain-node:hover { transform: translateY(-1px); box-shadow: var(--shadow)
 .hot-badge-sources { background: var(--accent-light); color: var(--accent); }
 .hot-badge-sources:hover { background: var(--accent); color: #fff; }
 
-/* 首页顶部热点入口 */
+/* 首页顶部热点入口：自动从右向左循环滚动 */
 .hot-strip {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; margin-bottom: 18px;
   border: 1px solid var(--border-light); border-radius: 10px;
-  background: var(--accent-light); overflow-x: auto;
+  background: var(--accent-light);
+  overflow: hidden;
 }
 .hot-strip-label { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--accent); white-space: nowrap; }
-.hot-strip-items { display: flex; gap: 8px; }
+.hot-strip-viewport {
+  flex: 1 1 auto; min-width: 0; overflow: hidden;
+  /* 两端渐隐，提示还有内容在滚动 */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+.hot-strip-track {
+  display: flex; width: max-content;
+  will-change: transform;
+}
+.hot-strip-set { display: flex; gap: 8px; padding-right: 8px; }
+@keyframes hot-strip-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(var(--hot-strip-shift, 0), 0, 0); }
+}
+/* 悬停或键盘聚焦时暂停，否则条目滚过去根本点不中 */
+.hot-strip:hover .hot-strip-track,
+.hot-strip:focus-within .hot-strip-track { animation-play-state: paused; }
 .hot-strip-item {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; color: var(--text); white-space: nowrap;
@@ -8859,3 +8929,9 @@ a.case-chain-node:hover { transform: translateY(-1px); box-shadow: var(--shadow)
 }
 .hot-strip-item:hover { border-color: var(--accent); color: var(--accent); }
 .hot-strip-count { color: var(--text-muted); font-size: 11px; }
+
+/* 系统开启"减少动态效果"时不自动滚，改为可横向滑动 */
+@media (prefers-reduced-motion: reduce) {
+  .hot-strip-track { animation: none; }
+  .hot-strip-viewport { overflow-x: auto; }
+}

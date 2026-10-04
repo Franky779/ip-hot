@@ -72,7 +72,7 @@ export function LicenseeClient() {
   }
 
   return (
-    <div className="factory-page">
+    <div className="factory-page licensee-page">
       <div className="factory-topbar">
         <div className="factory-brand">
           <div className="factory-brand-title">品牌方库</div>
@@ -111,7 +111,7 @@ export function LicenseeClient() {
                   {ipCount > 0 && <span className="factory-ip-count">已合作IP {ipCount} 个</span>}
                   {adminLoaded && isAdmin && <button className="factory-delete-btn" title="删除品牌方" onClick={event => { event.preventDefault(); event.stopPropagation(); setConfirmDel(item) }}>✕</button>}
                 </div>
-                <div className="factory-card-name">{item.name || '(未命名)'}{item.verified && <LicenseeBadge size={14} />}</div>
+                <div className="factory-card-name"><span>{item.name || '(未命名)'}</span>{item.verified && <LicenseeBadge size={14} />}</div>
                 <div className="factory-card-location-type-row"><div className="factory-card-meta"><span>{formatLocation(item)}</span></div><div className="factory-type-badges">{(item.biz_types || []).map(type => <span key={type}>{type}</span>)}</div></div>
                 <div className="factory-tags">{item.categories.slice(0, 3).map(tag => <span key={tag}>{tag}</span>)}</div>
               </Link>

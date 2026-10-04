@@ -24,8 +24,8 @@ function writeJsonFile(filename: string, data: unknown) {
   writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
 }
 
+// 2026-10-04 下线「公众号文章」分类，同步移除 articles 段，避免后台 API 继续写入无人展示的数据
 const SECTION_FILES: Record<string, string> = {
-  articles: 'talks-articles.json',
   knowledge: 'knowledge-terms.json',
   podcast: 'talks-podcast.json',
   courses: 'talks-courses.json',
@@ -34,7 +34,7 @@ const SECTION_FILES: Record<string, string> = {
 export async function GET(request: NextRequest) {
   const section = request.nextUrl.searchParams.get('section')
   if (!section || !SECTION_FILES[section]) {
-    return NextResponse.json({ error: 'Invalid section. Use: articles, knowledge, podcast, courses' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid section. Use: knowledge, podcast, courses' }, { status: 400 })
   }
   const data = readJsonFile(SECTION_FILES[section])
   return NextResponse.json(data ?? [])
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const section = request.nextUrl.searchParams.get('section')
   if (!section || !SECTION_FILES[section]) {
-    return NextResponse.json({ error: 'Invalid section. Use: articles, knowledge, podcast, courses' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid section. Use: knowledge, podcast, courses' }, { status: 400 })
   }
   try {
     const body = await request.json()

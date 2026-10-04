@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { createServiceClient, getSupabase } from '@/lib/supabase'
 import { CategoryTabs } from './components/CategoryTabs'
 import { SearchBox } from './components/SearchBox'
@@ -6,6 +5,7 @@ import { AdminToggle } from './components/AdminToggle'
 import { TimelineList } from './components/TimelineList'
 import { isClearlyIndirectTechTitle } from '@/lib/relevance'
 import { AdminPendingArticles } from './components/AdminPendingArticles'
+import { HotTicker, type HotEventLite } from './components/HotTicker'
 import { paginateFilteredResults } from '@/lib/filtered-pagination'
 import { formatArticleDate, resolveArticleDisplayTime } from '@/lib/article-time'
 import { createArticleSearchPattern } from '@/lib/article-search'
@@ -34,13 +34,6 @@ type Article = {
   is_video?: boolean | null
   /** 事件归属（A1 聚簇后叠加）：同一事件的时间线里只展示代表卡 */
   event?: { eventId: string; title: string; sourceCount: number }
-}
-
-type HotEventLite = {
-  id: string
-  title: string
-  sourceCount: number
-  heatScore: number
 }
 
 type SearchParams = { category?: string; q?: string; page?: string }
@@ -287,19 +280,7 @@ export default async function Home({
           </p>
         ) : (
           <>
-            {topHot.length > 0 && (
-              <div className="hot-strip">
-                <Link href="/hot" className="hot-strip-label">🔥 热点</Link>
-                <div className="hot-strip-items">
-                  {topHot.map((ev) => (
-                    <Link key={ev.id} href={`/hot/${ev.id}`} className="hot-strip-item" title={`热度 ${ev.heatScore.toFixed(1)}`}>
-                      {ev.title}
-                      <span className="hot-strip-count">{ev.sourceCount}家</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
+            {topHot.length > 0 && <HotTicker events={topHot} />}
             <TimelineList
               dateGroups={dateGroups}
               dates={dates}

@@ -11,13 +11,6 @@ export type MigratedResearch = {
   note?: string
 }
 
-export type LaojiaTalk = {
-  id: string
-  title: string
-  publishedAt: string
-  sourceUrl: string
-}
-
 export const RESEARCH_CATEGORIES: ResearchCategory[] = ['品类报告', '深度分析']
 
 export const RESEARCH_ITEMS: MigratedResearch[] = [
@@ -37,13 +30,3 @@ export const RESEARCH_ITEMS: MigratedResearch[] = [
   { id: 'jotoys-ukio-20260624', category: '深度分析', title: 'JOTOYS UKIO城市印象系列盲盒小红书营销推广分析', publishedAt: '2026-06-24', sourceUrl: 'https://github.com/Franky779/ip-news/blob/main/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/JOTOYS-UKIO%E5%9F%8E%E5%B8%82%E5%8D%B0%E8%B1%A1%E7%B3%BB%E5%88%97%E7%9B%B2%E7%9B%92%E5%B0%8F%E7%BA%A2%E4%B9%A6%E8%90%A5%E9%94%80%E6%8E%A8%E5%B9%BF%E5%88%86%E6%9E%90.html', sourceLabel: '查看原文件', status: '外链阅读', note: '完整 HTML，包含 7 个主要部分。' },
 ]
 
-export const LAOJIA_TALKS: LaojiaTalk[] = [
-  { id: 'talk-20260605', title: '【深度】30天，4万+字，我手搓了一份卡牌赛道深度报告，让我发现了7个行业真相和6个预判', publishedAt: '2026-06-05', sourceUrl: 'https://mp.weixin.qq.com/s/pt6ZZS62KScygA3Wf2dFvg' },
-  { id: 'talk-20260518', title: 'Q1烧掉20亿，瑞幸KFC们的联名还卖得动吗？', publishedAt: '2026-05-18', sourceUrl: 'https://mp.weixin.qq.com/s/BmG6xWl54BpZRiDXZJ4UAA' },
-  { id: 'talk-20260515', title: '当人人都能一键AI出图，IP行业最大的谎言被戳穿了', publishedAt: '2026-05-15', sourceUrl: 'https://mp.weixin.qq.com/s/V7SiPgaqkf8BpFm3YVstCw' },
-  { id: 'talk-20260507', title: '别碰二次元，碰就是死！', publishedAt: '2026-05-07', sourceUrl: 'https://mp.weixin.qq.com/s/YCv7oSVyU94J8W8agSHb8A' },
-  { id: 'talk-20260506', title: '满大街都是“类似Labubu”和“类似娃三岁”，你们到底在恶心谁？', publishedAt: '2026-05-06', sourceUrl: 'https://mp.weixin.qq.com/s/lr1kbxn6ldMSKYg7gwZ1AA' },
-  { id: 'talk-20260501', title: '【盘点】五一期间上新的IP授权案例', publishedAt: '2026-05-01', sourceUrl: 'https://mp.weixin.qq.com/s/xvVBZ8MS97gxRYeHmFm9Fw' },
-  { id: 'talk-20260428', title: '【深度盘点分析】哆啦A梦2026年IP授权联名案例。这世上根本就没有“新IP红利”！', publishedAt: '2026-04-28', sourceUrl: 'https://mp.weixin.qq.com/s/4ldB2hyuWNgx2WAp6RiI6g' },
-  { id: 'talk-20260419', title: '笑死！那个拿下哪吒1亿订单的工厂，现在要倒闭了……真相远比你想的残酷', publishedAt: '2026-04-19', sourceUrl: 'https://mp.weixin.qq.com/s/qaS1yz2OTUxx0JgaUGyRsA' },
-]
