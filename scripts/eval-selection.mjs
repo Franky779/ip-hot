@@ -253,11 +253,14 @@ async function callScore(sample) {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.apiKey}` },
           body: JSON.stringify({
             model: provider.model,
+            // B1：返回体含嵌套 axes，强制 JSON 模式
+            response_format: { type: 'json_object' },
             messages: [
               { role: 'system', content: sample.systemPrompt },
               { role: 'user', content: sample.userPrompt },
             ],
-            temperature: 0.2,
+            // 重试时抬高温度打破确定性坏输出（与生产 callLLM 一致）
+            temperature: 0.2 + i * 0.2,
             max_tokens: 3000,
           }),
         })
