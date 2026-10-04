@@ -21,6 +21,7 @@
 //   node scripts/eval-selection.mjs                          # 全量 106 条，跑 1 次
 //   node scripts/eval-selection.mjs --runs 3                 # 每条打 3 次分（测方差，服务 B1 两次独立打分）
 //   node scripts/eval-selection.mjs --limit 10 --dry-run     # 只验证链路，用库里的旧分算指标，不调 LLM
+//   node scripts/eval-selection.mjs --prescreen --tag b2     # B2 预筛评估：量排除精度/召回与省钱比例
 //   node scripts/eval-selection.mjs --model deepseek-v4-flash --tag after-prompt-edit
 //
 // 环境变量：DATABASE_URL 必需；LLM_BASE_URL/LLM_API_KEY/LLM_MODEL 必需（--dry-run 除外）；
@@ -80,6 +81,25 @@ const PROMPT_VERSION = createHash('sha256').update(PROMPT_RAW).digest('hex').sli
 const SYSTEM_PROMPT = PROMPT_RAW
   .replace('{{INDUSTRY_SCOPE}}', INDUSTRY_SCOPE_RULES)
   .replace('{{SAFETY_GATE}}', SAFETY_GATE)
+
+// ---------- B2 预筛评估模式（--prescreen）----------
+// 只跑预筛提示词，量「排除精度/召回」与省钱比例，不打五轴分。与生产同构约定：
+//   - 提示词读 prompts/article-prescreen.md（不许内置正文）
+//   - 排除裁决与 lib/llm.ts 一致：in_scope=false 且 confidence>=8 且 reason!=unsure
+//   - user 输入正文截断 1500 字符（PRESCREEN_CONTENT_CHARS）
+const PRESCREEN_MODE = hasFlag('--prescreen')
+const PRESCREEN_PATH = path.join(ROOT, 'prompts', 'article-prescreen.md')
+const PRESCREEN_RAW = PRESCREEN_MODE ? readFileSync(PRESCREEN_PATH, 'utf8') : ''
+const PRESCREEN_VERSION = PRESCREEN_MODE ? createHash('sha256').update(PRESCREEN_RAW).digest('hex').slice(0, 12) : null
+const PRESCREEN_MIN_CONFIDENCE = 8
+const PRESCREEN_CONTENT_CHARS = 1500
+const PRESCREEN_REASONS = ['ip_business', 'game_film', 'celebrity_sports', 'general_news', 'promo_other', 'unsure']
+// 生产完整打分的单篇 token 参考值（两次独立打分；用于估算省钱比例，可用环境变量覆盖）
+const SCORE_TOKENS_REF = Number(process.env.EVAL_SCORE_TOKENS_REF) || 6000
+if (PRESCREEN_MODE && DRY_RUN) {
+  console.error('--prescreen 与 --dry-run 不兼容：预筛没有历史分可复用，必须真实调用')
+  process.exit(1)
+}
 
 const PROVIDERS = [
   {
@@ -180,32 +200,124 @@ const samples = gold
       gold_label: g.label,
       old_score: a.relevance_score,
       old_category: a.category,
+      content, // B2 预筛评估用（生产预筛输入 = 标题 + 正文前 1500 字）
       userPrompt: `标题: ${title}\n\n内容: ${content.slice(0, 3000)}`,
       systemPrompt: SYSTEM_PROMPT, // 学习规则在下面按条注入
     }
   })
 
 // 按条查学习规则并追加到 system prompt（与生产 summarizeArticle 行为一致）
+// B2 预筛不注入学习规则（生产 prescreenArticle 也没有），预筛模式跳过
 {
-  const ldb = new pg.Client({ connectionString: process.env.DATABASE_URL })
-  await ldb.connect()
+  const ldb = PRESCREEN_MODE ? null : new pg.Client({ connectionString: process.env.DATABASE_URL })
+  if (ldb) await ldb.connect()
   let injected = 0
-  for (const sample of samples) {
-    try {
-      const learnings = await fetchLearningsFor(ldb, sample.title)
-      if (learnings.length) {
-        sample.systemPrompt += formatLearningRules(learnings)
-        injected++
-      }
-    } catch { /* 学习查询失败不阻塞评估，只是少注入 */ }
+  if (ldb) {
+    for (const sample of samples) {
+      try {
+        const learnings = await fetchLearningsFor(ldb, sample.title)
+        if (learnings.length) {
+          sample.systemPrompt += formatLearningRules(learnings)
+          injected++
+        }
+      } catch { /* 学习查询失败不阻塞评估，只是少注入 */ }
+    }
+    await ldb.end()
   }
-  await ldb.end()
   learningsInjected = injected
 }
 
 console.log(`样本 ${samples.length}/${gold.length} 条（缺库 ${missing.length} 条）；runs=${RUNS}；并发=${CONCURRENCY}`)
 console.log(`提示词版本 ${PROMPT_VERSION}；模型 ${PROVIDERS[0]?.model ?? '(dry-run)'}；学习规则注入 ${learningsInjected}/${samples.length} 条样本`)
 if (missing.length) console.warn(`警告：${missing.length} 条 gold 记录在 articles 表找不到，已跳过`)
+
+// ---------- B2 预筛评估主流程（--prescreen）：跑完即退出，不走五轴打分 ----------
+if (PRESCREEN_MODE) {
+  const started = Date.now()
+  const preResults = []
+  let preDone = 0
+  const preQueue = [...samples]
+  async function preWorker() {
+    for (;;) {
+      const sample = preQueue.shift()
+      if (!sample) return
+      const out = await callPrescreen(sample)
+      preResults.push({ ...sample, prescreen: out })
+      preDone++
+      process.stdout.write(
+        `[${preDone}/${samples.length}] gold=${sample.gold_label} ${out.ok ? (out.excluded ? `排除(${out.reason}/${out.confidence})` : `放行(${out.reason}/${out.confidence})`) : 'ERR'} ${sample.title.slice(0, 24)}\n`,
+      )
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, samples.length) }, () => preWorker()))
+
+  const okPre = preResults.filter((r) => r.prescreen.ok)
+  const excluded = okPre.filter((r) => r.prescreen.excluded)
+  const correctExcl = excluded.filter((r) => r.gold_label === 0)
+  const falseExcl = excluded.filter((r) => r.gold_label === 1) // 危险数：好文章被误拦
+  const gold0 = okPre.filter((r) => r.gold_label === 0)
+  const missed = gold0.filter((r) => !r.prescreen.excluded)
+  const pct2 = (x) => (x === null ? '—' : `${(x * 100).toFixed(1)}%`)
+  const exclPrecision = excluded.length ? correctExcl.length / excluded.length : null
+  const exclRecall = gold0.length ? correctExcl.length / gold0.length : null
+  const preTokens = preResults.reduce(
+    (s, r) => s + (r.prescreen.promptTokens ?? 0) + (r.prescreen.completionTokens ?? 0), 0,
+  )
+  const avgPreTokens = okPre.length ? preTokens / okPre.length : 0
+  const excludedPct = okPre.length ? excluded.length / okPre.length : 0
+  // 单篇生产成本 ≈ 预筛 + (放行时)两次打分；省钱比例 = 1 − (预筛 + 放行×打分参考) / 打分参考
+  const savingPct = 1 - (avgPreTokens + (1 - excludedPct) * SCORE_TOKENS_REF) / SCORE_TOKENS_REF
+  const reasonDist = {}
+  for (const r of okPre) reasonDist[r.prescreen.reason] = (reasonDist[r.prescreen.reason] ?? 0) + 1
+
+  const preTs = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19)
+  const preBase = `eval-prescreen-${preTs}-${TAG}`
+  writeFileSync(path.join(OUT_DIR, `${preBase}.json`), JSON.stringify({
+    meta: { at: new Date().toISOString(), model: PROVIDERS[0]?.model ?? '?', prescreen_version: PRESCREEN_VERSION, min_confidence: PRESCREEN_MIN_CONFIDENCE, elapsed_s: Math.round((Date.now() - started) / 1000) },
+    summary: { n: okPre.length, excluded: excluded.length, correct_exclusion: correctExcl.length, false_exclusion: falseExcl.length, missed_exclusion: missed.length, exclusion_precision: exclPrecision, exclusion_recall: exclRecall, avg_prescreen_tokens: avgPreTokens, excluded_pct: excludedPct, estimated_saving_pct: savingPct, score_tokens_ref: SCORE_TOKENS_REF, reason_dist: reasonDist, failures: preResults.length - okPre.length },
+    false_exclusions: falseExcl.map((r) => ({ article_id: r.article_id, title: r.title, source: r.source, reason: r.prescreen.reason, confidence: r.prescreen.confidence })),
+    missed_exclusions: missed.slice(0, 30).map((r) => ({ article_id: r.article_id, title: r.title, source: r.source, old_score: r.old_score })),
+    items: preResults.map((r) => ({ ...r, userPrompt: undefined, systemPrompt: undefined, content: undefined })),
+  }, null, 2))
+
+  const reasonRows = Object.entries(reasonDist).map(([k, v]) => `| ${k} | ${v} | ${pct2(v / okPre.length)} |`).join('\n')
+  const listMd = (items, extra) => items.length
+    ? items.slice(0, 20).map((r) => `- 【${r.source}】${r.title}${extra ? extra(r) : ''}`).join('\n')
+    : '- 无'
+  const preReport = `# B2 预筛离线评估报告（${preTs}，tag=${TAG}）
+
+- 样本：${okPre.length} 条（失败 ${preResults.length - okPre.length}）；预筛提示词版本：\`${PRESCREEN_VERSION}\`；排除信度下限 ${PRESCREEN_MIN_CONFIDENCE}
+- 排除 ${excluded.length} 条：正确 ${correctExcl.length}（gold=无关），**误拦 ${falseExcl.length}（gold=相关，危险数）**；漏拦 ${missed.length}（gold=无关仍放行，只是没省到钱）
+- 排除精确率 ${pct2(exclPrecision)} / 排除召回率 ${pct2(exclRecall)}
+- 成本：预筛平均 ${avgPreTokens.toFixed(0)} tokens/篇；排除率 ${pct2(excludedPct)}；按完整打分参考 ${SCORE_TOKENS_REF} tokens/篇估算，**整体省钱约 ${pct2(Math.max(0, savingPct))}**
+
+## 标签分布
+
+| reason | 条数 | 占比 |
+|---|---|---|
+${reasonRows}
+
+## 误拦清单（gold=相关却被排除——必须逐条回喂提示词，理想为 0）
+
+${listMd(falseExcl, (r) => `｜${r.prescreen.reason}/${r.prescreen.confidence}`)}
+
+## 漏拦清单（gold=无关仍放行——省钱漏斗，前 30 条）
+
+${listMd(missed, (r) => `｜旧分 ${r.old_score}`)}
+
+## 下一步
+
+误拦 > 0 → 收紧 prompts/article-prescreen.md（误拦类别加进放行/豁免条款）后重跑；
+漏拦偏多且集中在某标签 → 在「拦截」段补充该类模式。改完再跑：
+node scripts/eval-selection.mjs --prescreen --tag after-<改动说明>
+`
+  writeFileSync(path.join(OUT_DIR, `${preBase}.md`), preReport)
+  console.log(`\n===== 预筛摘要 =====`)
+  console.log(`排除 ${excluded.length}/${okPre.length}（精确率 ${pct2(exclPrecision)} / 召回率 ${pct2(exclRecall)}）；误拦（gold=相关）${falseExcl.length} 条；漏拦 ${missed.length} 条`)
+  console.log(`平均预筛 tokens ${avgPreTokens.toFixed(0)}；估算整体省钱 ${pct2(Math.max(0, savingPct))}`)
+  console.log(`报告：data/eval-results/${preBase}.md`)
+  process.exit(0)
+}
 
 // ---------- LLM 调用（不走回执/预算，参数与生产 callProvider 一致） ----------
 // B1 起返回体含嵌套 axes 对象，不能用惰性正则（会在第一个 } 处截断）。
@@ -238,6 +350,58 @@ function extractJsonObject(raw) {
     }
   }
   throw new Error(`No JSON in: ${trimmed.slice(0, 120)}`)
+}
+
+// B2 预筛调用（与 lib/llm.ts prescreenArticle 同构；失败不重试换通道前先记失败）
+async function callPrescreen(sample) {
+  const failures = []
+  const userPrompt = `标题: ${sample.title}\n\n内容: ${sample.content.slice(0, PRESCREEN_CONTENT_CHARS)}`
+  for (const provider of PROVIDERS) {
+    for (let i = 0; i < provider.attempts; i++) {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 90_000)
+      try {
+        const res = await fetch(`${provider.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
+          signal: controller.signal,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${provider.apiKey}` },
+          body: JSON.stringify({
+            model: provider.model,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: PRESCREEN_RAW },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.2 + i * 0.2,
+            max_tokens: 300,
+          }),
+        })
+        if (!res.ok) throw new Error(`API ${res.status}: ${(await res.text()).slice(0, 200)}`)
+        const data = await res.json()
+        const parsed = extractJsonObject(data.choices?.[0]?.message?.content ?? '')
+        const inScope = parsed.in_scope !== false
+        const confidenceRaw = Number(parsed.confidence)
+        const confidence = Number.isFinite(confidenceRaw)
+          ? Math.min(10, Math.max(0, Math.round(confidenceRaw)))
+          : 0
+        const reason = PRESCREEN_REASONS.includes(parsed.reason) ? parsed.reason : 'unsure'
+        // 与 lib/llm.ts 一致的排除裁决
+        const excluded = !inScope && confidence >= PRESCREEN_MIN_CONFIDENCE && reason !== 'unsure'
+        return {
+          ok: true, excluded, in_scope: inScope, confidence, reason, model: provider.model,
+          promptTokens: data.usage?.prompt_tokens ?? null,
+          completionTokens: data.usage?.completion_tokens ?? null,
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message.slice(0, 160) : String(e)
+        failures.push(`${provider.name}#${i + 1}: ${message}`)
+        await new Promise((r) => setTimeout(r, 2000))
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+  }
+  return { ok: false, error: failures.join(' | ').slice(0, 400) }
 }
 
 async function callScore(sample) {
