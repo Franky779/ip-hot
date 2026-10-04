@@ -115,7 +115,42 @@ export type LlmResult = {
   score_runs?: number[]
   /** 产出该结果的提示词版本（B4）；由 summarizeArticle 填，parseResult 阶段为 null */
   prompt_version?: string | null
+  /** B2 预筛结果；仅预筛排除的文章携带，正常打分为 undefined */
+  prescreen?: PrescreenResult | null
 }
+
+/** B2 预筛结果（完整打分前的超短提示词粗判） */
+export type PrescreenResult = {
+  /** 是否放行进入完整打分 */
+  in_scope: boolean
+  /** 模型自报置信度 0-10 */
+  confidence: number
+  /** 标签：ip_business / game_film / celebrity_sports / general_news / promo_other / unsure */
+  reason: string
+  /** 最终裁决：in_scope=false 且置信度达标才排除（宁放过勿错杀） */
+  excluded: boolean
+  /** 本次结果是否来自回执复用（复用=0成本） */
+  cached: boolean
+}
+
+/**
+ * B2 预筛排除的最低置信度：模型说 in_scope=false 但信心不足时一律放行。
+ * 误排除一篇好文章是内容损失（可能被清理逻辑删掉），误放行一篇噪声只是多花一次打分钱——
+ * 成本不对称决定门槛必须偏高。
+ */
+export const PRESCREEN_MIN_CONFIDENCE = 8
+
+const PRESCREEN_REASONS = [
+  'ip_business',
+  'game_film',
+  'celebrity_sports',
+  'general_news',
+  'promo_other',
+  'unsure',
+] as const
+
+/** 预筛 user 输入的正文截断长度（比完整打分短，成本更低；与评估脚本 --prescreen 模式保持一致） */
+const PRESCREEN_CONTENT_CHARS = 1500
 
 /** 失败信息分类（分类逻辑见 lib/llm-errors.ts） */
 
@@ -372,6 +407,36 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
+/**
+ * B2 预筛前置：完整打分前用超短提示词粗判「是否明显与 IP 产业无关」。
+ * - 走独立 purpose=prefilter 预算与回执（同题重试/多路由重复进入时回执复用=0成本）
+ * - fail-open：任何失败（无 provider/预算熔断/解析错误）返回 null → 放行进入完整打分
+ * - 排除裁决：in_scope=false 且 confidence >= PRESCREEN_MIN_CONFIDENCE 且非 unsure
+ */
+export async function prescreenArticle(
+  title: string,
+  content: string
+): Promise<PrescreenResult | null> {
+  const prompt = getPrompt('article-prescreen')
+  const userPrompt = `标题: ${title}\n\n内容: ${content.slice(0, PRESCREEN_CONTENT_CHARS)}`
+  const outcome = await callLlmJson('prefilter', prompt.text, userPrompt, 'article-prescreen')
+  if (!outcome.ok) {
+    console.warn(`[LLM] 预筛失败，放行进入完整打分: ${outcome.error.slice(0, 120)}`)
+    return null
+  }
+  const parsed = outcome.parsed
+  const inScope = parsed.in_scope !== false
+  const confidenceRaw = Number(parsed.confidence)
+  const confidence = Number.isFinite(confidenceRaw)
+    ? Math.min(10, Math.max(0, Math.round(confidenceRaw)))
+    : 0
+  const reason = (PRESCREEN_REASONS as readonly string[]).includes(parsed.reason as string)
+    ? (parsed.reason as string)
+    : 'unsure'
+  const excluded = !inScope && confidence >= PRESCREEN_MIN_CONFIDENCE && reason !== 'unsure'
+  return { in_scope: inScope, confidence, reason, excluded, cached: outcome.cached }
+}
+
 export async function summarizeArticle(
   title: string,
   content: string,
@@ -383,6 +448,40 @@ export async function summarizeArticle(
   if (!providers.length) {
     console.warn('[LLM] 未配置可用的 LLM，跳过摘要')
     return { ok: false, kind: 'outage', sampleError: 'no LLM provider configured' }
+  }
+
+  // B2 预筛前置：明显无关的内容不再花两次完整打分的钱。
+  // - LLM_PRESCREEN=off 可整体关闭
+  // - 预筛失败/异常一律 fail-open 放行（下面的 prescreenArticle 已兜底，这里再兜一层）
+  // - 排除结果落库为 score=2 + category=待分类，由各路由既有语义处置：
+  //   cron 主路由 → 已过滤（保留在库可审计）；admin 手动路由 → 沿用「无关即删」；
+  //   手动精选 → 待人工复核（is_manual 保护）
+  if (process.env.LLM_PRESCREEN !== 'off') {
+    try {
+      const pre = await prescreenArticle(title, content)
+      if (pre?.excluded) {
+        console.log(`[LLM] 预筛排除（${pre.reason}/${pre.confidence}${pre.cached ? '/缓存' : ''}）: ${title.slice(0, 40)}`)
+        return {
+          ok: true,
+          result: {
+            title_cn: title.slice(0, 100),
+            summary_cn: '',
+            category: '待分类',
+            relevance_score: 2,
+            is_selected: false,
+            commentary: `预筛排除（${pre.reason}）：判定与IP产业无直接业务关联`,
+            safety_blocked: false,
+            axes: null,
+            content_type: null,
+            score_runs: [2],
+            prompt_version: promptVersion('article-prescreen'),
+            prescreen: pre,
+          },
+        }
+      }
+    } catch (e) {
+      console.warn('[LLM] 预筛调用异常，放行进入完整打分:', e instanceof Error ? e.message : String(e))
+    }
   }
 
   // 提示词正文来自 prompts/article-score.md（B4），版本号随结果一起返回，供写库时留痕
