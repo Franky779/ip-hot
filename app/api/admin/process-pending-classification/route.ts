@@ -9,7 +9,7 @@ import {
   REVIEW_CATEGORY,
   autoCleanupLowScore,
 } from '@/lib/pending-classification'
-import { getSelectionThreshold } from '@/lib/selection-threshold'
+import { getSelectionThreshold, getTierThresholds, loadSourceTierMap, resolveThresholdForSource, type TierThresholds } from '@/lib/selection-threshold'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -24,7 +24,13 @@ type PendingArticle = {
 
 type Outcome = 'classified' | 'reviewed' | 'filtered' | 'failed'
 
-async function processArticle(article: PendingArticle, verifiedOfficialXNames: Set<string>, selectionThreshold: number): Promise<Outcome> {
+async function processArticle(
+  article: PendingArticle,
+  verifiedOfficialXNames: Set<string>,
+  selectionThreshold: number,
+  tierThresholds: TierThresholds,
+  sourceTierMap: Map<string, string>,
+): Promise<Outcome> {
   const supabase = createServiceClient()
   const llmOutcome = await summarizeArticle(article.title, '')
 
@@ -37,7 +43,9 @@ async function processArticle(article: PendingArticle, verifiedOfficialXNames: S
     const { error } = await supabase.from('articles').delete().eq('id', article.id)
     return error ? 'failed' : 'filtered'
   }
-  const outcome = getPendingClassificationOutcome({ ...result, relevance_score: policy.relevance_score }, selectionThreshold)
+  // B1 分级门槛：按信源分级取，未知分级回落全局门槛
+  const articleThreshold = resolveThresholdForSource(sourceTierMap.get(article.source), tierThresholds, selectionThreshold)
+  const outcome = getPendingClassificationOutcome({ ...result, relevance_score: policy.relevance_score }, articleThreshold)
 
   // Keep sensitive or ambiguous content out of the public stream and future auto-classification batches.
   if (outcome === 'reviewed') {
@@ -48,7 +56,7 @@ async function processArticle(article: PendingArticle, verifiedOfficialXNames: S
         summary_cn: result.summary_cn,
         category: REVIEW_CATEGORY,
         relevance_score: policy.relevance_score,
-        selection_threshold: selectionThreshold,
+        selection_threshold: articleThreshold,
         is_selected: false,
         commentary: result.commentary,
       })
@@ -61,7 +69,7 @@ async function processArticle(article: PendingArticle, verifiedOfficialXNames: S
       .from('articles')
       .update({
         category: FILTERED_CATEGORY,
-        selection_threshold: selectionThreshold,
+        selection_threshold: articleThreshold,
         is_selected: false,
       })
       .eq('id', article.id)
@@ -75,10 +83,13 @@ async function processArticle(article: PendingArticle, verifiedOfficialXNames: S
       summary_cn: result.summary_cn,
       category: result.category,
       relevance_score: policy.relevance_score,
-      selection_threshold: selectionThreshold,
-      is_selected: policy.is_selected && policy.relevance_score >= selectionThreshold,
+      selection_threshold: articleThreshold,
+      is_selected: policy.is_selected && policy.relevance_score >= articleThreshold,
       commentary: result.commentary,
       prompt_version: result.prompt_version,
+      score_axes: result.axes,
+      score_runs: result.score_runs,
+      content_type: result.content_type,
     })
     .eq('id', article.id)
   return error ? 'failed' : 'classified'
@@ -124,6 +135,9 @@ export async function POST(request: Request) {
 
   const verifiedOfficialXNames = await loadVerifiedOfficialXNames(supabase)
   const selectionThreshold = await getSelectionThreshold(supabase)
+  // B1 分级门槛
+  const tierThresholds = await getTierThresholds(supabase)
+  const sourceTierMap = await loadSourceTierMap(supabase)
 
   const { data: log, error: logError } = await supabase
     .from('cron_logs')
@@ -145,7 +159,7 @@ export async function POST(request: Request) {
       const group = pending.splice(0, CONCURRENCY)
       const results = await Promise.all(group.map(async (article) => {
         try {
-          return await processArticle(article, verifiedOfficialXNames, selectionThreshold)
+          return await processArticle(article, verifiedOfficialXNames, selectionThreshold, tierThresholds, sourceTierMap)
         } catch {
           return 'failed' as const
         }
