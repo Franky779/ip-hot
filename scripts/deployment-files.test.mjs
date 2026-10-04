@@ -252,3 +252,45 @@ test('eval-selection script stays production-faithful and side-effect-free', asy
   assert.ok(script.includes('data', 'gold.jsonl') || script.includes("gold.jsonl"), '评估脚本应以 data/gold.jsonl 为输入')
   assert.ok(script.includes('eval-results'), '评估脚本应把报告写到 data/eval-results/')
 })
+
+test('B1 five-axis prompt keeps the act-axis cap and content types', async () => {
+  const prompt = await readFile(join(root, 'prompts', 'article-score.md'), 'utf8')
+  for (const axis of ['sig', 'nov', 'cred', 'reson', 'act']) {
+    assert.ok(prompt.includes(axis), `五轴提示词缺 ${axis} 轴定义`)
+  }
+  assert.ok(prompt.includes('act ≤ 2，relevance_score ≤ 6'), 'act 压噪硬约束丢失：游戏/影视内容会被顶进精选')
+  for (const ct of ['licensing_deal', 'content_update', 'promo_noise']) {
+    assert.ok(prompt.includes(ct), `content_type 枚举缺 ${ct}`)
+  }
+})
+
+test('B1 two-run scoring hashes the run index and routes persist axes', async () => {
+  const llm = await readFile(join(root, 'lib', 'llm.ts'), 'utf8')
+  assert.ok(llm.includes('run:${runIndex}'), '两次独立打分的回执哈希必须带 run 序号，否则第二次会命中第一次的回执')
+  assert.ok(llm.includes('SCORE_RUNS'), 'SCORE_RUNS 常量丢失，两次打分退化为单次')
+  assert.ok(llm.includes('mergeScoreRuns'), '缺少多次打分合并逻辑')
+  const route = await readFile(join(root, 'app', 'api', 'cron', 'process-llm', 'route.ts'), 'utf8')
+  for (const col of ['score_axes', 'score_runs', 'content_type']) {
+    assert.ok(route.includes(col), `process-llm 写库缺 ${col}，五轴数据落不了库`)
+  }
+  assert.ok(route.includes('resolveThresholdForSource'), 'process-llm 未按信源分级取门槛')
+})
+
+test('B1 five-axis migration is idempotent and grants to app role', async () => {
+  const sql = await readFile(
+    join(root, 'ops', 'postgres', 'migrations', '20261004-b1-five-axis.sql'),
+    'utf8',
+  )
+  assert.ok(sql.includes("ADD COLUMN IF NOT EXISTS score_axes jsonb"), 'score_axes 列必须幂等创建')
+  assert.ok(sql.includes("article_selection_threshold_t1"), '分级门槛键缺失')
+  assert.ok(sql.includes('update llm_budget set day_limit = 6000'), 'summarize 预算未翻倍')
+  assert.ok(sql.includes('GRANT'), '迁移末尾必须 GRANT 给 ip_hot_app（迁移铁律）')
+})
+
+test('LLM JSON extraction must not use the lazy regex (breaks on nested axes)', async () => {
+  const llm = await readFile(join(root, 'lib', 'llm.ts'), 'utf8')
+  assert.ok(llm.includes('extractJsonObject'), 'JSON 提取必须走 extractJsonObject（平衡扫描兼容嵌套 axes）')
+  assert.ok(!llm.includes("match(/\\{[\\s\\S]*?\\}/)"), '惰性正则 \\{[\\s\\S]*?\\} 会在嵌套 axes 的第一个 } 截断，禁止回退')
+  const evalScript = await readFile(join(root, 'scripts', 'eval-selection.mjs'), 'utf8')
+  assert.ok(evalScript.includes('extractJsonObject'), '评估脚本必须与生产同构使用 extractJsonObject')
+})
