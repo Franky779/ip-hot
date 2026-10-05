@@ -115,8 +115,8 @@ export async function POST(request: Request) {
       commentary: llmResult?.commentary ?? null,
       prompt_version: llmResult?.prompt_version ?? null,
       // B1 五轴（手动精选保留完整评分证据）
-      score_axes: llmResult?.axes ?? null,
-      score_runs: llmResult?.score_runs ?? null,
+      score_axes: llmResult?.axes ? JSON.stringify(llmResult.axes) : null,
+      score_runs: llmResult?.score_runs ? JSON.stringify(llmResult.score_runs) : null,
       content_type: llmResult?.content_type ?? null,
       // A7 旧文不刷屏：发布时间归一化（缺失→现在，未来时间→现在，正常→按原文时间归档）
       published_at: normalizePublishedAt(article.publishedAt ?? null, new Date().toISOString()),
