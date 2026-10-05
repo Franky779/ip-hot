@@ -595,8 +595,8 @@ export async function GET(request: Request) {
               is_selected: classification.is_selected,
               commentary: llmResult.commentary,
               prompt_version: llmResult.prompt_version,
-              score_axes: llmResult.axes,
-              score_runs: llmResult.score_runs,
+              score_axes: llmResult.axes ? JSON.stringify(llmResult.axes) : null,
+              score_runs: llmResult.score_runs ? JSON.stringify(llmResult.score_runs) : null,
               content_type: llmResult.content_type,
             })
             .eq('id', article.id)
