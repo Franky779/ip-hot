@@ -87,8 +87,8 @@ async function processArticle(
       is_selected: policy.is_selected && policy.relevance_score >= articleThreshold,
       commentary: result.commentary,
       prompt_version: result.prompt_version,
-      score_axes: result.axes,
-      score_runs: result.score_runs,
+      score_axes: result.axes ? JSON.stringify(result.axes) : null,
+      score_runs: result.score_runs ? JSON.stringify(result.score_runs) : null,
       content_type: result.content_type,
     })
     .eq('id', article.id)
