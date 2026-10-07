@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { currentShanghaiDate, githubResearchPath, renderResearchMarkdown, researchCategoryLink, researchTags, slugFromTitle, validateResearchInput } from './research.ts'
+import { currentShanghaiDate, githubResearchPath, normalizeResearchCategory, renderResearchMarkdown, researchCategoryLink, researchTags, slugFromTitle, validateResearchInput } from './research.ts'
 
 test('validates report metadata and markdown size', () => {
   const result = validateResearchInput({ title: '报告', category: '品类报告', published_at: '1999-01-01', markdown_content: '# 正文' })
@@ -26,31 +26,16 @@ test('maps research categories to GitHub backup folders', () => {
   )
 })
 
-test('links report details back to their selected research category', () => {
-  assert.deepEqual(researchCategoryLink('品类报告'), {
-    href: '/research?category=%E5%93%81%E7%B1%BB%E6%8A%A5%E5%91%8A',
-    label: '← 返回品类报告',
-  })
-  assert.deepEqual(researchCategoryLink('深度分析'), {
-    href: '/research?category=%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90',
-    label: '← 返回深度分析',
-  })
+test('links report details back to the merged research list', () => {
+  assert.deepEqual(researchCategoryLink('品类报告'), { href: '/research', label: '← 返回行业报告' })
+  assert.deepEqual(researchCategoryLink('深度分析'), { href: '/research', label: '← 返回行业报告' })
 })
 
 test('normalizes legacy category names to current ones', () => {
   // Old names should map to new canonical names
-  assert.deepEqual(researchCategoryLink('品类研究'), {
-    href: '/research?category=%E5%93%81%E7%B1%BB%E6%8A%A5%E5%91%8A',
-    label: '← 返回品类报告',
-  })
-  assert.deepEqual(researchCategoryLink('品牌/IP与授权营销研究'), {
-    href: '/research?category=%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90',
-    label: '← 返回深度分析',
-  })
-  assert.deepEqual(researchCategoryLink('品牌/IP分析'), {
-    href: '/research?category=%E6%B7%B1%E5%BA%A6%E5%88%86%E6%9E%90',
-    label: '← 返回深度分析',
-  })
+  assert.equal(normalizeResearchCategory('品类研究'), '品类报告')
+  assert.equal(normalizeResearchCategory('品牌/IP与授权营销研究'), '深度分析')
+  assert.equal(normalizeResearchCategory('品牌/IP分析'), '深度分析')
 })
 
 test('extracts report keyword tags from title templates', () => {
