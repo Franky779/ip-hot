@@ -12,12 +12,9 @@ export function normalizeResearchCategory(value: string): ResearchCategory {
   return '深度分析'
 }
 
-export function researchCategoryLink(value: string): { href: string; label: string } {
-  const category = normalizeResearchCategory(value)
-  return {
-    href: `/research?category=${encodeURIComponent(category)}`,
-    label: `← 返回${category}`,
-  }
+export function researchCategoryLink(_value: string): { href: string; label: string } {
+  // 报告列表页已合并为一个时间流（不再按分类分 tab），详情页统一返回行业报告
+  return { href: '/research', label: '← 返回行业报告' }
 }
 
 export function researchTags(report: Pick<ResearchReport, 'title' | 'category'>): string[] {
