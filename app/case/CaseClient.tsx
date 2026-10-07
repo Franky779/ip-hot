@@ -141,29 +141,21 @@ export function CaseClient() {
           {cities.map(([name, count]) => <button key={name} className={`factory-hub-btn${city === name ? ' active' : ''}`} onClick={() => setCity(name)}>{name} ({count})</button>)}
         </div>}
 
-        <div className="case-grid">
+        <div className="case-list">
           {loadError && <div className="factory-empty">数据加载失败，请刷新重试</div>}
           {!loadError && !data && <div className="factory-empty">加载案例库中…</div>}
           {data && filtered.length === 0 && <div className="factory-empty">没有找到匹配的案例</div>}
-          {filtered.map(item => (
-            <Link href={`/case/detail?id=${item.id}`} className={`factory-card case-card${adminLoaded && isAdmin && selectedIds.has(item.id) ? ' selected' : ''}`} key={item.id} title={caseTitle(item)}>
-              <div className="factory-card-cover">
-                {item.images[0] ? <img src={`/case/${item.images[0].local}`} alt={caseTitle(item)} loading="lazy" /> : <div className="factory-card-placeholder">{(item.ip_name || item.licensee_name || '?').slice(0, 1)}</div>}
-                {adminLoaded && isAdmin && <div className={`case-select-box${selectedIds.has(item.id) ? ' checked' : ''}`} onClick={event => { event.preventDefault(); event.stopPropagation(); toggleSelect(item.id) }} title={selectedIds.has(item.id) ? '取消选择' : '选择案例'} role="checkbox" aria-checked={selectedIds.has(item.id)} />}
+          {filtered.map(item => {
+            const tags = [item.license_kind, item.product_category, item.city, item.factory_name, item.case_date].filter(Boolean) as string[]
+            return (
+              <Link href={`/case/detail?id=${item.id}`} className={`case-strip${adminLoaded && isAdmin && selectedIds.has(item.id) ? ' selected' : ''}`} key={item.id} title={caseTitle(item)}>
+                {adminLoaded && isAdmin && <span className={`case-select-box${selectedIds.has(item.id) ? ' checked' : ''}`} onClick={event => { event.preventDefault(); event.stopPropagation(); toggleSelect(item.id) }} title={selectedIds.has(item.id) ? '取消选择' : '选择案例'} role="checkbox" aria-checked={selectedIds.has(item.id)} />}
+                <span className="case-strip-title">【{caseTitle(item)}】</span>
+                <span className="case-strip-tags">{tags.map(tag => <span className="case-strip-tag" key={tag}>#{tag}</span>)}</span>
                 {adminLoaded && isAdmin && <button className="factory-delete-btn" title="删除案例" onClick={event => { event.preventDefault(); event.stopPropagation(); setConfirmDel(item) }}>✕</button>}
-              </div>
-              <div className="factory-card-name case-card-name">{caseTitle(item)}</div>
-              <div className="case-card-meta">
-                <span className="case-kind-tag">{item.license_kind || '授权案例'}</span>
-                {item.product_category && <span className="case-cat-tag">{item.product_category}</span>}
-              </div>
-              <div className="case-card-parties">
-                {item.ip_name && <span className="case-party case-party-ip">IP·{item.ip_name}</span>}
-                {item.licensee_name && <span className="case-party case-party-licensee">品牌·{item.licensee_name}</span>}
-                {item.factory_name && <span className="case-party case-party-factory">工厂·{item.factory_name}</span>}
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
       </main>
 
