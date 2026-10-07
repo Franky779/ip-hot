@@ -105,15 +105,17 @@ export function mergeCaseRecords(records: CaseRecord[], admin: CaseAdminData): C
   ]
 }
 
-// 反向查询：三库详情页"相关授权案例"区块用
-export function casesByIp(records: CaseRecord[], ipId: number): CaseRecord[] {
-  return records.filter(r => r.ip_id === ipId)
+// 反向查询：三库详情页"相关授权案例"区块用。
+// 兼容两类关联：① 硬编号关联（id === x）；② 仅存名字未关联编号（id === 0 且 name 与对方库实体名一致）。
+// 第②类让"在品牌方库填了信息、但案例没手动选编号"的情况也能自动互链，无需回填数据。
+export function casesByIp(records: CaseRecord[], ipId: number, ipName?: string): CaseRecord[] {
+  return records.filter(r => r.ip_id === ipId || (r.ip_id === 0 && !!ipName && r.ip_name === ipName))
 }
-export function casesByLicensee(records: CaseRecord[], licenseeId: number): CaseRecord[] {
-  return records.filter(r => r.licensee_id === licenseeId)
+export function casesByLicensee(records: CaseRecord[], licenseeId: number, licenseeName?: string): CaseRecord[] {
+  return records.filter(r => r.licensee_id === licenseeId || (r.licensee_id === 0 && !!licenseeName && r.licensee_name === licenseeName))
 }
-export function casesByFactory(records: CaseRecord[], factoryId: number): CaseRecord[] {
-  return records.filter(r => r.factory_id === factoryId)
+export function casesByFactory(records: CaseRecord[], factoryId: number, factoryName?: string): CaseRecord[] {
+  return records.filter(r => r.factory_id === factoryId || (r.factory_id === 0 && !!factoryName && r.factory_name === factoryName))
 }
 
 // 案例展示名：IP × 品牌方

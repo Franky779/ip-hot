@@ -3485,6 +3485,21 @@ body {
   white-space: nowrap;
 }
 
+/* IP 方归属标签：版权方官方 / 中国代理方官方。两者都属 T1，用蓝色区分于普通 T1 标签。 */
+.source-ip-scope-tag {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #185fa5;
+  background: rgba(24, 95, 165, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .source-ip-scope-tag { color: #85b7eb; background: rgba(133, 183, 235, 0.14); }
+
 .source-desc {
   margin-top: 0.5rem;
   font-size: 0.875rem;
@@ -8697,45 +8712,52 @@ a.lic-chain-factory:hover b { color: #5f97a6; }
 /* ============================================================
    IP授权案例库 /case（复用 factory-* 布局类，仅新增案例专属样式）
    ============================================================ */
-/* 列表：一排 8 卡的小卡网格 */
-.case-grid {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 0.7rem;
+/* 列表：新闻长条卡 —— 一行一条，【IP × 品牌】左侧顶格 + #标签 跟随 */
+.case-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
-@media (max-width: 1900px) { .case-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
-@media (max-width: 1650px) { .case-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-@media (max-width: 1400px) { .case-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-@media (max-width: 1150px) { .case-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 900px) { .case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 620px) { .case-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-/* 小卡文字区压缩 */
-.case-card-name { padding: 0.5rem 0.6rem 0.1rem; font-size: 0.8rem; }
-
-/* 第二排：授权分类（左）+ 品类（右） */
-.case-card-meta { display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; padding: 0.2rem 0.6rem 0; }
-.case-kind-tag {
-  font-size: 0.62rem; font-weight: 600; white-space: nowrap;
-  color: var(--accent); background: var(--accent-light);
-  padding: 1px 0.45rem; border-radius: 100px;
+.case-strip {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.7rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
-.case-cat-tag {
-  font-size: 0.62rem; white-space: nowrap;
-  color: var(--text-secondary); border: 1px solid var(--card-border);
-  padding: 1px 0.45rem; border-radius: 100px;
+.case-strip:hover { border-color: var(--accent); background: var(--surface-hover); }
+.case-strip-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-/* 第三排：IP / 品牌方 / 工厂 小按钮 */
-.case-card-parties { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0.35rem 0.6rem 0.55rem; }
-.case-party {
-  font-size: 0.62rem; padding: 1px 0.4rem; border-radius: 6px;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.case-strip-tags { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; min-width: 0; }
+.case-strip-tag { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; }
+/* 长条卡标题内：IP方/品牌方 名字按名字自动跳转链接 */
+.case-strip-entity { color: var(--accent); text-decoration: none; }
+.case-strip-entity:hover { text-decoration: underline; }
+/* 长条卡末尾：查看案例详情入口 */
+.case-strip-open { margin-left: auto; flex-shrink: 0; color: var(--text-secondary); font-size: 0.8rem; text-decoration: none; white-space: nowrap; }
+.case-strip-open:hover { color: var(--accent); }
+.case-strip .case-select-box { position: static; flex-shrink: 0; }
+.case-strip .factory-delete-btn { position: static; flex-shrink: 0; }
+.case-strip.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+@media (max-width: 620px) {
+  .case-strip { padding: 0.55rem 0.7rem; }
+  .case-strip-title { white-space: normal; }
 }
-.case-party-ip { color: #c9a24a; background: rgba(201, 162, 74, 0.12); }
-.case-party-licensee { color: var(--accent); background: var(--accent-light); }
-.case-party-factory { color: #5f97a6; background: rgba(95, 151, 166, 0.12); }
 
 /* 详情页：授权链路 —— 可点击的是彩色按钮（带›箭头），不可点击的是灰色纯文本 */
 .case-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -8785,8 +8807,6 @@ a.case-chain-node:hover { transform: translateY(-1px); box-shadow: var(--shadow)
 .case-select-box.checked { background: var(--accent); border-color: var(--accent); }
 .case-select-box.checked::after { content: '✓'; color: #fff; font-size: 12px; line-height: 1; font-weight: 700; }
 .case-select-box:hover { border-color: var(--accent); }
-
-.factory-card.case-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
 
 .factory-batch-del-btn {
   display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.6rem;

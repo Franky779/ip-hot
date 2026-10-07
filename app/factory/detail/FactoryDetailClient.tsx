@@ -58,10 +58,10 @@ export function FactoryDetailClient({ initialId }: { initialId: number }) {
     ])
       .then(([records, admin]) => {
         const merged = admin ? mergeCaseRecords(records, admin as CaseAdminData) : records
-        setRelatedCases(casesByFactory(merged, initialId))
+        setRelatedCases(casesByFactory(merged, initialId, d?.name))
       })
       .catch(() => setRelatedCases([]))
-  }, [initialId])
+  }, [initialId, d?.name])
 
   useEffect(() => { if (d) document.title = `${d.name} · IP工厂供应链` }, [d])
 

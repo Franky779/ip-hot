@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../components/AdminToggle'
 import { CASE_CITIES, CASE_LICENSE_KINDS, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseConfig, type CaseRecord } from '@/lib/case-types'
+import { mergeLicenseeRecords, type LicenseeAdminData } from '@/lib/licensee-types'
+import { mergeFactoryRecords, type FactoryAdminData } from '@/lib/factory-types'
+import { buildFactoryIndex, buildIpIndex, buildLicenseeIndex, resolveEntityHref, type EntityKind } from '@/lib/entity-links'
 
 const EMPTY_CONFIG: CaseConfig = { custom_categories: [], custom_cities: [] }
 
@@ -22,6 +25,37 @@ export function CaseClient() {
   const [batchConfirm, setBatchConfirm] = useState(false)
   const [batchDeleting, setBatchDeleting] = useState(false)
   const { isAdmin, loaded: adminLoaded } = useAdmin()
+
+  const EMPTY_LICENSEE_ADMIN: LicenseeAdminData = { deleted: [], edits: {}, new_records: [], config: { contact_public: true, custom_hubs: [], custom_categories: [] } }
+  const EMPTY_FACTORY_ADMIN: FactoryAdminData = { deleted: [], edits: {}, new_records: [], config: { contact_public: true, custom_hubs: [], custom_categories: [] } }
+
+  // 载入三库名称→编号索引，供长条卡里的 IP方/品牌方 名字按名字自动跳转（无需手动关联编号）
+  const [licensees, setLicensees] = useState<{ id: number; name: string; name_en?: string }[]>([])
+  const [factories, setFactories] = useState<{ id: number; name: string; name_en?: string }[]>([])
+  const [ipLibrary, setIpLibrary] = useState<{ id: number; name_cn?: string; name_en?: string }[] | null>(null)
+  useEffect(() => {
+    Promise.all([
+      fetch('/licensee/licensees.json').then(r => r.ok ? r.json() : []),
+      fetch('/api/licensee/overrides').then(r => r.ok ? r.json() : Promise.resolve(EMPTY_LICENSEE_ADMIN)),
+      fetch('/factory/factories.json').then(r => r.ok ? r.json() : []),
+      fetch('/api/factory/overrides').then(r => r.ok ? r.json() : Promise.resolve(EMPTY_FACTORY_ADMIN)),
+    ])
+      .then(([lr, la, fr, fa]) => {
+        setLicensees(mergeLicenseeRecords(lr || [], (la as LicenseeAdminData) || { deleted: [], edits: {}, new_records: [] }))
+        setFactories(mergeFactoryRecords(fr || [], (fa as FactoryAdminData) || { deleted: [], edits: {}, new_records: [] }))
+      })
+      .catch(() => { setLicensees([]); setFactories([]) })
+    fetch('/api/ipbrand/summary', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : [])
+      .then(records => setIpLibrary(records))
+      .catch(() => setIpLibrary([]))
+  }, [])
+
+  const licenseeIndex = useMemo(() => buildLicenseeIndex(licensees), [licensees])
+  const factoryIndex = useMemo(() => buildFactoryIndex(factories), [factories])
+  const ipIndex = useMemo(() => (ipLibrary ? buildIpIndex(ipLibrary) : null), [ipLibrary])
+  const linkFor = (kind: EntityKind, id: number, name: string): string | null =>
+    resolveEntityHref(kind, { id, name, index: kind === 'ip' ? ipIndex : kind === 'licensee' ? licenseeIndex : factoryIndex })
 
   useEffect(() => {
     Promise.all([
@@ -141,29 +175,32 @@ export function CaseClient() {
           {cities.map(([name, count]) => <button key={name} className={`factory-hub-btn${city === name ? ' active' : ''}`} onClick={() => setCity(name)}>{name} ({count})</button>)}
         </div>}
 
-        <div className="case-grid">
+        <div className="case-list">
           {loadError && <div className="factory-empty">数据加载失败，请刷新重试</div>}
           {!loadError && !data && <div className="factory-empty">加载案例库中…</div>}
           {data && filtered.length === 0 && <div className="factory-empty">没有找到匹配的案例</div>}
-          {filtered.map(item => (
-            <Link href={`/case/detail?id=${item.id}`} className={`factory-card case-card${adminLoaded && isAdmin && selectedIds.has(item.id) ? ' selected' : ''}`} key={item.id} title={caseTitle(item)}>
-              <div className="factory-card-cover">
-                {item.images[0] ? <img src={`/case/${item.images[0].local}`} alt={caseTitle(item)} loading="lazy" /> : <div className="factory-card-placeholder">{(item.ip_name || item.licensee_name || '?').slice(0, 1)}</div>}
-                {adminLoaded && isAdmin && <div className={`case-select-box${selectedIds.has(item.id) ? ' checked' : ''}`} onClick={event => { event.preventDefault(); event.stopPropagation(); toggleSelect(item.id) }} title={selectedIds.has(item.id) ? '取消选择' : '选择案例'} role="checkbox" aria-checked={selectedIds.has(item.id)} />}
+          {filtered.map(item => {
+            const tags = [item.license_kind, item.product_category, item.city, item.factory_name, item.case_date].filter(Boolean) as string[]
+            const ipHref = linkFor('ip', item.ip_id, item.ip_name)
+            const licHref = linkFor('licensee', item.licensee_id, item.licensee_name)
+            return (
+              <div className={`case-strip${adminLoaded && isAdmin && selectedIds.has(item.id) ? ' selected' : ''}`} key={item.id} title={caseTitle(item)}>
+                {adminLoaded && isAdmin && <span className={`case-select-box${selectedIds.has(item.id) ? ' checked' : ''}`} onClick={event => { event.preventDefault(); event.stopPropagation(); toggleSelect(item.id) }} title={selectedIds.has(item.id) ? '取消选择' : '选择案例'} role="checkbox" aria-checked={selectedIds.has(item.id)} />}
+                <span className="case-strip-title">
+                  【{ipHref
+                    ? <Link href={ipHref} className="case-strip-entity" onClick={event => event.stopPropagation()} title="查看IP档案">{item.ip_name}</Link>
+                    : <span>{item.ip_name}</span>}
+                  {' × '}
+                  {licHref
+                    ? <Link href={licHref} className="case-strip-entity" onClick={event => event.stopPropagation()} title="查看品牌方档案">{item.licensee_name}</Link>
+                    : <span>{item.licensee_name}</span>}】
+                </span>
+                <span className="case-strip-tags">{tags.map(tag => <span className="case-strip-tag" key={tag}>#{tag}</span>)}</span>
+                <Link href={`/case/detail?id=${item.id}`} className="case-strip-open" onClick={event => event.stopPropagation()} title="查看案例详情">详情 ›</Link>
                 {adminLoaded && isAdmin && <button className="factory-delete-btn" title="删除案例" onClick={event => { event.preventDefault(); event.stopPropagation(); setConfirmDel(item) }}>✕</button>}
               </div>
-              <div className="factory-card-name case-card-name">{caseTitle(item)}</div>
-              <div className="case-card-meta">
-                <span className="case-kind-tag">{item.license_kind || '授权案例'}</span>
-                {item.product_category && <span className="case-cat-tag">{item.product_category}</span>}
-              </div>
-              <div className="case-card-parties">
-                {item.ip_name && <span className="case-party case-party-ip">IP·{item.ip_name}</span>}
-                {item.licensee_name && <span className="case-party case-party-licensee">品牌·{item.licensee_name}</span>}
-                {item.factory_name && <span className="case-party case-party-factory">工厂·{item.factory_name}</span>}
-              </div>
-            </Link>
-          ))}
+            )
+          })}
         </div>
       </main>
 

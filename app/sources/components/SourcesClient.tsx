@@ -29,7 +29,21 @@ interface Source {
   last_tested_at?: string | null
   last_test_message?: string
   tier?: 'T1' | 'T1_5' | 'T2' | 'EXCLUDE_MP'
+  /** IP 方归属：版权方官方（海外原版权方）/ 中国代理方官方（国内代理公司）。两者都属 T1。 */
+  ip_scope?: 'rights_holder' | 'cn_agent' | null
+  /** 该源对应的公司主体名，与 ipbrand.company 对齐 */
+  ip_owner?: string | null
   sort_order: number
+}
+
+const IP_SCOPE_FILTER_OPTIONS: Array<{ value: NonNullable<Source['ip_scope']>; label: string }> = [
+  { value: 'rights_holder', label: '版权方官方' },
+  { value: 'cn_agent', label: '中国代理方官方' },
+]
+
+const IP_SCOPE_LABELS: Record<string, string> = {
+  rights_holder: '版权方官方',
+  cn_agent: '中国代理方官方',
 }
 
 const SOURCE_TIER_FILTER_OPTIONS: Array<{ value: NonNullable<Source['tier']>; label: string }> = [
@@ -171,6 +185,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
   const [sectionFilter, setSectionFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [tierFilter, setTierFilter] = useState('all')
+  const [ipScopeFilter, setIpScopeFilter] = useState('all')
   const [healthRows, setHealthRows] = useState<SourceHealthRow[] | null>(null)
 
   const refreshHealth = useCallback(async () => {
@@ -240,10 +255,19 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
     }
     return counts
   }, [sources])
+  // IP 方归属统计：未归属的 T1 是政府/行业媒体，不算 IP 方缺口
+  const ipScopeSummary = useMemo(() => {
+    const counts: Record<string, number> = { rights_holder: 0, cn_agent: 0 }
+    for (const source of sources) {
+      const scope = source.ip_scope
+      if (scope && scope in counts) counts[scope] += 1
+    }
+    return counts
+  }, [sources])
 
   const filteredSources = sources.filter((source) => {
     const matchesKeyword = !normalizedKeyword || [
-      source.name, source.url, source.type, source.description, source.method,
+      source.name, source.url, source.type, source.description, source.method, source.ip_owner,
     ].some((value) => value?.toLowerCase().includes(normalizedKeyword))
     const matchesRegion = regionFilter === 'all' || source.region === regionFilter
     const matchesTestStatus = testStatusFilter === 'all'
@@ -258,10 +282,17 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
       || (healthSummary.available
         && resolveHealthFilterValue(source, healthBySource[source.id]) === statusFilter)
     const matchesTier = tierFilter === 'all' || (source.tier ?? 'T2') === tierFilter
-    return matchesKeyword && matchesRegion && matchesTestStatus && matchesFetchType && matchesExecutionMode && matchesSection && matchesStatus && matchesTier
+    // 'none' 专查未归属 IP 方的 T1——即真正的 IP 方官方源缺口
+    const matchesIpScope = ipScopeFilter === 'all'
+      || (ipScopeFilter === 'none'
+        ? (source.tier ?? 'T2') === 'T1' && !source.ip_scope
+        : source.ip_scope === ipScopeFilter)
+    return matchesKeyword && matchesRegion && matchesTestStatus && matchesFetchType && matchesExecutionMode
+      && matchesSection && matchesStatus && matchesTier && matchesIpScope
   })
   const hasFilters = keyword !== '' || regionFilter !== 'all' || testStatusFilter !== 'all' || fetchTypeFilter !== 'all'
     || executionModeFilter !== 'all' || sectionFilter !== 'all' || statusFilter !== 'all' || tierFilter !== 'all'
+    || ipScopeFilter !== 'all'
   const grouped = groupBySection(filteredSources)
   const sectionIds = Object.keys(grouped)
 
@@ -785,6 +816,20 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                 ))}
               </select>
             </label>
+            <label>
+              <span>IP 方归属</span>
+              <select value={ipScopeFilter} onChange={(event) => setIpScopeFilter(event.target.value)}>
+                <option value="all">全部归属</option>
+                {IP_SCOPE_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {ipScopeSummary[option.value]} 条 · {option.label}
+                  </option>
+                ))}
+                <option value="none">
+                  {tierSummary.T1 - ipScopeSummary.rights_holder - ipScopeSummary.cn_agent} 条 · T1 但未归属 IP 方
+                </option>
+              </select>
+            </label>
           </div>
           <div className="source-filter-summary">
             <span>当前显示 <strong>{filteredSources.length}</strong> / {sources.length} 条</span>
@@ -800,6 +845,7 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                   setSectionFilter('all')
                   setStatusFilter('all')
                   setTierFilter('all')
+                  setIpScopeFilter('all')
                 }}
               >
                 清除筛选
@@ -897,6 +943,12 @@ export function SourcesClient({ initialSources }: SourcesClientProps) {
                         </svg>
                       </a>
                       <span className="source-tag">{item.type}</span>
+                      {item.ip_scope && (
+                        <span className="source-ip-scope-tag">
+                          {IP_SCOPE_LABELS[item.ip_scope]}
+                          {item.ip_owner ? ` · ${item.ip_owner}` : ''}
+                        </span>
+                      )}
                     </div>
                     {(() => {
                       const schedule = getSourceSchedule(item)

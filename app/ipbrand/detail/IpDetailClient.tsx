@@ -130,10 +130,10 @@ export function IpDetailClient({ initialId }: { initialId: number }) {
     ])
       .then(([records, admin]) => {
         const merged = admin ? mergeCaseRecords(records, admin as CaseAdminData) : records
-        setRelatedCases(casesByIp(merged, ipId))
+        setRelatedCases(casesByIp(merged, ipId, data?.name_cn || data?.name_en))
       })
       .catch(() => setRelatedCases([]))
-  }, [ipId])
+  }, [ipId, data?.name_cn, data?.name_en])
 
   const d = data
   const title = d ? d.name_cn || d.name_en || '(未命名)' : 'IP 详情'

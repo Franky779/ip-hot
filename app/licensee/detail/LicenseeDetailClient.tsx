@@ -58,10 +58,10 @@ export function LicenseeDetailClient({ initialId }: { initialId: number }) {
     ])
       .then(([records, admin]) => {
         const merged = admin ? mergeCaseRecords(records, admin as CaseAdminData) : records
-        setRelatedCases(casesByLicensee(merged, initialId))
+        setRelatedCases(casesByLicensee(merged, initialId, d?.name))
       })
       .catch(() => setRelatedCases([]))
-  }, [initialId])
+  }, [initialId, d?.name])
 
   // 进入编辑态时载入工厂列表供案例选择
   useEffect(() => {

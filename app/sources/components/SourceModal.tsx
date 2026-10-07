@@ -27,15 +27,25 @@ interface Source {
   tier?: 'T1' | 'T1_5' | 'T2' | 'EXCLUDE_MP'
   participation_mode?: 'editorial' | 'hot_signal' | 'isolated'
   first_party?: boolean
+  /** IP 方归属：版权方官方（海外原版权方）/ 中国代理方官方（国内代理公司）。两者都属 T1。 */
+  ip_scope?: 'rights_holder' | 'cn_agent' | null
+  /** 该源对应的公司主体名，与 ipbrand.company 对齐 */
+  ip_owner?: string | null
   verified_by?: string
   verification_notes?: string
 }
 
 const SOURCE_TIER_OPTIONS: Array<{ value: NonNullable<Source['tier']>; label: string }> = [
-  { value: 'T1', label: 'T1 · 官方一手（公告/财报/展会官方）' },
+  { value: 'T1', label: 'T1 · 官方一手（公告/财报/展会/IP方官方）' },
   { value: 'T1_5', label: 'T1.5 · 官方账号' },
   { value: 'T2', label: 'T2 · 媒体与个人' },
   { value: 'EXCLUDE_MP', label: '不参与精选（广告/招商号）' },
+]
+
+// IP 方归属只在 T1 里有意义：T2 媒体与个人不是当事方，EXCLUDE_MP 是广告号
+const IP_SCOPE_OPTIONS: Array<{ value: NonNullable<Source['ip_scope']>; label: string }> = [
+  { value: 'rights_holder', label: '版权方官方（海外 IP 原版权方，如三丽鸥 / 万代 / LEGO）' },
+  { value: 'cn_agent', label: '中国代理方官方（国内代理 / 授权公司，如艺洲人 / 羚邦）' },
 ]
 
 const PARTICIPATION_MODE_OPTIONS: Array<{ value: NonNullable<Source['participation_mode']>; label: string }> = [
@@ -84,6 +94,8 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
     tier: source?.tier ?? 'T2',
     participation_mode: source?.participation_mode ?? 'editorial',
     first_party: source?.first_party ?? false,
+    ip_scope: source?.ip_scope ?? null,
+    ip_owner: source?.ip_owner ?? '',
   })
   const [executionMode, setExecutionMode] = useState<SourceExecutionMode>(initialSchedule.executionMode)
   const [scheduleTier, setScheduleTier] = useState<SourceScheduleTier>(initialSchedule.tier)
@@ -303,6 +315,41 @@ export function SourceModal({ source, sectionOptions, onClose, onSaved }: Source
           </select>
           <p className="source-form-hint">T1 官方一手优先展示；T2 媒体报道要更硬才入选；广告号只算热度。</p>
         </div>
+
+        {form.tier === 'T1' && (
+          <>
+            <div className="source-form-field">
+              <label>IP 方归属</label>
+              <select
+                value={form.ip_scope ?? ''}
+                onChange={(e) => setForm({ ...form, ip_scope: (e.target.value || null) as Source['ip_scope'] })}
+              >
+                <option value="">— 非 IP 方（政府 / 媒体 / 行业机构）—</option>
+                {IP_SCOPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <p className="source-form-hint">
+                两者都是 T1，区别在代表的市场不同：版权方官方＝海外原版权方，中国代理方官方＝国内代理公司。
+                选「非 IP 方」适用于政府网站与行业媒体。
+              </p>
+            </div>
+
+            {form.ip_scope && (
+              <div className="source-form-field">
+                <label>公司主体名</label>
+                <input
+                  value={form.ip_owner ?? ''}
+                  onChange={(e) => setForm({ ...form, ip_owner: e.target.value })}
+                  placeholder="如：三丽鸥 / 广州艺洲人品牌管理股份有限公司"
+                />
+                <p className="source-form-hint">
+                  填 IP 品牌库里的 company 原文，用于自动关联。填了才能把该源的官方消息挂到对应 IP 上。
+                </p>
+              </div>
+            )}
+          </>
+        )}
 
         <div className="source-form-field">
           <label>参与方式</label>

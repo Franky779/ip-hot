@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAdmin, ADMIN_PW_KEY } from '../../components/AdminToggle'
 import { CASE_CITIES, CASE_LICENSE_KINDS, CASE_PRODUCT_CATEGORIES, caseTitle, mergeCaseRecords, type CaseAdminData, type CaseConfig, type CaseRecord } from '@/lib/case-types'
 import { mergeLicenseeRecords, type LicenseeAdminData, type LicenseeRecord } from '@/lib/licensee-types'
 import { mergeFactoryRecords, type FactoryAdminData, type FactoryRecord } from '@/lib/factory-types'
 import type { IpSummary } from '@/lib/ipbrand-types'
+import { buildFactoryIndex, buildIpIndex, buildLicenseeIndex, resolveEntityHref, type EntityKind } from '@/lib/entity-links'
 
 function imageUrl(local: string) { return `/case/${local}` }
 
@@ -46,9 +47,8 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
 
   useEffect(() => { if (d) document.title = `${caseTitle(d)} · IP授权案例库` }, [d])
 
-  // 进入编辑态时载入品牌方/工厂列表供三方关联选择
+  // 载入品牌方/工厂列表：编辑态用于三方关联选择，常态也用于「按名字自动跳转」解析
   useEffect(() => {
-    if (!editing) return
     Promise.all([
       fetch('/licensee/licensees.json').then(r => r.ok ? r.json() as Promise<LicenseeRecord[]> : []),
       fetch('/api/licensee/overrides').then(r => r.ok ? r.json() : Promise.resolve(EMPTY_LICENSEE_ADMIN)),
@@ -60,7 +60,10 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
         setFactories(mergeFactoryRecords(factoryRecords, factoryAdmin))
       })
       .catch(() => { setLicensees([]); setFactories([]) })
-  }, [editing])
+  }, [])
+
+  // 载入 IP 品牌库摘要：用于 IP方 节点按名字自动跳转（轻量摘要，非 4.7MB 全量）
+  useEffect(() => { loadIpLibrary() }, [])
 
   const loadIpLibrary = () => {
     if (ipLibrary !== null || ipLoading) return
@@ -125,6 +128,18 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
   const availableCities = [...CASE_CITIES, ...config.custom_cities]
   const keyword = ipSearch.trim().toLowerCase()
   const ipHits = ipLibrary && keyword ? ipLibrary.filter(ip => (ip.name_cn || '').toLowerCase().includes(keyword) || (ip.name_en || '').toLowerCase().includes(keyword)).slice(0, 8) : []
+
+  // 三库名称→编号索引，供「按名字自动跳转」：仅存名字（id=0）的关联方也能点进对方档案
+  const licenseeIndex = useMemo(() => buildLicenseeIndex(licensees), [licensees])
+  const factoryIndex = useMemo(() => buildFactoryIndex(factories), [factories])
+  const ipIndex = useMemo(() => (ipLibrary ? buildIpIndex(ipLibrary) : null), [ipLibrary])
+  const linkFor = (kind: EntityKind, id: number, name: string): string | null =>
+    resolveEntityHref(kind, { id, name, index: kind === 'ip' ? ipIndex : kind === 'licensee' ? licenseeIndex : factoryIndex })
+
+  // 授权链路三节点的跳转链接：有编号直接跳；无编号但名字在对方库存在则按名字自动跳
+  const ipHref = d ? linkFor('ip', d.ip_id, d.ip_name) : null
+  const licHref = d ? linkFor('licensee', d.licensee_id, d.licensee_name) : null
+  const facHref = d ? linkFor('factory', d.factory_id, d.factory_name) : null
 
   const body = loadError ? <div className="factory-status">数据加载失败，请刷新重试</div> : !data ? <div className="factory-status">加载中…</div> : !d ? <div className="factory-status">没有找到该案例，<Link href="/case">返回案例库</Link></div> : editing && draft ? (
     <div className="factory-detail-main editing">
@@ -192,17 +207,17 @@ export function CaseDetailClient({ initialId }: { initialId: number }) {
         <div className="factory-section-heading">授权链路</div>
         <div className="lic-case-card">
           <div className="case-chain">
-            {d.ip_id > 0
-              ? <Link href={`/ipbrand/detail?id=${d.ip_id}`} className="case-chain-node case-chain-ip" title="查看IP档案"><span className="case-chain-role case-role-ip">IP方</span><b>{d.ip_name}</b><i>›</i></Link>
+            {ipHref
+              ? <Link href={ipHref} className="case-chain-node case-chain-ip" title="查看IP档案"><span className="case-chain-role case-role-ip">IP方</span><b>{d.ip_name}</b><i>›</i></Link>
               : <div className="case-chain-node case-chain-off"><span className="case-chain-role case-role-ip">IP方</span><b>{d.ip_name || '未填写'}</b></div>}
             <span className="case-chain-arrow">→</span>
-            {d.licensee_id > 0
-              ? <Link href={`/licensee/detail?id=${d.licensee_id}`} className="case-chain-node case-chain-licensee" title="查看品牌方档案"><span className="case-chain-role case-role-licensee">品牌方</span><b>{d.licensee_name}</b><i>›</i></Link>
+            {licHref
+              ? <Link href={licHref} className="case-chain-node case-chain-licensee" title="查看品牌方档案"><span className="case-chain-role case-role-licensee">品牌方</span><b>{d.licensee_name}</b><i>›</i></Link>
               : <div className="case-chain-node case-chain-off"><span className="case-chain-role case-role-licensee">品牌方</span><b>{d.licensee_name || '未填写'}</b></div>}
             {(d.factory_id > 0 || d.factory_name) && <>
               <span className="case-chain-arrow">→</span>
-              {d.factory_id > 0
-                ? <Link href={`/factory/detail?id=${d.factory_id}`} className="case-chain-node case-chain-factory" title="查看工厂档案"><span className="case-chain-role case-role-factory">工厂</span><b>{d.factory_name}</b><i>›</i></Link>
+              {facHref
+                ? <Link href={facHref} className="case-chain-node case-chain-factory" title="查看工厂档案"><span className="case-chain-role case-role-factory">工厂</span><b>{d.factory_name}</b><i>›</i></Link>
                 : <div className="case-chain-node case-chain-off"><span className="case-chain-role case-role-factory">工厂</span><b>{d.factory_name}</b></div>}
             </>}
           </div>
