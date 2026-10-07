@@ -21,17 +21,14 @@ function readResearchCache(): ResearchReport[] {
 }
 
 export default function ResearchPage() {
-  const [category, setCategory] = useState<ResearchCategory>('品类报告')
   const [reports, setReports] = useState<ResearchReport[]>([])
   const [loaded, setLoaded] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const { isAdmin, loaded: adminLoaded } = useAdmin()
   useEffect(() => {
-    const requestedCategory = new URLSearchParams(window.location.search).get('category')
     const cached = readResearchCache()
     const initialFrame = requestAnimationFrame(() => {
-      if (requestedCategory) setCategory(normalizeResearchCategory(requestedCategory))
       if (cached.length > 0) { setReports(cached); setLoaded(true) }
     })
     let cancelled = false
@@ -49,7 +46,7 @@ export default function ResearchPage() {
     }).catch(() => { if (!cancelled) setLoaded(true) })
     return () => { cancelled = true; cancelAnimationFrame(initialFrame); clearTimeout(loadingTimeout) }
   }, [])
-  const items = useMemo(() => reports.filter((item) => item.category === category), [category, reports])
+  const items = useMemo(() => [...reports].sort((a, b) => (b.published_at || '').localeCompare(a.published_at || '')), [reports])
   const handleDelete = async (item: ResearchReport) => {
     if (deletingId) return
     if (!confirm(`确定删除「${item.title}」？删除后不可恢复。`)) return
@@ -70,9 +67,9 @@ export default function ResearchPage() {
     }
   }
   return <>
-    <header className="page-header"><div className="home-header-top"><div><h1 className="page-title font-serif">行业报告</h1><p className="page-sub">品类报告与深度分析，沉淀可复用的行业洞察。</p></div>{adminLoaded && isAdmin && <button className="admin-action-btn research-upload-btn" onClick={() => setShowUpload(true)}>＋ 上传研究报告</button>}</div><nav className="talks-tab-bar" role="tablist" aria-label="行业报告分类">{RESEARCH_CATEGORIES.map((item) => <button key={item} className={`talks-tab${item === category ? ' active' : ''}`} onClick={() => setCategory(item)} role="tab" aria-selected={item === category}>{item}</button>)}</nav></header>
-    <section className="research-page article-section"><div className="research-grid">{!loaded ? <p className="empty-state">正在加载报告…</p> : items.length === 0 ? <p className="empty-state">该分类暂无报告。</p> : items.map((item) => <Link href={`/research/${item.slug}`} className="research-card" key={item.id}><div className="research-card-meta"><span>{item.category}</span><time dateTime={item.published_at}>{item.published_at}</time>{adminLoaded && isAdmin && <button className="research-delete-btn" aria-label="删除报告" disabled={deletingId === item.id} onClick={(event) => { event.preventDefault(); event.stopPropagation(); handleDelete(item) }}>{deletingId === item.id ? '删除中…' : '删除'}</button>}</div><h2>{item.title}</h2><div className="research-card-tags">{researchTags(item).map((tag) => <span className="research-tag" key={tag}>#{tag}</span>)}</div>{adminLoaded && isAdmin && <div className={`research-backup-status ${item.github_backup_status}`}><span>{item.github_backup_status === 'backed_up' ? 'GitHub 已备份' : item.github_backup_status === 'failed' ? 'GitHub 备份失败' : 'GitHub 待备份'}</span>{item.github_backup_status === 'failed' && <button className="research-retry" onClick={async (event) => { event.preventDefault(); event.stopPropagation(); const response = await fetch(`/api/research/${item.id}/backup`, { method: 'POST', headers: { 'x-admin-password': password() } }); if (response.ok) setReports((value) => value.map((report) => report.id === item.id ? { ...report, github_backup_status: 'backed_up' } : report)) }}>重试</button>}</div>}</Link>)}</div></section>
-    {showUpload && <ResearchUploadDialog onClose={() => setShowUpload(false)} onCreated={(report) => { setReports((value) => { const next = [report, ...value]; researchMemoryCache = next; try { sessionStorage.setItem('ip-hot-research-reports', JSON.stringify(next)) } catch {} return next }); setCategory(report.category); setShowUpload(false) }} />}
+    <header className="page-header"><div className="home-header-top"><div><h1 className="page-title font-serif">行业报告</h1><p className="page-sub">品类报告与深度分析，按时间沉淀可复用的行业洞察。</p></div>{adminLoaded && isAdmin && <button className="admin-action-btn research-upload-btn" onClick={() => setShowUpload(true)}>＋ 上传研究报告</button>}</div></header>
+    <section className="research-page article-section"><div className="research-grid">{!loaded ? <p className="empty-state">正在加载报告…</p> : items.length === 0 ? <p className="empty-state">暂无报告。</p> : items.map((item) => <Link href={`/research/${item.slug}`} className="research-card" key={item.id}><div className="research-card-meta"><span>{item.category}</span><time dateTime={item.published_at}>{item.published_at}</time>{adminLoaded && isAdmin && <button className="research-delete-btn" aria-label="删除报告" disabled={deletingId === item.id} onClick={(event) => { event.preventDefault(); event.stopPropagation(); handleDelete(item) }}>{deletingId === item.id ? '删除中…' : '删除'}</button>}</div><h2>{item.title}</h2><div className="research-card-tags">{researchTags(item).map((tag) => <span className="research-tag" key={tag}>#{tag}</span>)}</div>{adminLoaded && isAdmin && <div className={`research-backup-status ${item.github_backup_status}`}><span>{item.github_backup_status === 'backed_up' ? 'GitHub 已备份' : item.github_backup_status === 'failed' ? 'GitHub 备份失败' : 'GitHub 待备份'}</span>{item.github_backup_status === 'failed' && <button className="research-retry" onClick={async (event) => { event.preventDefault(); event.stopPropagation(); const response = await fetch(`/api/research/${item.id}/backup`, { method: 'POST', headers: { 'x-admin-password': password() } }); if (response.ok) setReports((value) => value.map((report) => report.id === item.id ? { ...report, github_backup_status: 'backed_up' } : report)) }}>重试</button>}</div>}</Link>)}</div></section>
+    {showUpload && <ResearchUploadDialog onClose={() => setShowUpload(false)} onCreated={(report) => { setReports((value) => { const next = [report, ...value]; researchMemoryCache = next; try { sessionStorage.setItem('ip-hot-research-reports', JSON.stringify(next)) } catch {} return next }); setShowUpload(false) }} />}
   </>
 }
 
