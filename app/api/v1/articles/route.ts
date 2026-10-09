@@ -5,16 +5,16 @@ export const dynamic = 'force-dynamic'
 
 /**
  * 公开只读 API：/api/v1/articles?category=&limit=
- * 限流 60 次/分钟/IP；只输出元数据与摘要，不带全文。
+ * 限流 40 次/分钟/IP；只输出元数据与摘要，不带全文。
  */
 export async function GET(request: Request) {
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
     'unknown'
-  if (!checkRateLimit(`v1-articles:${ip}`)) {
+  if (!checkRateLimit(`v1-articles:${ip}`, 40)) {
     return NextResponse.json(
-      { error: '请求过于频繁，请稍后再试（限流 60 次/分钟）' },
+      { error: '请求过于频繁，请稍后再试（限流 40 次/分钟）' },
       { status: 429, headers: { 'Retry-After': '60' } },
     )
   }
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       {
         ok: true,
         count: articles.length,
-        note: '仅摘要与原文链接，全文请访问原文；限流 60 次/分钟。',
+        note: '仅摘要与原文链接，全文请访问原文；限流 40 次/分钟。',
         articles: articles.map((article: FeedArticle) => ({
           id: article.id,
           title: article.title_cn || article.title,
