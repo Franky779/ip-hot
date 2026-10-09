@@ -7,7 +7,7 @@ site: https://www.laojia-ip.com
 
 # 老贾 IP Skill
 
-本技能让你（AI Agent）直接读取 laojia-ip.com 的公开数据。全部接口匿名可读、返回 JSON、限流 40 次/分钟/IP——超过限流会返回 429，等 60 秒再试，不要连续猛刷。
+本技能让你（AI Agent）直接读取 laojia-ip.com 的公开数据。全部接口匿名可读、返回 JSON、限流 40 次/分钟/IP——超过限流会返回 429，等 60 秒再试，不要连续猛刷。若你持有站长授予的管理员密码（CLI 环境变量 LAOJIA_ADMIN_PASSWORD），CLI 会自动带上密码头，访问公开接口**不限流**。
 
 ## 基础地址
 

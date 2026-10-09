@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
 import { topEvents, isRising, isNew } from '@/lib/events/hot'
 import { checkRateLimit } from '@/lib/rss-feed'
+import { isAdminAuthenticated } from '@/lib/admin-auth'
 
 export const dynamic = 'force-dynamic'
 
-/** 公开热点 API：/api/v1/hot?limit=20（限流 40 次/分/IP，与 /api/v1/articles 同规则） */
+/** 公开热点 API：/api/v1/hot?limit=20（限流 40 次/分/IP；持管理员密码不限流，与 /api/v1/articles 同规则） */
 export async function GET(request: Request) {
   const ip =
     request.headers.get('x-real-ip') ??
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     'unknown'
-  if (!checkRateLimit(`v1hot:${ip}`, 40, 60_000)) {
+  if (!isAdminAuthenticated(request) && !checkRateLimit(`v1hot:${ip}`, 40, 60_000)) {
     return NextResponse.json({ error: 'rate limited' }, { status: 429 })
   }
 

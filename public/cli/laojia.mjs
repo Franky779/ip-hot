@@ -5,7 +5,8 @@
  * 单文件、零依赖，Node 18+ 直接运行。
  *
  * 权限分级：
- *   级别 1｜匿名只读 —— 不需要密码，读取公开数据（文章/热点/信息源/RSS/页面），限流 40 次/分钟。
+ *   级别 1｜匿名只读 —— 不需要密码，读取公开数据（文章/热点/信息源/RSS/页面），限流 40 次/分钟；
+ *                       设置了管理员密码（LAOJIA_ADMIN_PASSWORD）时自动携带密码头，公开接口不限流。
  *   级别 2｜管理员全权 —— 设置环境变量 LAOJIA_ADMIN_PASSWORD（或 --password 参数，不建议），
  *                         可调用全部 /api/admin/* 管理接口：读、增、改、删。
  *
@@ -46,7 +47,7 @@ function printHelp() {
   stdout.write(`
 老贾 IP CLI（laojia-ip.com）— 权限分两级
 
-【级别 1｜匿名只读】（无需密码，限流 40 次/分钟）
+【级别 1｜匿名只读】（无需密码，限流 40 次/分钟；设置了管理员密码则不限流）
   node laojia.mjs articles [--limit 20] [--category 授权联名]   精选文章（摘要+原文链接）
   node laojia.mjs hot [--limit 20]                              本周热点事件榜
   node laojia.mjs sources                                       信息源列表
