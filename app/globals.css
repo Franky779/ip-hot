@@ -8955,3 +8955,94 @@ a.case-chain-node:hover { transform: translateY(-1px); box-shadow: var(--shadow)
   .hot-strip-track { animation: none; }
   .hot-strip-viewport { overflow-x: auto; }
 }
+
+/* ===== Agent 接入页（/agent，仅管理员可见） ===== */
+.agent-page { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+.agent-loading { min-height: 60vh; }
+.agent-header { margin-bottom: 1.75rem; }
+.agent-kicker { color: var(--accent); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; margin: 0 0 0.5rem; }
+.agent-title { font-family: var(--font-noto-serif-sc), serif; font-size: 1.9rem; font-weight: 700; margin: 0 0 0.75rem; color: var(--text); }
+.agent-subtitle { color: var(--text-secondary); line-height: 1.9; margin: 0 0 1.1rem; max-width: 720px; }
+.agent-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.1rem; }
+.agent-badge { display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.8rem; font-size: 0.78rem; color: var(--text-secondary); background: var(--surface); }
+.agent-badge-ok { color: var(--accent); border-color: var(--accent); }
+.agent-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.agent-notice { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; border: 1px solid rgba(180, 130, 0, 0.35); background: rgba(220, 170, 30, 0.09); border-radius: 10px; padding: 0.75rem 1rem; }
+.agent-notice-text { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.7; }
+.agent-notice-btn { color: var(--accent); font-size: 0.85rem; white-space: nowrap; text-decoration: none; font-weight: 600; }
+.agent-notice-btn:hover { text-decoration: underline; }
+
+.agent-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; margin-bottom: 1rem; position: relative; }
+.agent-card { position: relative; border: 1px solid var(--card-border); border-radius: 12px; padding: 1.1rem 1rem 1rem; background: var(--bg); transition: border-color 0.15s ease; }
+.agent-card:hover { border-color: var(--card-border-hover); }
+.agent-card-recommended { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-light); }
+.agent-card-tag { position: absolute; top: 0.7rem; right: 0.7rem; font-size: 0.7rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0.05rem 0.5rem; }
+.agent-card-icon { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 9px; background: var(--accent-light); color: var(--accent); margin-bottom: 0.7rem; }
+.agent-card-icon svg { width: 18px; height: 18px; }
+.agent-card-title { font-size: 0.98rem; font-weight: 700; margin: 0 0 0.35rem; color: var(--text); }
+.agent-card-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.7; margin: 0; }
+.agent-cards-note { grid-column: 1 / -1; color: var(--text-muted); font-size: 0.78rem; line-height: 1.7; margin: 0.2rem 0 0; }
+.agent-cards-note code { background: var(--surface); border: 1px solid var(--border-light); border-radius: 5px; padding: 0.05rem 0.35rem; font-size: 0.75rem; }
+
+.agent-columns { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 2rem; align-items: start; margin-top: 2rem; }
+.agent-main { min-width: 0; }
+.agent-section { margin-bottom: 2.75rem; }
+.agent-section-kicker { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; margin: 0 0 0.4rem; }
+.agent-section-title { font-family: var(--font-noto-serif-sc), serif; font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 0 0 0.7rem; }
+.agent-section-text { color: var(--text-secondary); line-height: 1.95; margin: 0 0 1rem; font-size: 0.92rem; }
+.agent-section-note { color: var(--text-muted); font-size: 0.82rem; line-height: 1.8; margin: 0.75rem 0 0; }
+.agent-section-note a { color: var(--accent); }
+.agent-sub-heading { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.5rem; }
+
+.agent-copy-block { border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; margin: 0.9rem 0 1.2rem; background: var(--surface); }
+.agent-copy-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.78rem; }
+.agent-copy-meta { display: inline-flex; align-items: center; gap: 0.5rem; }
+.agent-lang-tag { color: var(--text-muted); font-size: 0.7rem; }
+.agent-copy-btn { border: 1px solid var(--border); background: var(--bg); color: var(--text-secondary); border-radius: 6px; padding: 0.15rem 0.55rem; font-size: 0.72rem; cursor: pointer; }
+.agent-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.agent-copy-block pre { margin: 0; padding: 0.85rem 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.8; color: var(--text); }
+
+.agent-question-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.agent-question-list li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border: 1px solid var(--border-light); border-radius: 8px; padding: 0.5rem 0.8rem; color: var(--text-secondary); font-size: 0.85rem; }
+
+.agent-rss-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.agent-rss-list li { display: flex; align-items: center; gap: 0.75rem; border: 1px solid var(--border-light); border-radius: 8px; padding: 0.55rem 0.8rem; }
+.agent-rss-list code { flex: 1; font-size: 0.8rem; color: var(--text); overflow-x: auto; white-space: nowrap; }
+.agent-rss-list span { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; }
+
+.agent-steps-list { margin: 0; padding-left: 1.3rem; color: var(--text-secondary); line-height: 2; font-size: 0.9rem; }
+.agent-steps-list a { color: var(--accent); }
+
+.agent-capabilities { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.agent-cap-list { margin: 0; padding-left: 1.2rem; color: var(--text-secondary); line-height: 2; font-size: 0.88rem; }
+.agent-cap-list-no li::marker { color: var(--text-muted); }
+
+.agent-aside { display: grid; gap: 1rem; position: sticky; top: 1.5rem; }
+.agent-aside-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem 1.1rem; background: var(--bg); }
+.agent-aside-title { font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 0 0 0.6rem; }
+.agent-aside-nav { display: grid; gap: 0.15rem; }
+.agent-aside-link { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.55rem; border-radius: 8px; color: var(--text-secondary); font-size: 0.84rem; text-decoration: none; }
+.agent-aside-link:hover { background: var(--surface-hover); color: var(--text); }
+.agent-aside-link-active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.agent-aside-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); position: absolute; margin-left: -0.9rem; margin-top: 0.45rem; }
+.agent-aside-link-active { position: relative; }
+.agent-aside-sub { color: var(--text-muted); font-size: 0.72rem; }
+.agent-aside-text { color: var(--text-muted); font-size: 0.8rem; line-height: 1.8; margin: 0 0 0.6rem; }
+.agent-aside-feedback { color: var(--accent); font-size: 0.84rem; text-decoration: none; font-weight: 600; }
+.agent-aside-feedback:hover { text-decoration: underline; }
+
+.agent-locked { max-width: 460px; margin: 15vh auto 0; text-align: center; border: 1px solid var(--card-border); border-radius: 14px; padding: 2.5rem 2rem; background: var(--bg); }
+.agent-locked-icon { display: inline-flex; width: 52px; height: 52px; align-items: center; justify-content: center; border-radius: 14px; background: var(--accent-light); color: var(--accent); margin-bottom: 1rem; }
+.agent-locked-icon svg { width: 26px; height: 26px; }
+.agent-locked-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.9; margin: 0 0 1.25rem; }
+
+@media (max-width: 900px) {
+  .agent-cards { grid-template-columns: repeat(2, 1fr); }
+  .agent-columns { grid-template-columns: 1fr; }
+  .agent-aside { position: static; }
+  .agent-capabilities { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .agent-cards { grid-template-columns: 1fr; }
+  .agent-title { font-size: 1.5rem; }
+}
